@@ -228,7 +228,47 @@ Confirme une invitation et crée le compte.
     },
     "double_compte": true
 }
+### 7. MOT DE PASSE OUBLIÉ
+Demander un lien de réinitialisation de mot de passe.
+
+**Endpoint :** `POST /auth/forgot-password`
+
+**Body :**
+```json
+{
+    "email": "yessoufouzenabou46@gmail.com"
+}
 ```
+
+**Réponse :**
+```json
+{
+    "message": "Email de réinitialisation envoyé",
+    "reset_token_dev": "d7b32508919dbd39151fe8ccbce67....."//Votre Token dev ici 
+}
+```
+
+---
+
+### 8. RÉINITIALISER MOT DE PASSE
+Changer le mot de passe avec le token reçu.
+
+**Endpoint :** `POST /auth/reset-password`
+
+**Body :**
+```json
+{
+    "token": "d7b32508919dbd39151fe8ccbce67e......",//Votre token ici 
+    "nouveau_mot_de_passe": "ola"
+}
+```
+
+**Réponse :**
+```json
+{
+    "message": "Mot de passe réinitialisé avec succès"
+}
+````
 
 ---
 
