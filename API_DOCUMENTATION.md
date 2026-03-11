@@ -303,3 +303,274 @@ Changer le mot de passe avec le token reçu.
 - Les tokens expirent après **24h**. Si un token ne fonctionne plus, refaites un login.
 - Pour les routes protégées, **toujours inclure** le header `Authorization: Bearer VOTRE_TOKEN`
 - Les mots de passe des comptes de test sont **pour développement uniquement**
+//Création de Biens
+//Connexion en tant que proprietaire
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+{
+    "email": "yessoufouzenabou46@gmail.com",
+    "mot_de_passe": "123456"
+}
+**Reponse**
+{
+    "message": "Connexion réussie",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6....",//Votre token à copier
+    "user": {
+        "id": 15,
+        "nom": "yessoufou",
+        "prenoms": "Zenabou",
+        "email": "yessoufouzenabou46@gmail.com",
+        "telephone": "0158868731",
+        "type": "proprietaire",
+        "roleInfo": {
+            "id_proprietaire": 4
+        },
+        "derniere_connexion": "2026-03-11T14:01:34.944Z"
+    }
+}
+POST http://localhost:5000/api/biens
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+    **Body**(1er Exemple bIENS Appartements)
+    {
+    "titre": "Bel Appartement F3 au centre-ville",
+    "description": "Appartement lumineux avec vue dégagée, proche commodités",
+    "type_bien": "appartement",
+    "charge": 50000,
+    "loyer_mensuel": 200000,
+    "adresse": "Rue 10, Médina",
+    "ville": "Dakar",
+    "code_postal": "BP 1234",
+    "superficie": 85.5,
+    "nombre_pieces": 3,
+    "nombre_chambres": 2,
+    "meuble": true
+}
+**Reponse**
+{
+    "message": "Bien créé avec succès",
+    "bien": {
+        "id_bien": 2, //copier lid (du premier Bien crée)
+        "id_proprietaire": 4,
+        "titre": "Bel Appartement F3 au centre-ville",
+        "description": "Appartement lumineux avec vue dégagée, proche commodités",
+        "type_bien": "appartement",
+        "charge": "50000.00",
+        "statut": "disponible",
+        "loyer_mensuel": "200000.00",
+        "adresse": "Rue 10, Médina",
+        "ville": "Dakar",
+        "date_creation": "2026-03-11T14:03:18.039Z",
+        "code_postal": "BP 1234",
+        "superficie": 85.5,
+        "nombre_pieces": 3,
+        "nombre_chambres": 2,
+        "meuble": true
+    }
+}
+//creer un autre Bien (Bien Maison)
+**Body**
+{
+    "titre": "Maison avec jardin",
+    "description": "Maison de 4 pièces avec grand jardin",
+    "type_bien": "maison",
+    "loyer_mensuel": 350000,
+    "adresse": "Route de Ouakam",
+    "ville": "Dakar",
+    "superficie": 150,
+    "nombre_pieces": 4,
+    "nombre_chambres": 3
+}
+//Reponse
+{
+    "message": "Bien créé avec succès",
+    "bien": {
+        "id_bien": 3,
+        "id_proprietaire": 4,
+        "titre": "Maison avec jardin",
+        "description": "Maison de 4 pièces avec grand jardin",
+        "type_bien": "maison",
+        "charge": "0.00",
+        "statut": "disponible",
+        "loyer_mensuel": "350000.00",
+        "adresse": "Route de Ouakam",
+        "ville": "Dakar",
+        "date_creation": "2026-03-11T14:09:46.383Z",
+        "code_postal": null,
+        "superficie": 150,
+        "nombre_pieces": 4,
+        "nombre_chambres": 3,
+        "meuble": false
+    }
+}
+// Lister mes Biens 
+GET http://localhost:5000/api/biens/mes-biens
+Headers:
+    Authorization: Bearer TON_TOKEN (Votre token que vous aviez copier)
+**Reponse**
+[
+    {
+        "id_bien": 3,
+        "id_proprietaire": 4,
+        "titre": "Maison avec jardin",
+        "description": "Maison de 4 pièces avec grand jardin",
+        "type_bien": "maison",
+        "charge": "0.00",
+        "statut": "disponible",
+        "loyer_mensuel": "350000.00",
+        "adresse": "Route de Ouakam",
+        "ville": "Dakar",
+        "date_creation": "2026-03-11T14:09:46.383Z",
+        "code_postal": null,
+        "superficie": 150,
+        "nombre_pieces": 4,
+        "nombre_chambres": 3,
+        "meuble": false,
+        "photos": []
+    },
+    {
+        "id_bien": 2,
+        "id_proprietaire": 4,
+        "titre": "Bel Appartement F3 au centre-ville",
+        "description": "Appartement lumineux avec vue dégagée, proche commodités",
+        "type_bien": "appartement",
+        "charge": "50000.00",
+        "statut": "disponible",
+        "loyer_mensuel": "200000.00",
+        "adresse": "Rue 10, Médina",
+        "ville": "Dakar",
+        "date_creation": "2026-03-11T14:03:18.039Z",
+        "code_postal": "BP 1234",
+        "superficie": 85.5,
+        "nombre_pieces": 3,
+        "nombre_chambres": 2,
+        "meuble": true,
+        "photos": []
+    }
+]
+
+//Voir un bien spécifique (GET /api/biens/:id)
+GET http://localhost:5000/api/biens/1
+//(Remplace 1 par l'ID du bien que tu veux voir)
+//Modifier un Biens
+PUT http://localhost:5000/api/biens/2
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+**Body**
+{
+    "loyer_mensuel": 210000,
+    "description": "Appartement rénové avec clim",
+    "meuble": true
+}
+**Réponse**
+{
+    "message": "Bien mis à jour avec succès",
+    "bien": {
+        "id_bien": 2,
+        "id_proprietaire": 4,
+        "titre": "Bel Appartement F3 au centre-ville",
+        "description": "Appartement rénové avec clim",
+        "type_bien": "appartement",
+        "charge": "50000.00",
+        "statut": "disponible",
+        "loyer_mensuel": "210000.00",
+        "adresse": "Rue 10, Médina",
+        "ville": "Dakar",
+        "date_creation": "2026-03-11T14:03:18.039Z",
+        "code_postal": "BP 1234",
+        "superficie": 85.5,
+        "nombre_pieces": 3,
+        "nombre_chambres": 2,
+        "meuble": true
+    }
+}
+// CHANGER LE STATUT D'UN BIEN (PATCH /api/biens/:id/statut)
+PATCH http://localhost:5000/api/biens/2/statut
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+**Body**
+{
+    "statut": "loue"
+}
+**Réponse**
+{
+    "message": "Statut mis à jour avec succès",
+    "bien": {
+        "id_bien": 2,
+        "id_proprietaire": 4,
+        "titre": "Bel Appartement F3 au centre-ville",
+        "description": "Appartement rénové avec clim",
+        "type_bien": "appartement",
+        "charge": "50000.00",
+        "statut": "loue",
+        "loyer_mensuel": "210000.00",
+        "adresse": "Rue 10, Médina",
+        "ville": "Dakar",
+        "date_creation": "2026-03-11T14:03:18.039Z",
+        "code_postal": "BP 1234",
+        "superficie": 85.5,
+        "nombre_pieces": 3,
+        "nombre_chambres": 2,
+        "meuble": true
+    }
+}
+//VOIR LES BIENS DISPONIBLES (PUBLIC - sans token)
+GET http://localhost:5000/api/biens/disponibles
+**Réponse**
+[
+    {
+        "id_bien": 3,
+        "id_proprietaire": 4,
+        "titre": "Maison avec jardin",
+        "description": "Maison de 4 pièces avec grand jardin",
+        "type_bien": "maison",
+        "charge": "0.00",
+        "statut": "disponible",
+        "loyer_mensuel": "350000.00",
+        "adresse": "Route de Ouakam",
+        "ville": "Dakar",
+        "date_creation": "2026-03-11T14:09:46.383Z",
+        "code_postal": null,
+        "superficie": 150,
+        "nombre_pieces": 4,
+        "nombre_chambres": 3,
+        "meuble": false,
+        "proprietaire_nom": "yessoufou",
+        "proprietaire_prenoms": "Zenabou",
+        "proprietaire_telephone": "0158868731",
+        "photo_principale": null
+    }
+]
+// Biens Disponibles avec Filtres 
+GET http://localhost:5000/api/biens/disponibles?ville=Dakar&type_bien=appartement&prix_max=250000
+
+// RECHERCHER DES BIENS (GET /api/biens/search)
+GET http://localhost:5000/api/biens/search?q=appartement
+
+// STATISTIQUES DES BIENS (GET /api/biens/stats)*
+GET http://localhost:5000/api/biens/stats
+Headers:
+    Authorization: Bearer TON_TOKEN
+**Réponse**
+[
+    {
+        "statut": "disponible",
+        "nombre": "1"
+    },
+    {
+        "statut": "loue",
+        "nombre": "1"
+    }
+]
+// SUPPRIMER UN BIEN (DELETE /api/biens/:id)
+DELETE http://localhost:5000/api/biens/3
+Headers:
+    Authorization: Bearer TON_TOKEN
+//Réponse
+{
+    "message": "Bien supprimé avec succès"
+}
+
