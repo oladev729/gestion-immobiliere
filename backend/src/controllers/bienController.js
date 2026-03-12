@@ -1,0 +1,350 @@
+const Bien = require('../models/Bien');
+const db = require('../config/database');
+
+const bienController = {
+    // ============================================================
+    // CRÉER UN NOUVEAU BIEN
+    // ============================================================
+    async create(req, res) {
+        try {
+            // Récupérer l'id_proprietaire à partir de l'utilisateur connecté
+            const proprietaire = await db.query(
+                'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
+                [req.user.id]
+            );
+
+            if (proprietaire.rows.length === 0) {
+                return res.status(403).json({ 
+                    message: 'Vous devez être propriétaire pour créer un bien' 
+                });
+            }
+
+            const id_proprietaire = proprietaire.rows[0].id_proprietaire;
+            const newBien = await Bien.create(req.body, id_proprietaire);
+
+            // Créer une notification pour le propriétaire
+            await db.query(
+                `INSERT INTO notification (id_utilisateur, titre, message, type)
+                 VALUES ($1, $2, $3, $4)`,
+                [req.user.id, 'Bien créé', 
+                 `Votre bien "${newBien.titre}" a été créé avec succès`, 
+                 'contrat']
+            );
+
+            res.status(201).json({
+                message: 'Bien créé avec succès',
+                bien: newBien
+            });
+
+        } catch (error) {
+            console.error('Erreur création bien:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // RÉCUPÉRER TOUS LES BIENS DU PROPRIÉTAIRE CONNECTÉ
+    // ============================================================
+    async getMyBiens(req, res) {
+        try {
+            const proprietaire = await db.query(
+                'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
+                [req.user.id]
+            );
+
+            if (proprietaire.rows.length === 0) {
+                return res.status(200).json([]); // Pas propriétaire = pas de biens
+            }
+
+            const biens = await Bien.findByProprietaire(proprietaire.rows[0].id_proprietaire);
+            
+            // Ajouter les photos pour chaque bien
+            for (let bien of biens) {
+                const photos = await db.query(
+                    'SELECT url_photobien, legende FROM photosbien WHERE id_bien = $1',
+                    [bien.id_bien]
+                );
+                bien.photos = photos.rows;
+            }
+
+            res.json(biens);
+
+        } catch (error) {
+            console.error('Erreur récupération biens:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // RÉCUPÉRER TOUS LES BIENS DISPONIBLES (PUBLIC)
+    // ============================================================
+    async getBiensDisponibles(req, res) {
+        try {
+            const filtres = {
+                ville: req.query.ville,
+                type_bien: req.query.type_bien,
+                prix_max: req.query.prix_max
+            };
+
+            const biens = await Bien.findAllDisponibles(filtres);
+            
+            // Ajouter la première photo pour chaque bien
+            for (let bien of biens) {
+                const photos = await db.query(
+                    'SELECT url_photobien FROM photosbien WHERE id_bien = $1 LIMIT 1',
+                    [bien.id_bien]
+                );
+                bien.photo_principale = photos.rows[0]?.url_photobien || null;
+            }
+
+            res.json(biens);
+
+        } catch (error) {
+            console.error('Erreur récupération biens disponibles:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // RÉCUPÉRER UN BIEN PAR SON ID (PUBLIC)
+    // ============================================================
+    async getBienById(req, res) {
+        try {
+            const bien = await Bien.findById(req.params.id);
+            
+            if (!bien) {
+                return res.status(404).json({ message: 'Bien non trouvé' });
+            }
+
+            // Récupérer toutes les photos du bien
+            const photos = await db.query(
+                'SELECT url_photobien, legende FROM photosbien WHERE id_bien = $1',
+                [bien.id_bien]
+            );
+            bien.photos = photos.rows;
+
+            res.json(bien);
+
+        } catch (error) {
+            console.error('Erreur récupération bien:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // METTRE À JOUR UN BIEN (propriétaire uniquement)
+    // ============================================================
+    async update(req, res) {
+        try {
+            const bien = await Bien.findById(req.params.id);
+            
+            if (!bien) {
+                return res.status(404).json({ message: 'Bien non trouvé' });
+            }
+
+            // Vérifier que le propriétaire connecté est bien le propriétaire du bien
+            const proprietaire = await db.query(
+                'SELECT id_utilisateur FROM proprietaire WHERE id_proprietaire = $1',
+                [bien.id_proprietaire]
+            );
+
+            if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
+                return res.status(403).json({ 
+                    message: 'Vous n\'êtes pas autorisé à modifier ce bien' 
+                });
+            }
+
+            const updatedBien = await Bien.update(req.params.id, req.body);
+
+            res.json({
+                message: 'Bien mis à jour avec succès',
+                bien: updatedBien
+            });
+
+        } catch (error) {
+            console.error('Erreur mise à jour bien:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // SUPPRIMER UN BIEN (propriétaire uniquement)
+    // ============================================================
+    async delete(req, res) {
+        try {
+            const bien = await Bien.findById(req.params.id);
+            
+            if (!bien) {
+                return res.status(404).json({ message: 'Bien non trouvé' });
+            }
+
+            // Vérifier que le propriétaire connecté est bien le propriétaire du bien
+            const proprietaire = await db.query(
+                'SELECT id_utilisateur FROM proprietaire WHERE id_proprietaire = $1',
+                [bien.id_proprietaire]
+            );
+
+            if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
+                return res.status(403).json({ 
+                    message: 'Vous n\'êtes pas autorisé à supprimer ce bien' 
+                });
+            }
+
+            // Vérifier que le bien n'est pas loué
+            if (bien.statut === 'loue') {
+                return res.status(400).json({ 
+                    message: 'Impossible de supprimer un bien actuellement loué' 
+                });
+            }
+
+            await Bien.delete(req.params.id);
+
+            res.json({ 
+                message: 'Bien supprimé avec succès' 
+            });
+
+        } catch (error) {
+            console.error('Erreur suppression bien:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // CHANGER LE STATUT D'UN BIEN
+    // ============================================================
+    async changeStatut(req, res) {
+        try {
+            const { statut } = req.body;
+            const bien = await Bien.findById(req.params.id);
+            
+            if (!bien) {
+                return res.status(404).json({ message: 'Bien non trouvé' });
+            }
+
+            // Vérifier les droits
+            const proprietaire = await db.query(
+                'SELECT id_utilisateur FROM proprietaire WHERE id_proprietaire = $1',
+                [bien.id_proprietaire]
+            );
+
+            if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
+                return res.status(403).json({ 
+                    message: 'Vous n\'êtes pas autorisé à modifier ce bien' 
+                });
+            }
+
+            const updatedBien = await Bien.changeStatut(req.params.id, statut);
+
+            res.json({
+                message: 'Statut mis à jour avec succès',
+                bien: updatedBien
+            });
+
+        } catch (error) {
+            console.error('Erreur changement statut:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // RECHERCHER DES BIENS
+    // ============================================================
+    async searchBiens(req, res) {
+        try {
+            const { q } = req.query;
+            
+            if (!q) {
+                return res.status(400).json({ 
+                    message: 'Paramètre de recherche requis' 
+                });
+            }
+
+            const biens = await Bien.search(q);
+            res.json(biens);
+
+        } catch (error) {
+            console.error('Erreur recherche biens:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // STATISTIQUES DES BIENS (pour propriétaire)
+    // ============================================================
+    async getStats(req, res) {
+        try {
+            const proprietaire = await db.query(
+                'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
+                [req.user.id]
+            );
+
+            let stats;
+            if (proprietaire.rows.length > 0) {
+                stats = await Bien.countByStatut(proprietaire.rows[0].id_proprietaire);
+            } else {
+                stats = await Bien.countByStatut();
+            }
+
+            res.json(stats);
+
+        } catch (error) {
+            console.error('Erreur stats biens:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // AJOUTER DES PHOTOS À UN BIEN
+    // ============================================================
+    async addPhotos(req, res) {
+        try {
+            const { id } = req.params;
+            const { urls, legendes } = req.body; // Tableau d'URLs et légendes
+
+            if (!urls || !Array.isArray(urls) || urls.length === 0) {
+                return res.status(400).json({ 
+                    message: 'Au moins une URL est requise' 
+                });
+            }
+
+            // Vérifier que le bien existe et appartient au propriétaire
+            const bien = await Bien.findById(id);
+            if (!bien) {
+                return res.status(404).json({ message: 'Bien non trouvé' });
+            }
+
+            const proprietaire = await db.query(
+                'SELECT id_utilisateur FROM proprietaire WHERE id_proprietaire = $1',
+                [bien.id_proprietaire]
+            );
+
+            if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
+                return res.status(403).json({ 
+                    message: 'Vous n\'êtes pas autorisé' 
+                });
+            }
+
+            // Insérer les photos
+            const photos = [];
+            for (let i = 0; i < urls.length; i++) {
+                const result = await db.query(
+                    `INSERT INTO photosbien (id_bien, url_photobien, legende)
+                     VALUES ($1, $2, $3) RETURNING *`,
+                    [id, urls[i], legendes?.[i] || null]
+                );
+                photos.push(result.rows[0]);
+            }
+
+            res.status(201).json({
+                message: 'Photos ajoutées avec succès',
+                photos
+            });
+
+        } catch (error) {
+            console.error('Erreur ajout photos:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    }
+};
+
+module.exports = bienController;

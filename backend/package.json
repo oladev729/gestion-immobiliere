@@ -7,7 +7,11 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["immobilier", "api", "nodejs"],
+  "keywords": [
+    "immobilier",
+    "api",
+    "nodejs"
+  ],
   "author": "oladev729",
   "license": "ISC",
   "dependencies": {
