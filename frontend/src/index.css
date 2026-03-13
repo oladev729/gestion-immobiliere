@@ -1,0 +1,196 @@
+:root {
+  --primary-navy: #021b3a;      /* bleu nuit */
+  --primary-navy-soft: #062447;
+  --bg-page: #ffffff;
+  --bg-photo: #d9d9d9;          /* gris clair des blocs photo */
+  --text-main: #0b1020;
+  --text-muted: #4b5563;
+  --radius-lg: 18px;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+}
+
+/* Bouton onglet "Gestion bien Immobilière" */
+.chip-primary {
+  background-color: var(--primary-navy);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 22px;
+  border: none;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Boutons header à droite */
+.btn-pill {
+  border-radius: 999px !important;
+  padding-inline: 22px;
+  font-weight: 500;
+}
+
+/* Bouton bleu nuit */
+.btn-navy {
+  background-color: var(--primary-navy);
+  border-color: var(--primary-navy);
+  color: #fff;
+}
+
+.btn-navy:hover {
+  background-color: var(--primary-navy-soft);
+  border-color: var(--primary-navy-soft);
+}
+
+/* Bouton "Nos biens" plus large */
+.btn-nos-biens {
+  background-color: var(--primary-navy);
+  border-color: var(--primary-navy);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 26px;
+  font-weight: 600;
+}
+
+/* Bloc photo + bande bleue */
+.property-tile {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  border: none;
+}
+
+.property-tile__photo {
+  background-color: var(--bg-photo); /* remplace par une vraie image plus tard */
+  height: 150px;
+  background-size: cover;
+  background-position: center;
+}
+
+.property-tile__footer {
+  background-color: var(--primary-navy);
+  color: #fff;
+  padding: 12px 18px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Texte bas de page */
+.footer-slogan {
+  font-weight: 500;
+  font-size: 17px;
+}
+:root {
+  --primary-navy: #021b3a;
+  --bg-form: #e6e6ea; /* gris clair du bloc formulaire */
+}
+
+/* Carte formulaire inscription */
+.register-wrapper {
+  min-height: calc(100vh - 72px); /* hauteur écran moins header approx */
+  background-color: #f5f5f7;
+}
+
+.register-card {
+  background-color: var(--bg-form);
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 32px 24px;
+  border-radius: 8px;
+}
+
+.register-card h2 {
+  font-size: 18px;
+}
+
+/* Input bleu nuit */
+.input-navy {
+  background-color: var(--primary-navy);
+  border: 1px solid var(--primary-navy);
+  color: #fff;
+  font-size: 14px;
+}
+
+.input-navy::placeholder {
+  color: #d1d5db;
+}
+
+/* Boutons rôle */
+.role-btn {
+  background-color: var(--primary-navy);
+  border-color: var(--primary-navy);
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 18px;
+}
+
+.role-btn.inactive {
+  background-color: #bfc3cd;
+  border-color: #bfc3cd;
+  color: #111827;
+}
+
+/* Bouton S'inscrire */
+.btn-register-main {
+  background-color: var(--primary-navy);
+  border-color: var(--primary-navy);
+  color: #fff;
+  width: 100%;
+}
+/* Lignes titre + carte centrées */
+.register-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Intro sous INSCRIPTION */
+.register-subtitle {
+  font-size: 14px;
+  color: #4b5563;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+/* Champ mot de passe avec icône oeil */
+.password-wrapper {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  color: #111827;
+}
+/* Zone globale page connexion */
+.login-wrapper {
+  min-height: calc(100vh - 72px); /* écran – header approx. */
+  background-color: #ffffff;
+}
+
+/* Carte formulaire connexion */
+.login-card {
+  background-color: var(--form-bg); /* même gris que l'inscription */
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 32px 32px 24px;
+  border-radius: 8px;
+}
+
+/* Texte "Connexion à votre compte" */
+.login-title {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 18px;
+}
