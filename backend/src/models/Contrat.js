@@ -118,6 +118,7 @@ class Contrat {
     static async findById(id_contrat) {
         const query = `
             SELECT c.*, 
+                   b.id_proprietaire,
                    b.titre as bien_titre,
                    b.adresse as bien_adresse,
                    b.ville as bien_ville,
