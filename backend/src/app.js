@@ -41,4 +41,8 @@ app.use('/api/biens', bienRoutes);
 const contratRoutes = require('./routes/contratRoutes');
 app.use('/api/contrats', contratRoutes);
 
+//  ROUTES DES PAIEMENTS
+const paiementRoutes = require('./routes/paiementRoutes');
+app.use('/api/paiements', paiementRoutes);
+
 module.exports = app;

@@ -962,4 +962,602 @@ json
     }
 }
 
+//Tests des paiements
+ **Connectez-vous en tant que proprietaire
+ POST http://localhost:5000/api/auth/login
+Content-Type: application/json
 
+**Body**
+{
+    "email": "yessoufouzenabou46@gmail.com",
+    "mot_de_passe": "123456"
+}
+**Réponse**
+{
+    "message": "Connexion réussie",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5c....",//Votre token à copiez vous aurez besoin
+    "user": {
+        "id": 15,
+        "nom": "yessoufou",
+        "prenoms": "Zenabou",
+        "email": "yessoufouzenabou46@gmail.com",
+        "telephone": "0158868731",
+        "type": "proprietaire",
+        "roleInfo": {
+            "id_proprietaire": 4
+        },
+        "derniere_connexion": "2026-03-14T12:49:10.293Z"
+    }
+}
+
+//Vérifier les biens disponibles
+GET http://localhost:5000/api/biens/disponibles
+**Réponse**
+[
+    {
+        "id_bien": 9,
+        "id_proprietaire": 4,
+        "titre": "Maison de ville rénovée",
+        "description": "Immeuble 2 niveaux,120m,séjour avec cour intérieure,2 chambres...",
+        "type_bien": "maison",
+        "charge": "0.00",
+        "statut": "disponible",
+        "loyer_mensuel": "220000.00",
+        "adresse": "12 Av.Steinmetz,Missèbo",
+        "ville": "Cotonou",
+        "date_creation": "2026-03-12T12:24:30.003Z",
+        "code_postal": null,
+        "superficie": 120,
+        "nombre_pieces": 4,
+        "nombre_chambres": 2,
+        "meuble": false,
+        "proprietaire_nom": "yessoufou",
+        "proprietaire_prenoms": "Zenabou",
+        "proprietaire_telephone": "0158868731",
+        "photo_principale": null
+    }
+]
+//choisis un bien (EX: 9)
+//Récupere l'id d'un locataire EX=9 
+//Créer un contrat
+
+POST http://localhost:5000/api/contrats
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+**Body**
+
+{
+    "id_locataire": 9,
+    "id_bien": 9,
+    "date_debut": "2026-04-01",
+    "date_fin": "2027-03-31",
+    "loyer_mensuel": 150000,
+    "charge": 30000,
+    "nb_mois_depot_guarantie": 2,
+    "montant_depot_guarantie_attendu": 300000,
+    "date_signature": "2026-03-15"
+}
+**Réponse**
+{
+    "message": "Contrat créé avec succès",
+    "contrat": {
+        "id_contact": 6,
+        "numero_contrat": "CT-2026-0005",
+        "id_locataire": 9,
+        "id_bien": 9,
+        "date_debut": "2026-03-31T23:00:00.000Z",
+        "date_fin": "2027-03-30T23:00:00.000Z",
+        "loyer_mensuel": "150000.00",
+        "charge": "30000.00",
+        "nb_mois_depot_guarantie": 2,
+        "montant_depot_guarantie_attendu": "300000.00",
+        "statut_contrat": "actif",
+        "date_signature": "2026-03-14T23:00:00.000Z",
+        "date_creation": "2026-03-14T13:07:15.577Z"
+    }
+}
+//Note l'id_contrat Ex=6
+//Génerer les échéances du contrat
+POST http://localhost:5000/api/paiements/contrat/6/echeances
+Headers:
+    Authorization: Bearer TON_TOKEN
+//Remplace le 6 par id_contrat
+**Réponse**
+{
+    "message": "Échéances générées avec succès",
+    "loyers": [
+        {
+            "id_loyer": 4,
+            "id_contact": 6,
+            "mois_concerne": "2026-03",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2026-04-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 5,
+            "id_contact": 6,
+            "mois_concerne": "2026-04",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2026-05-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 6,
+            "id_contact": 6,
+            "mois_concerne": "2026-05",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2026-06-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 7,
+            "id_contact": 6,
+            "mois_concerne": "2026-06",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2026-07-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 8,
+            "id_contact": 6,
+            "mois_concerne": "2026-07",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2026-08-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 9,
+            "id_contact": 6,
+            "mois_concerne": "2026-08",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2026-09-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 10,
+            "id_contact": 6,
+            "mois_concerne": "2026-09",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2026-10-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 11,
+            "id_contact": 6,
+            "mois_concerne": "2026-10",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2026-11-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 12,
+            "id_contact": 6,
+            "mois_concerne": "2026-11",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2026-12-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 13,
+            "id_contact": 6,
+            "mois_concerne": "2026-12",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2027-01-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 14,
+            "id_contact": 6,
+            "mois_concerne": "2027-01",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2027-02-04T23:00:00.000Z",
+            "statut": "en_attente"
+        },
+        {
+            "id_loyer": 15,
+            "id_contact": 6,
+            "mois_concerne": "2027-02",
+            "montant_loyer": "150000.00",
+            "montant_charge": "30000.00",
+            "date_echeance": "2027-03-04T23:00:00.000Z",
+            "statut": "en_attente"
+        }
+    ]
+}
+//Payer un depot de garantie
+POST http://localhost:5000/api/paiements/depot
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+**Body**
+{
+    "id_contact": 6,
+    "id_mode_payment": 1,
+    "montant": 300000,
+    "mode_versement": "virement"
+}
+**Réponse**
+{
+    "message": "Dépôt de garantie effectué avec succès",
+    "depot": {
+        "id_depot": 2,
+        "id_contact": 6,
+        "montant_depot_verse": "300000.00",
+        "date_versement": "2026-03-13T23:00:00.000Z",
+        "mode_versement": "virement",
+        "commentaire": null
+    },
+    "paiement": {
+        "id_payment": 3,
+        "numero_transaction": "DEP-1773494246236-933",
+        "id_contact": 6,
+        "id_loyer": null,
+        "id_depot": 2,
+        "id_mode_payment": 1,
+        "montant_depot": null,
+        "montant": "300000.00",
+        "date_paiement": "2026-03-14T13:17:26.236Z",
+        "date_echeance": "2026-03-13T23:00:00.000Z",
+        "statut_paiement": "valide"
+    }
+}
+//Réuperer l'id d'un loyer
+GET http://localhost:5000/api/paiements/contrat/6/loyers
+Headers:
+    Authorization: Bearer TON_TOKEN
+**Réponse**
+[
+    {
+        "id_loyer": 4,
+        "id_contact": 6,
+        "mois_concerne": "2026-03",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-04-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 5,
+        "id_contact": 6,
+        "mois_concerne": "2026-04",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-05-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 6,
+        "id_contact": 6,
+        "mois_concerne": "2026-05",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-06-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 7,
+        "id_contact": 6,
+        "mois_concerne": "2026-06",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-07-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 8,
+        "id_contact": 6,
+        "mois_concerne": "2026-07",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-08-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 9,
+        "id_contact": 6,
+        "mois_concerne": "2026-08",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-09-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 10,
+        "id_contact": 6,
+        "mois_concerne": "2026-09",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-10-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 11,
+        "id_contact": 6,
+        "mois_concerne": "2026-10",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-11-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 12,
+        "id_contact": 6,
+        "mois_concerne": "2026-11",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-12-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 13,
+        "id_contact": 6,
+        "mois_concerne": "2026-12",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2027-01-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 14,
+        "id_contact": 6,
+        "mois_concerne": "2027-01",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2027-02-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 15,
+        "id_contact": 6,
+        "mois_concerne": "2027-02",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2027-03-04T23:00:00.000Z",
+        "statut": "en_attente"
+    }
+]
+//Choisis un id_loyer (EX: 4)
+//Effectuer un paiement
+POST http://localhost:5000/api/paiements/loyer
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+**Body**
+{
+    "id_loyer": 4, //(l'id _loyer que vous avez choisi)
+    "id_mode_payment": 1,
+    "montant": 150000
+}
+**Réponse**
+{
+    "message": "Paiement effectué avec succès",
+    "paiement": {
+        "id_payment": 4,
+        "numero_transaction": "PAY-1773494873544-466",
+        "id_contact": 6,
+        "id_loyer": 4,
+        "id_depot": null,
+        "id_mode_payment": 1,
+        "montant_depot": null,
+        "montant": "150000.00",
+        "date_paiement": "2026-03-14T13:27:53.544Z",
+        "date_echeance": "2026-04-04T23:00:00.000Z",
+        "statut_paiement": "valide"
+    }
+}
+//Voir les Paiements d'un contrat
+GET http://localhost:5000/api/paiements/contrat/6
+Headers:
+    Authorization: Bearer TON_TOKEN
+**Réponse**
+[
+    {
+        "id_payment": 4,
+        "numero_transaction": "PAY-1773494873544-466",
+        "id_contact": 6,
+        "id_loyer": 4,
+        "id_depot": null,
+        "id_mode_payment": 1,
+        "montant_depot": null,
+        "montant": "150000.00",
+        "date_paiement": "2026-03-14T13:27:53.544Z",
+        "date_echeance": "2026-04-04T23:00:00.000Z",
+        "statut_paiement": "valide",
+        "mode_paiement_libelle": "carte_bancaire",
+        "loyer_mois": "2026-03",
+        "depot_montant": null
+    },
+    {
+        "id_payment": 3,
+        "numero_transaction": "DEP-1773494246236-933",
+        "id_contact": 6,
+        "id_loyer": null,
+        "id_depot": 2,
+        "id_mode_payment": 1,
+        "montant_depot": null,
+        "montant": "300000.00",
+        "date_paiement": "2026-03-14T13:17:26.236Z",
+        "date_echeance": "2026-03-13T23:00:00.000Z",
+        "statut_paiement": "valide",
+        "mode_paiement_libelle": "carte_bancaire",
+        "loyer_mois": null,
+        "depot_montant": "300000.00"
+    }
+]
+//Voir les loyer d'un contrat
+GET http://localhost:5000/api/paiements/contrat/6/loyers
+Headers:
+    Authorization: Bearer TON_TOKEN
+**Réponse**
+[
+    {
+        "id_loyer": 4,
+        "id_contact": 6,
+        "mois_concerne": "2026-03",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-04-04T23:00:00.000Z",
+        "statut": "paye"
+    },
+    {
+        "id_loyer": 5,
+        "id_contact": 6,
+        "mois_concerne": "2026-04",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-05-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 6,
+        "id_contact": 6,
+        "mois_concerne": "2026-05",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-06-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 7,
+        "id_contact": 6,
+        "mois_concerne": "2026-06",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-07-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 8,
+        "id_contact": 6,
+        "mois_concerne": "2026-07",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-08-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 9,
+        "id_contact": 6,
+        "mois_concerne": "2026-08",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-09-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 10,
+        "id_contact": 6,
+        "mois_concerne": "2026-09",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-10-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 11,
+        "id_contact": 6,
+        "mois_concerne": "2026-10",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-11-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 12,
+        "id_contact": 6,
+        "mois_concerne": "2026-11",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2026-12-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 13,
+        "id_contact": 6,
+        "mois_concerne": "2026-12",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2027-01-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 14,
+        "id_contact": 6,
+        "mois_concerne": "2027-01",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2027-02-04T23:00:00.000Z",
+        "statut": "en_attente"
+    },
+    {
+        "id_loyer": 15,
+        "id_contact": 6,
+        "mois_concerne": "2027-02",
+        "montant_loyer": "150000.00",
+        "montant_charge": "30000.00",
+        "date_echeance": "2027-03-04T23:00:00.000Z",
+        "statut": "en_attente"
+    }
+]
+//test en tant que locataire
+**Connecte toi en tant que locataire
+POST http://localhost:5000/api/auth/login
+{
+    "email": "agossouroland@gmail.com",
+    "mot_de_passe": "agossou12"
+}
+**Réponse**
+{
+    "message": "Connexion réussie",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6I...", //Copie votre token
+    "user": {
+        "id": 5,
+        "nom": "agossou",
+        "prenoms": "Roland",
+        "email": "agossouroland@gmail.com",
+        "telephone": "0146121212",
+        "type": "locataire",
+        "derniere_connexion": "2026-03-14T13:35:40.933Z"
+    }
+}
+//Voir mes paiements
+GET http://localhost:5000/api/paiements/mes-paiements
+Headers:
+    Authorization: Bearer TON_TOKEN_LOCATAIRE
+**Réponse**
+Tous tes paiements (en tant que locataire).
+
+//Voir les impayés
+GET http://localhost:5000/api/paiements/impayes
+Headers:
+    Authorization: Bearer TON_TOKEN
+**Réponse**
+Liste des loyers en retard.
+
+//Statistiques des Paiements
+GET http://localhost:5000/api/paiements/stats
+Headers:
+    Authorization: Bearer TON_TOKEN
+**Réponse **  
+{
+    "stats": {
+        "total_paiements": "2",
+        "paiements_valides": "2",
+        "paiements_echoues": "0",
+        "montant_total": "450000.00"
+    },
+    "impayes": "0"
+}
