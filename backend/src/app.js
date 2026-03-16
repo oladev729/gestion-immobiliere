@@ -46,7 +46,15 @@ const paiementRoutes = require('./routes/paiementRoutes');
 app.use('/api/paiements', paiementRoutes);
 
 //  ROUTES DES DEMANDES DE VISITE
-const demandeVisiteRoutes = require('./routes/demandeVisiteRoutes');
+const demandeVisiteRoutes = require('./routes/DemandeVisiteRoutes');
 app.use('/api/demandes-visite', demandeVisiteRoutes);
+
+//  ROUTES DES PROBLÈMES
+const problemeRoutes = require('./routes/problemeRoutes');
+app.use('/api/problemes', problemeRoutes);
+
+// ROUTES DES PHOTOS
+const photoRoutes = require('./routes/photoRoutes');
+app.use('/api/photos', photoRoutes);
 
 module.exports = app;

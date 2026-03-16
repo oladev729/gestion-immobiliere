@@ -260,6 +260,16 @@ const bienController = {
             }
 
             const biens = await Bien.search(q);
+            
+            // Ajouter les photos
+            for (let bien of biens) {
+                const photos = await db.query(
+                    'SELECT url_photobien, legende FROM photosbien WHERE id_bien = $1 LIMIT 1',
+                    [bien.id_bien]
+                );
+                bien.photo_principale = photos.rows[0]?.url_photobien || null;
+            }
+
             res.json(biens);
 
         } catch (error) {
@@ -299,11 +309,11 @@ const bienController = {
     async addPhotos(req, res) {
         try {
             const { id } = req.params;
-            const { urls, legendes } = req.body; // Tableau d'URLs et légendes
+            const { url_photobien, legende } = req.body;
 
-            if (!urls || !Array.isArray(urls) || urls.length === 0) {
+            if (!url_photobien) {
                 return res.status(400).json({ 
-                    message: 'Au moins une URL est requise' 
+                    message: 'L\'URL de la photo est requise' 
                 });
             }
 
@@ -320,28 +330,63 @@ const bienController = {
 
             if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
                 return res.status(403).json({ 
-                    message: 'Vous n\'êtes pas autorisé' 
+                    message: 'Vous n\'êtes pas autorisé à ajouter des photos à ce bien' 
                 });
             }
 
-            // Insérer les photos
-            const photos = [];
-            for (let i = 0; i < urls.length; i++) {
-                const result = await db.query(
-                    `INSERT INTO photosbien (id_bien, url_photobien, legende)
-                     VALUES ($1, $2, $3) RETURNING *`,
-                    [id, urls[i], legendes?.[i] || null]
-                );
-                photos.push(result.rows[0]);
-            }
+            // Insérer la photo
+            const result = await db.query(
+                `INSERT INTO photosbien (id_bien, url_photobien, legende)
+                 VALUES ($1, $2, $3) RETURNING *`,
+                [id, url_photobien, legende || null]
+            );
 
             res.status(201).json({
-                message: 'Photos ajoutées avec succès',
-                photos
+                message: 'Photo ajoutée avec succès',
+                photo: result.rows[0]
             });
 
         } catch (error) {
-            console.error('Erreur ajout photos:', error);
+            console.error('Erreur ajout photo:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // RÉCUPÉRER LES PHOTOS D'UN BIEN
+    // ============================================================
+    async getPhotos(req, res) {
+        try {
+            const { id } = req.params;
+
+            // Vérifier que le bien existe
+            const bien = await Bien.findById(id);
+            if (!bien) {
+                return res.status(404).json({ message: 'Bien non trouvé' });
+            }
+
+            // Vérifier les droits d'accès (public pour les biens disponibles, privé pour les autres)
+            const isProprietaire = req.user && await db.query(
+                'SELECT id_utilisateur FROM proprietaire WHERE id_utilisateur = $1',
+                [req.user.id]
+            );
+
+            if (bien.statut !== 'disponible' && 
+                (!isProprietaire || isProprietaire.rows.length === 0)) {
+                return res.status(403).json({ 
+                    message: 'Vous n\'avez pas accès aux photos de ce bien' 
+                });
+            }
+
+            const photos = await db.query(
+                'SELECT id_photosbien, url_photobien, legende, date_ajout FROM photosbien WHERE id_bien = $1 ORDER BY date_ajout DESC',
+                [id]
+            );
+
+            res.json(photos.rows);
+
+        } catch (error) {
+            console.error('Erreur récupération photos:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     }

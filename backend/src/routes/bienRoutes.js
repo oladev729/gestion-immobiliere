@@ -30,12 +30,6 @@ router.post('/',
     bienController.create
 );
 
-// Ajouter des photos à un bien
-router.post('/:id/photos', 
-    authenticateToken, 
-    bienController.addPhotos
-);
-
 // Modifier un bien
 router.put('/:id', 
     authenticateToken, 
@@ -55,8 +49,25 @@ router.delete('/:id',
 );
 
 // ============================================================
-// ⚠️ ROUTE DYNAMIQUE À METTRE TOUJOURS EN DERNIER
+// ROUTES POUR LES PHOTOS DES BIENS
 // ============================================================
+
+// Ajouter des photos à un bien
+router.post('/:id/photos', 
+    authenticateToken, 
+    bienController.addPhotos
+);
+
+// Récupérer les photos d'un bien
+router.get('/:id/photos', 
+    authenticateToken, 
+    bienController.getPhotos
+);
+
+// ============================================================
+// ROUTE DYNAMIQUE À METTRE TOUJOURS EN DERNIER
+// ============================================================
+
 // Détail d'un bien (par ID)
 router.get('/:id', bienController.getBienById);
 

@@ -1857,6 +1857,357 @@ Headers:
     "annulees": "1"
 }
 
+//Test pour les problemes
+//Connection entant que locataire
+POST http://localhost:5000/api/auth/login
+{
+    "email": "agossouroland@gmail.com",
+    "mot_de_passe": "agossou12"
+}
+**Reponse**
+//copie le token recçue
+//Créée un petit signalement
+POST http://localhost:5000/api/problemes
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+
+{
+    "id_bien": 6,
+    "titre": "Fuite d'eau dans la cuisine",
+    "description": "Le robinet fuit depuis 2 jours, l'eau coule sans arrêt",
+    "categorie": "plomberie",
+    "priorite": "haute"
+}
+**Reponse**
+{
+    "message": "Problème signalé avec succès",
+    "probleme": {
+        "id_probleme": 1,
+        "id_locataire": 9,
+        "id_bien": 6,
+        "titre": "Test problème",
+        "description": "Description du test",
+        "categorie": "plomberie",
+        "priorite": "moyenne",
+        "statut_probleme": "ouvert",
+        "date_signalement": "2026-03-15T23:00:00.000Z",
+        "date_resolution": null
+    }
+}
+//CRÉER UN SECOND SIGNALEMENT (autre catégorie)
+POST http://localhost:5000/api/problemes
+{
+    "id_bien": 6,
+    "titre": "Panne de courant",
+    "description": "Les plombs sautent régulièrement",
+    "categorie": "electricite",
+    "priorite": "urgente"
+}
+**Reponse**
+Note le id_probleme (EX: 2)
+
+//VOIR MES SIGNALEMENTS (locataire)
+GET http://localhost:5000/api/problemes/mes-problemes
+Headers: Authorization: Bearer TON_TOKEN
+
+// CONNEXION EN TANT QUE PROPRIÉTAIRE
+POST http://localhost:5000/api/auth/login
+{
+    "email": "yessoufouzenabou46@gmail.com",
+    "mot_de_passe": "123456"
+}
+**Reponse**
+copie le nouveau token
+//Voir les signalements reçus
+GET http://localhost:5000/api/problemes/problemes-recus
+Headers: Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+**Reponse**
+[
+    {
+        "id_probleme": 1,
+        "id_locataire": 9,
+        "id_bien": 6,
+        "titre": "Test problème",
+        "description": "Description du test",
+        "categorie": "plomberie",
+        "priorite": "moyenne",
+        "statut_probleme": "ouvert",
+        "date_signalement": "2026-03-15T23:00:00.000Z",
+        "date_resolution": null,
+        "bien_titre": "New appartement F2 au centre ville",
+        "bien_adresse": "Rue 345",
+        "bien_ville": "Dakar",
+        "locataire_nom": "agossou",
+        "locataire_prenoms": "Roland"
+    },
+    {
+        "id_probleme": 2,
+        "id_locataire": 9,
+        "id_bien": 6,
+        "titre": "Panne de courant",
+        "description": "Les plombs sautent régulièrement",
+        "categorie": "electricite",
+        "priorite": "urgente",
+        "statut_probleme": "ouvert",
+        "date_signalement": "2026-03-15T23:00:00.000Z",
+        "date_resolution": null,
+        "bien_titre": "New appartement F2 au centre ville",
+        "bien_adresse": "Rue 345",
+        "bien_ville": "Dakar",
+        "locataire_nom": "agossou",
+        "locataire_prenoms": "Roland"
+    }
+]
+//VOIR LES SIGNALEMENTS D'UN BIEN SPÉCIFIQUE
+GET http://localhost:5000/api/problemes/bien/6
+Headers: Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+//VOIR LES SIGNALEMENTS PAR STATUT
+**Statut Ouvert
+GET http://localhost:5000/api/problemes/statut/ouvert
+Headers: Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+
+**Statut en_Cours
+GET http://localhost:5000/api/problemes/statut/en_cours
+
+//METTRE À JOUR LE STATUT D'UN SIGNALEMENT
+PATCH http://localhost:5000/api/problemes/1/statut
+Headers:
+    Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+    Content-Type: application/json
+
+{
+    "statut": "en_cours"
+}
+
+//STATISTIQUES DES SIGNALEMENTS
+GET http://localhost:5000/api/problemes/stats
+Headers: Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+
+**Reponse**
+{
+    "total": "2",
+    "ouverts": "0",
+    "en_cours": "1",
+    "resolus": "1",
+    "fermes": "0",
+    "urgentes": "1",
+    "hautes": "0",
+    "moyennes": "1",
+    "basses": "0"
+}
+//Test pour photo Biens
+//Connection en tant que proprietaire
+POST http://localhost:5000/api/auth/login
+{
+    "email": "yessoufouzenabou46@gmail.com",
+    "mot_de_passe": "123456"
+}
+**Reponse**
+copier votre token reçue
+//Créer un bien si cest pas déja fait
+POST http://localhost:5000/api/biens
+Headers: Authorization: Bearer TON_TOKEN
+{
+    "titre": "Appartement avec photos",
+    "type_bien": "appartement",
+    "loyer_mensuel": 200000,
+    "adresse": "Rue des photos",
+    "ville": "Dakar"
+}
+**Reponse**
+{
+    "message": "Bien créé avec succès",
+    "bien": {
+        "id_bien": 11,
+        "id_proprietaire": 4,
+        "titre": "Appartement avec photos",
+        "description": null,
+        "type_bien": "appartement",
+        "charge": "0.00",
+        "statut": "disponible",
+        "loyer_mensuel": "200000.00",
+        "adresse": "Rue des photos",
+        "ville": "Dakar",
+        "date_creation": "2026-03-16T13:23:07.458Z",
+        "code_postal": null,
+        "superficie": null,
+        "nombre_pieces": null,
+        "nombre_chambres": null,
+        "meuble": false
+    }
+}
+
+//Ajouter des photos au bien
+POST http://localhost:5000/api/biens/10/photos
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+
+{
+    "url_photobien": "https://exemple.com/photo1.jpg",
+    "legende": "Façade de l'immeuble"
+}
+**Reponse**
+{
+    "message": "Photo ajoutée avec succès",
+    "photo": {
+        "id_photosbien": 1,
+        "id_bien": 10,
+        "url_photobien": "https://exemple.com/photo1.jpg",
+        "legende": "Façade de l'immeuble",
+        "date_ajout": "2026-03-16T13:27:29.947Z"
+    }
+}
+//Ajouter une deuxieme photo
+POST http://localhost:5000/api/biens/10/photos
+{
+    "url_photobien": "https://exemple.com/photo2.jpg",
+    "legende": "Salon"
+}
+//Recuperer les photo du Bien
+GET http://localhost:5000/api/biens/10/photos
+Headers: Authorization: Bearer TON_TOKEN
+
+**Reponse**
+Listes des photos
+//Voir le bien ave ses pphotos
+GET http://localhost:5000/api/biens/10
+**Reponse**
+{
+    "id_bien": 10,
+    "id_proprietaire": 4,
+    "titre": "Studio mublé centre-ville",
+    "description": "Studio de 32m, au 2e étage,salle d'eau avec douche,balcon.Immeublesécurisé,wifi fibre inclus.Idéal étudiant ou jeune pro",
+    "type_bien": "studio",
+    "charge": "0.00",
+    "statut": "loue",
+    "loyer_mensuel": "195.00",
+    "adresse": "Immeuble Baobab,Blvd St-Michel",
+    "ville": "Cotonou",
+    "date_creation": "2026-03-12T12:37:13.791Z",
+    "code_postal": null,
+    "superficie": 32,
+    "nombre_pieces": 2,
+    "nombre_chambres": 1,
+    "meuble": false,
+    "proprietaire_nom": "yessoufou",
+    "proprietaire_prenoms": "Zenabou",
+    "proprietaire_email": "yessoufouzenabou46@gmail.com",
+    "proprietaire_telephone": "0158868731",
+    "photos": [
+        {
+            "url_photobien": "https://exemple.com/photo1.jpg",
+            "legende": "Façade de l'immeuble"
+        },
+        {
+            "url_photobien": "https://exemple.com/photo2.jpg",
+            "legende": "Salon"
+        }
+    ]
+}
+//Vérifier que les photos apparaissent dans la liste des biens
+GET http://localhost:5000/api/biens/mes-biens
+Headers: Authorization: Bearer TON_TOKEN
+**Reponse**
+Chaque bien doit avoir son tableau phoos
+//Tester l'accès public
+GET http://localhost:5000/api/biens/disponibles
+**Reponse**
+[
+    {
+        "id_bien": 11,
+        "id_proprietaire": 4,
+        "titre": "Appartement avec photos",
+        "description": null,
+        "type_bien": "appartement",
+        "charge": "0.00",
+        "statut": "disponible",
+        "loyer_mensuel": "200000.00",
+        "adresse": "Rue des photos",
+        "ville": "Dakar",
+        "date_creation": "2026-03-16T13:23:07.458Z",
+        "code_postal": null,
+        "superficie": null,
+        "nombre_pieces": null,
+        "nombre_chambres": null,
+        "meuble": false,
+        "proprietaire_nom": "yessoufou",
+        "proprietaire_prenoms": "Zenabou",
+        "proprietaire_telephone": "0158868731",
+        "photo_principale": null
+    }
+]
+//Connecte toi en tant que locataire
+POST http://localhost:5000/api/auth/login
+{
+    "email": "agossouroland@gmail.com",
+    "mot_de_passe": "agossou12"
+}
+**Reponse**
+copie votre token
+//Créer un probleme si pas déja fait
+//Note l'id_probleme Ex: 1
+//Ajoute une photo au probleme
+POST http://localhost:5000/api/photos/probleme/1
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+
+{
+    "url_photosbp": "https://exemple.com/fuite.jpg",
+    "description": "Photo de la fuite sous l'évier"
+}
+**Reponse**
+{
+    "message": "Photo ajoutée avec succès",
+    "photo": {
+        "id_photosbp": 1,
+        "id_probleme": 1,
+        "url_photosbp": "https://exemple.com/fuite.jpg",
+        "description": "Photo de la fuite sous l'évier",
+        "date_ajout": "2026-03-16T14:04:04.246Z"
+    }
+}
+//Ajouter une deuxieme photo
+POST http://localhost:5000/api/photos/probleme/1
+{
+    "url_photosbp": "https://exemple.com/fuite2.jpg",
+    "description": "Vue rapprochée du robinet"
+}
+//Récuperer les photos du problemes
+GET http://localhost:5000/api/photos/probleme/1
+Headers: Authorization: Bearer TON_TOKEN
+
+//Connecte -toi en tan que proprietaire
+POST http://localhost:5000/api/auth/login
+{
+    "email": "yessoufouzenabou46@gmail.com",
+    "mot_de_passe": "123456"
+}
+**Reponse**
+copie votre token
+//Le proprietaire peut aussi voir les photos
+GET http://localhost:5000/api/photos/probleme/1
+Headers: Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+**Reponse**
+Meme photos
+//Mettre à jours la description dune photo
+PATCH http://localhost:5000/api/photos/1
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+
+{
+    "description": "Fuite d'eau importante - urgence"
+}
+//Supprimer une photo
+DELETE http://localhost:5000/api/photos/1
+Headers: Authorization: Bearer TON_TOKEN
+**Reponse**
+{
+    "message": "Photo supprimée avec succès"
+}
 
 
 
@@ -1868,4 +2219,5 @@ Headers:
 
 
 
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTYsImVtYWlsIjoiYWdvc3NvdXJvbGFuZEBnbWFpbC5jb20iLCJ0eXBlIjoicHJvcHJpZXRhaXJlIiwiaWF0IjoxNzczNTg3NDUwLCJleHAiOjE3NzM2NzM4NTB9.KgxD8XxIicsKH-DeOG3wGl7LOkY-6pEZSqBDPPwwNi0
+
+
