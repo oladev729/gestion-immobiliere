@@ -1561,3 +1561,311 @@ Headers:
     },
     "impayes": "0"
 }
+
+//Tester les demandes de visite
+//Connectez-vous en tant que locataire
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+**Body**
+{
+    "email": "agossouroland@gmail.com",
+    "mot_de_passe": "agossou12"
+}
+**Reponse**
+{
+    "message": "Connexion réussie",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXV....",//Votre token à copié
+    "user": {
+        "id": 16,
+        "nom": "agossou",
+        "prenoms": "Roland",
+        "email": "agossouroland@gmail.com",
+        "telephone": "0146121212",
+        "type": "proprietaire",
+        "roleInfo": {
+            "id_proprietaire": 5
+        },
+        "derniere_connexion": "2026-03-15T15:10:50.909Z"
+    }
+}
+// LISTER LES BIENS DISPONIBLES (pour savoir quel bien visiter)
+GET http://localhost:5000/api/biens/6
+**Réponse**
+{
+    "id_bien": 6,
+    "id_proprietaire": 4,
+    "titre": "New appartement F2 au centre ville",
+    "description": "Appartement avec clim",
+    "type_bien": "appartement",
+    "charge": "0.00",
+    "statut": "loue",
+    "loyer_mensuel": "150000.00",
+    "adresse": "Rue 345",
+    "ville": "Dakar",
+    "date_creation": "2026-03-12T11:42:08.434Z",
+    "code_postal": null,
+    "superficie": 80,
+    "nombre_pieces": 3,
+    "nombre_chambres": 2,
+    "meuble": false,
+    "proprietaire_nom": "yessoufou",
+    "proprietaire_prenoms": "Zenabou",
+    "proprietaire_email": "yessoufouzenabou46@gmail.com",
+    "proprietaire_telephone": "0158868731",
+    "photos": []
+}
+
+ CRÉER UNE DEMANDE DE VISITE (en tant que locataire)
+
+POST http://localhost:5000/api/demandes-visite
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+**Body**
+{
+    "id_bien": 6,
+    "date_visite_souhaitee": "2026-03-20T14:30:00",
+    "message": "Je suis intéressé par ce bien. Puis-je visiter samedi après-midi ?"
+}
+
+//Demande de visite par le locataire
+POST http://localhost:5000/api/demandes-visite
+Headers:
+    Authorization: Bearer TON_TOKEN_LOCATAIRE
+    Content-Type: application/json
+
+{
+    "id_bien": 6,
+    "date_visite": "2026-03-20T14:30:00",
+    "message": "Je souhaite visiter ce bien"
+}
+**Réponse**
+{
+    "message": "Demande de visite créée avec succès",
+    "demande": {
+        "id_demande": 4,
+        "id_locataire": 9,
+        "id_bien": 6,
+        "id_proprietaire": 4,
+        "date_demande": "2026-03-14T23:00:00.000Z",
+        "date_visite": "2026-03-20T13:30:00.000Z",
+        "message": "Je souhaite visiter ce bien",
+        "statut_demande": "en_attente",
+        "date_reponse": null
+    }
+}
+
+// VOIR MES DEMANDES (en tant que locataire)
+
+GET http://localhost:5000/api/demandes-visite/mes-demandes
+Headers:
+    Authorization: Bearer TON_TOKEN
+**Réponse**
+[
+    {
+        "id_demande": 4,
+        "id_locataire": 9,
+        "id_bien": 6,
+        "id_proprietaire": 4,
+        "date_demande": "2026-03-14T23:00:00.000Z",
+        "date_visite": "2026-03-20T13:30:00.000Z",
+        "message": "Je souhaite visiter ce bien",
+        "statut_demande": "en_attente",
+        "date_reponse": null,
+        "bien_titre": "New appartement F2 au centre ville",
+        "bien_adresse": "Rue 345",
+        "bien_ville": "Dakar",
+        "proprietaire_nom": "yessoufou",
+        "proprietaire_prenoms": "Zenabou"
+    }
+]
+
+//CONNEXION EN TANT QUE PROPRIÉTAIRE (pour répondre aux demandes)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+**Body**
+{
+    "email": "yessoufouzenabou46@gmail.com",
+    "mot_de_passe": "123456"
+}
+**Reponse**
+{
+    "message": "Connexion réussie",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....", //Copier votre token
+    "user": {
+        "id": 15,
+        "nom": "yessoufou",
+        "prenoms": "Zenabou",
+        "email": "yessoufouzenabou46@gmail.com",
+        "telephone": "0158868731",
+        "type": "proprietaire",
+        "roleInfo": {
+            "id_proprietaire": 4
+        },
+        "derniere_connexion": "2026-03-15T23:08:19.283Z"
+    }
+}
+
+// VOIR LES DEMANDES REÇUES (en tant que propriétaire) 
+
+GET http://localhost:5000/api/demandes-visite/demandes-recues
+Headers:
+    Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+
+**Reponse**
+[
+    {
+        "id_demande": 4,
+        "id_locataire": 9,
+        "id_bien": 6,
+        "id_proprietaire": 4,
+        "date_demande": "2026-03-14T23:00:00.000Z",
+        "date_visite": "2026-03-20T13:30:00.000Z",
+        "message": "Je souhaite visiter ce bien",
+        "statut_demande": "en_attente",
+        "date_reponse": null,
+        "bien_titre": "New appartement F2 au centre ville",
+        "bien_adresse": "Rue 345",
+        "bien_ville": "Dakar",
+        "locataire_nom": "agossou",
+        "locataire_prenoms": "Roland",
+        "locataire_email": "agossouroland@gmail.com",
+        "locataire_telephone": "0146121212"
+    }
+]
+//VOIR LES DEMANDES EN ATTENTE (pour les deux rôles)
+GET http://localhost:5000/api/demandes-visite/en-attente
+Headers:
+    Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+**reponse**
+Seules les demandes avec statut "en_attente".
+
+//ACCEPTER UNE DEMANDE (en tant que propriétaire)
+PATCH http://localhost:5000/api/demandes-visite/4/accepter
+Headers:
+    Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+
+//Remplace 1 par l'ID de la demande à accepter) EX: 4
+**Reponse**
+{
+    "message": "Demande acceptée avec succès",
+    "demande": {
+        "id_demande": 4,
+        "id_locataire": 9,
+        "id_bien": 6,
+        "id_proprietaire": 4,
+        "date_demande": "2026-03-14T23:00:00.000Z",
+        "date_visite": "2026-03-20T13:30:00.000Z",
+        "message": "Je souhaite visiter ce bien",
+        "statut_demande": "acceptee",
+        "date_reponse": "2026-03-15T23:19:27.018Z"
+    }
+}
+//REFUSER UNE DEMANDE (en tant que propriétaire)
+PATCH http://localhost:5000/api/demandes-visite/1/refuser
+Headers:
+    Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+
+//Connecte-toi en tat que locaaire
+POST http://localhost:5000/api/auth/login
+{
+    "email": "agossouroland@gmail.com",
+    "mot_de_passe": "agossou12"
+}
+**Reponse**
+//Copie le token reçue
+
+//// CRÉER UNE NOUVELLE DEMANDE (pour tester l'annulation)
+POST http://localhost:5000/api/demandes-visite
+Headers:
+    Authorization: Bearer TON_TOKEN
+    Content-Type: application/json
+**Body**
+{
+    "id_bien": 5,
+    "date_visite_souhaitee": "2026-03-20T14:30:00",
+    "message": "Je suis intéressé par ce bien. Puis-je visiter samedi après-midi ?"
+}   
+**Reponse**
+{
+    "message": "Demande de visite créée avec succès",
+    "demande": {
+        "id_demande": 5,
+        "id_locataire": 9,
+        "id_bien": 5,
+        "id_proprietaire": 4,
+        "date_demande": "2026-03-15T23:00:00.000Z",
+        "date_visite": "2026-03-25T14:00:00.000Z",
+        "message": "Deuxième demande de visite",
+        "statut_demande": "en_attente",
+        "date_reponse": null
+    }
+}
+
+//Annule la demande
+PATCH http://localhost:5000/api/demandes-visite/5/annuler
+Headers:
+    Authorization: Bearer TON_TOKEN_LOCATAIRE
+**Réponse**
+{
+    "message": "Demande annulée avec succès",
+    "demande": {
+        "id_demande": 5,
+        "id_locataire": 9,
+        "id_bien": 5,
+        "id_proprietaire": 4,
+        "date_demande": "2026-03-15T23:00:00.000Z",
+        "date_visite": "2026-03-25T14:00:00.000Z",
+        "message": "Deuxième demande de visite",
+        "statut_demande": "annulee",
+        "date_reponse": "2026-03-16T00:04:11.247Z"
+    }
+}
+// STATISTIQUES DES DEMANDES (pour les deux rôles)
+//Reuete en tant que loataire
+GET http://localhost:5000/api/demandes-visite/stats
+Headers:
+    Authorization: Bearer TON_TOKEN_LOCATAIRE
+**Reponse**
+{
+    "total": "0",
+    "en_attente": "0",
+    "acceptees": "0",
+    "refusees": "0",
+    "annulees": "0"
+}
+
+//connection en tant que proprietaire
+POST http://localhost:5000/api/auth/login
+{
+    "email": "yessoufouzenaou46@gmail.com",
+    "mot_de_passe": "123456"
+}
+**Reponse**
+//copier le token
+
+GET http://localhost:5000/api/demandes-visite/stats
+Headers:
+    Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+
+**Reponse**
+{
+    "total": "2",
+    "en_attente": "0",
+    "acceptees": "1",
+    "refusees": "0",
+    "annulees": "1"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTYsImVtYWlsIjoiYWdvc3NvdXJvbGFuZEBnbWFpbC5jb20iLCJ0eXBlIjoicHJvcHJpZXRhaXJlIiwiaWF0IjoxNzczNTg3NDUwLCJleHAiOjE3NzM2NzM4NTB9.KgxD8XxIicsKH-DeOG3wGl7LOkY-6pEZSqBDPPwwNi0

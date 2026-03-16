@@ -45,4 +45,8 @@ app.use('/api/contrats', contratRoutes);
 const paiementRoutes = require('./routes/paiementRoutes');
 app.use('/api/paiements', paiementRoutes);
 
+//  ROUTES DES DEMANDES DE VISITE
+const demandeVisiteRoutes = require('./routes/demandeVisiteRoutes');
+app.use('/api/demandes-visite', demandeVisiteRoutes);
+
 module.exports = app;
