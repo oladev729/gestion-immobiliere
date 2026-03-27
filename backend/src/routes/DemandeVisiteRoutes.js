@@ -31,4 +31,15 @@ router.patch('/:id/refuser', authenticateToken, demandeVisiteController.refuser)
 // Annuler une demande (locataire)
 router.patch('/:id/annuler', authenticateToken, demandeVisiteController.annuler);
 
+// Alias pour compatibilité frontend
+router.get('/recues', authenticateToken, demandeVisiteController.getDemandesRecues);
+
+// Route statut (acceptee/refusee) pour compatibilité frontend
+router.patch('/:id/statut', authenticateToken, async (req, res) => {
+    const { statut } = req.body;
+    if (statut === 'acceptee') return demandeVisiteController.accepter(req, res);
+    if (statut === 'refusee') return demandeVisiteController.refuser(req, res);
+    return res.status(400).json({ message: 'Statut invalide' });
+});
+
 module.exports = router;
