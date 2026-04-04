@@ -19,4 +19,7 @@ router.post('/', authenticateToken, problemeController.create);
 router.get('/:id', authenticateToken, problemeController.getProblemeById);
 router.patch('/:id/statut', authenticateToken, problemeController.updateStatut);
 
+// Gérer un problème : changer statut + ajouter charge locataire
+router.patch('/:id/gerer', authenticateToken, problemeController.gererProbleme);
+
 module.exports = router;

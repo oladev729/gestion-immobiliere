@@ -4,7 +4,7 @@ const paiementController = require('../controllers/paiementController');
 const { authenticateToken } = require('../middleware/auth');
 
 // ============================================================
-// ROUTES PROTÉGÉES
+// ROUTES EXISTANTES
 // ============================================================
 
 // Paiement d'un loyer
@@ -30,5 +30,21 @@ router.get('/impayes', authenticateToken, paiementController.getImpayes);
 
 // Statistiques des paiements
 router.get('/stats', authenticateToken, paiementController.getStats);
+
+// ============================================================
+// NOUVELLES ROUTES CINETPAY
+// ============================================================
+
+// Initier un paiement en ligne (locataire)
+router.post('/initier', authenticateToken, paiementController.initier);
+
+// Webhook CinetPay — PAS de auth (appelé directement par CinetPay)
+router.post('/notify', paiementController.notify);
+
+// Historique paiements en ligne du locataire
+router.get('/en-ligne', authenticateToken, paiementController.mesPaiementsEnLigne);
+
+// Paiements reçus par le propriétaire
+router.get('/recus', authenticateToken, paiementController.paiementsRecus);
 
 module.exports = router;

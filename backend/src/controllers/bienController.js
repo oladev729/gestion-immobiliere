@@ -1,6 +1,7 @@
 const Bien = require('../models/Bien');
 const db = require('../config/database');
 
+
 const bienController = {
     // ============================================================
     // CRÉER UN NOUVEAU BIEN
@@ -42,6 +43,7 @@ const bienController = {
         }
     },
 
+
     // ============================================================
     // RÉCUPÉRER TOUS LES BIENS DU PROPRIÉTAIRE CONNECTÉ
     // ============================================================
@@ -75,6 +77,7 @@ const bienController = {
         }
     },
 
+
     // ============================================================
     // RÉCUPÉRER TOUS LES BIENS DISPONIBLES (PUBLIC)
     // ============================================================
@@ -105,6 +108,7 @@ const bienController = {
         }
     },
 
+
     // ============================================================
     // RÉCUPÉRER UN BIEN PAR SON ID (PUBLIC)
     // ============================================================
@@ -130,6 +134,7 @@ const bienController = {
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },
+
 
     // ============================================================
     // METTRE À JOUR UN BIEN (propriétaire uniquement)
@@ -167,47 +172,47 @@ const bienController = {
         }
     },
 
+
     // ============================================================
     // SUPPRIMER UN BIEN (propriétaire uniquement)
     // ============================================================
     async delete(req, res) {
         try {
             const bien = await Bien.findById(req.params.id);
-            
             if (!bien) {
                 return res.status(404).json({ message: 'Bien non trouvé' });
             }
 
-            // Vérifier que le propriétaire connecté est bien le propriétaire du bien
             const proprietaire = await db.query(
                 'SELECT id_utilisateur FROM proprietaire WHERE id_proprietaire = $1',
                 [bien.id_proprietaire]
             );
 
             if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
-                return res.status(403).json({ 
-                    message: 'Vous n\'êtes pas autorisé à supprimer ce bien' 
-                });
+                return res.status(403).json({ message: 'Non autorisé' });
             }
 
-            // Vérifier que le bien n'est pas loué
             if (bien.statut === 'loue') {
                 return res.status(400).json({ 
                     message: 'Impossible de supprimer un bien actuellement loué' 
                 });
             }
 
+            // Supprimer les données liées avant le bien
+            await db.query('DELETE FROM demander_visite WHERE id_bien = $1', [req.params.id]);
+            await db.query('DELETE FROM problemes WHERE id_bien = $1', [req.params.id]);
+            await db.query('DELETE FROM photosbien WHERE id_bien = $1', [req.params.id]);
+
             await Bien.delete(req.params.id);
 
-            res.json({ 
-                message: 'Bien supprimé avec succès' 
-            });
+            res.json({ message: 'Bien supprimé avec succès' });
 
         } catch (error) {
             console.error('Erreur suppression bien:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },
+
 
     // ============================================================
     // CHANGER LE STATUT D'UN BIEN
@@ -246,6 +251,7 @@ const bienController = {
         }
     },
 
+
     // ============================================================
     // RECHERCHER DES BIENS
     // ============================================================
@@ -278,6 +284,7 @@ const bienController = {
         }
     },
 
+
     // ============================================================
     // STATISTIQUES DES BIENS (pour propriétaire)
     // ============================================================
@@ -302,6 +309,7 @@ const bienController = {
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },
+
 
     // ============================================================
     // AJOUTER DES PHOTOS À UN BIEN
@@ -352,6 +360,7 @@ const bienController = {
         }
     },
 
+
     // ============================================================
     // RÉCUPÉRER LES PHOTOS D'UN BIEN
     // ============================================================
@@ -391,5 +400,6 @@ const bienController = {
         }
     }
 };
+
 
 module.exports = bienController;

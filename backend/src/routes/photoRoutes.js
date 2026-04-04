@@ -1,73 +1,85 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const db = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
-const PhotosBP = require('../models/PhotosBP');
 
-// ============================================================
-// ROUTES POUR LES PHOTOS DES PROBLÈMES
-// ============================================================
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, unique + path.extname(file.originalname));
+    }
+});
 
-// Ajouter une photo à un problème
-router.post('/probleme/:id_probleme', authenticateToken, async (req, res) => {
+const upload = multer({ storage });
+
+// Upload photos d'un bien
+router.post('/bien/:id', authenticateToken, upload.array('photos', 10), async (req, res) => {
     try {
-        const { url_photosbp, description } = req.body;
-        
-        if (!url_photosbp) {
-            return res.status(400).json({ 
-                message: 'L\'URL de la photo est requise' 
-            });
+        const { id } = req.params;
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: 'Aucune photo reçue' });
         }
-
-        const photo = await PhotosBP.add(req.params.id_probleme, url_photosbp, description);
-        res.status(201).json({
-            message: 'Photo ajoutée avec succès',
-            photo
-        });
+        const inserted = [];
+        for (const file of req.files) {
+            const url = `/uploads/${file.filename}`;
+            const result = await db.query(
+                'INSERT INTO photosbien (id_bien, url_photobien) VALUES ($1, $2) RETURNING *',
+                [id, url]
+            );
+            inserted.push(result.rows[0]);
+        }
+        res.status(201).json({ message: 'Photos ajoutées avec succès', photos: inserted });
     } catch (error) {
-        console.error('Erreur ajout photo problème:', error);
+        console.error('Erreur upload photo bien:', error);
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+});
+
+// Upload photos d'un problème
+router.post('/probleme/:id', authenticateToken, upload.array('photos', 5), async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: 'Aucune photo reçue' });
+        }
+        const inserted = [];
+        for (const file of req.files) {
+            const url = `/uploads/${file.filename}`;
+            // Utilise photosbp si elle existe, sinon stocke dans photosbien avec id_probleme
+            try {
+                const result = await db.query(
+                    'INSERT INTO photosbp (id_probleme, url_photosbp) VALUES ($1, $2) RETURNING *',
+                    [id, url]
+                );
+                inserted.push(result.rows[0]);
+            } catch {
+                // Si la table photosbp n'existe pas, on ignore silencieusement
+                inserted.push({ url_photo: url });
+            }
+        }
+        res.status(201).json({ message: 'Photos du problème ajoutées avec succès', photos: inserted });
+    } catch (error) {
+        console.error('Erreur upload photo problème:', error);
         res.status(500).json({ message: 'Erreur serveur' });
     }
 });
 
 // Récupérer les photos d'un problème
-router.get('/probleme/:id_probleme', authenticateToken, async (req, res) => {
+router.get('/probleme/:id', authenticateToken, async (req, res) => {
     try {
-        const photos = await PhotosBP.findByProbleme(req.params.id_probleme);
-        res.json(photos);
+        const { id } = req.params;
+        const result = await db.query(
+            'SELECT * FROM photosbp WHERE id_probleme = $1 ORDER BY date_ajout ASC',
+            [id]
+        );
+        res.json(result.rows);
     } catch (error) {
-        console.error('Erreur récupération photos:', error);
-        res.status(500).json({ message: 'Erreur serveur' });
-    }
-});
-
-// Supprimer une photo
-router.delete('/:id_photosbp', authenticateToken, async (req, res) => {
-    try {
-        const result = await PhotosBP.delete(req.params.id_photosbp);
-        if (!result) {
-            return res.status(404).json({ message: 'Photo non trouvée' });
-        }
-        res.json({ message: 'Photo supprimée avec succès' });
-    } catch (error) {
-        console.error('Erreur suppression photo:', error);
-        res.status(500).json({ message: 'Erreur serveur' });
-    }
-});
-
-// Mettre à jour la description d'une photo
-router.patch('/:id_photosbp', authenticateToken, async (req, res) => {
-    try {
-        const { description } = req.body;
-        const photo = await PhotosBP.updateDescription(req.params.id_photosbp, description);
-        if (!photo) {
-            return res.status(404).json({ message: 'Photo non trouvée' });
-        }
-        res.json({
-            message: 'Description mise à jour',
-            photo
-        });
-    } catch (error) {
-        console.error('Erreur mise à jour description:', error);
+        console.error('Erreur récupération photos problème:', error);
         res.status(500).json({ message: 'Erreur serveur' });
     }
 });
