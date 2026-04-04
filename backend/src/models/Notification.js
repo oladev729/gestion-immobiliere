@@ -18,13 +18,7 @@ class Notification {
             RETURNING *
         `;
 
-        const values = [
-            id_utilisateur,
-            titre,
-            message,
-            type
-        ];
-
+        const values = [id_utilisateur, titre, message, type];
         const result = await db.query(query, values);
         return result.rows[0];
     }
@@ -32,7 +26,7 @@ class Notification {
     // ============================================================
     // RÉCUPÉRER LES NOTIFICATIONS D'UN UTILISATEUR
     // ============================================================
-    static async findByUser(id_utilisateur, limit = 20) {
+    static async findByUser(id_utilisateur, limit = 50) {
         const query = `
             SELECT * FROM notification 
             WHERE id_utilisateur = $1 
@@ -44,7 +38,7 @@ class Notification {
     }
 
     // ============================================================
-    // RÉCUPÉRER LES NOTIFICATIONS NON LUES D'UN UTILISATEUR
+    // RÉCUPÉRER LES NOTIFICATIONS NON LUES
     // ============================================================
     static async findNonLues(id_utilisateur) {
         const query = `
@@ -57,18 +51,22 @@ class Notification {
     }
 
     // ============================================================
-    // RÉCUPÉRER UNE NOTIFICATION PAR ID
+    // COMPTER LES NOTIFICATIONS NON LUES
     // ============================================================
-    static async findById(id_notification) {
-        const query = 'SELECT * FROM notification WHERE id_notification = $1';
-        const result = await db.query(query, [id_notification]);
-        return result.rows[0];
+    static async countNonLues(id_utilisateur) {
+        const query = `
+            SELECT COUNT(*) as total_non_lues
+            FROM notification
+            WHERE id_utilisateur = $1 AND lu = false
+        `;
+        const result = await db.query(query, [id_utilisateur]);
+        return parseInt(result.rows[0].total_non_lues);
     }
 
     // ============================================================
     // MARQUER UNE NOTIFICATION COMME LUE
     // ============================================================
-    static async marquerCommeLue(id_notification) {
+    static async markAsRead(id_notification) {
         const query = `
             UPDATE notification 
             SET lu = true, date_lecture = CURRENT_TIMESTAMP
@@ -80,9 +78,9 @@ class Notification {
     }
 
     // ============================================================
-    // MARQUER TOUTES LES NOTIFICATIONS D'UN UTILISATEUR COMME LUES
+    // MARQUER TOUTES LES NOTIFICATIONS COMME LUES
     // ============================================================
-    static async marquerToutCommeLu(id_utilisateur) {
+    static async markAllAsRead(id_utilisateur) {
         const query = `
             UPDATE notification 
             SET lu = true, date_lecture = CURRENT_TIMESTAMP
@@ -91,19 +89,6 @@ class Notification {
         `;
         const result = await db.query(query, [id_utilisateur]);
         return result.rows;
-    }
-
-    // ============================================================
-    // COMPTER LES NOTIFICATIONS NON LUES D'UN UTILISATEUR
-    // ============================================================
-    static async countNonLues(id_utilisateur) {
-        const query = `
-            SELECT COUNT(*) as total_non_lues
-            FROM notification
-            WHERE id_utilisateur = $1 AND lu = false
-        `;
-        const result = await db.query(query, [id_utilisateur]);
-        return parseInt(result.rows[0].total_non_lues);
     }
 
     // ============================================================
@@ -121,34 +106,6 @@ class Notification {
     static async deleteAllByUser(id_utilisateur) {
         const query = 'DELETE FROM notification WHERE id_utilisateur = $1 RETURNING id_notification';
         const result = await db.query(query, [id_utilisateur]);
-        return result.rows;
-    }
-
-    // ============================================================
-    // RÉCUPÉRER LES NOTIFICATIONS PAR TYPE
-    // ============================================================
-    static async findByType(id_utilisateur, type) {
-        const query = `
-            SELECT * FROM notification 
-            WHERE id_utilisateur = $1 AND type = $2 
-            ORDER BY date_envoi DESC
-        `;
-        const result = await db.query(query, [id_utilisateur, type]);
-        return result.rows;
-    }
-
-    // ============================================================
-    // RÉCUPÉRER LES DERNIÈRES NOTIFICATIONS (tous utilisateurs)
-    // ============================================================
-    static async getRecentes(limit = 50) {
-        const query = `
-            SELECT n.*, u.nom, u.prenoms, u.email
-            FROM notification n
-            JOIN utilisateur u ON n.id_utilisateur = u.id_utilisateur
-            ORDER BY n.date_envoi DESC
-            LIMIT $1
-        `;
-        const result = await db.query(query, [limit]);
         return result.rows;
     }
 }

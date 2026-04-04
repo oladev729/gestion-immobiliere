@@ -2209,6 +2209,285 @@ Headers: Authorization: Bearer TON_TOKEN
     "message": "Photo supprimée avec succès"
 }
 
+//test pour les notifications
+**connecte toi-d'abord**
+POST http://localhost:5000/api/auth/login
+{
+    "email": "agossouroland@gmail.com",
+    "mot_de_passe": "agossou12"
+}
+**Reponse**
+{
+    "message": "Connexion réussie",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....", //votre token ici
+    "user": {
+        "id": 16,
+        "nom": "agossou",
+        "prenoms": "Roland",
+        "email": "agossouroland@gmail.com",
+        "telephone": "0146121212",
+        "type": "proprietaire",
+        "roleInfo": {
+            "id_proprietaire": 5
+        },
+        "derniere_connexion": "2026-04-04T13:39:53.682Z"
+    }
+}
+//voir toutes mes notifications
+GET http://localhost:5000/api/notifications
+Headers: Authorization: Bearer TON_TOKEN
+**Reponse**
+[
+    {
+        "id_notification": 51,
+        "id_utilisateur": 16,
+        "titre": "Statut du problème mis à jour",
+        "message": "Votre problème est maintenant: resolu",
+        "type": "probleme",
+        "date_envoi": "2026-03-16T01:39:16.592Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 50,
+        "id_utilisateur": 16,
+        "titre": "Statut du problème mis à jour",
+        "message": "Votre problème est maintenant: en_cours",
+        "type": "probleme",
+        "date_envoi": "2026-03-16T01:37:52.321Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 45,
+        "id_utilisateur": 16,
+        "titre": "Demande de visite acceptée",
+        "message": "Votre demande de visite a été acceptée",
+        "type": "visite",
+        "date_envoi": "2026-03-15T23:19:27.021Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 42,
+        "id_utilisateur": 16,
+        "titre": "Nouveau contrat",
+        "message": "Un contrat de location a été créé pour le bien 9",
+        "type": "contrat",
+        "date_envoi": "2026-03-14T13:07:15.592Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 41,
+        "id_utilisateur": 16,
+        "titre": "Nouveau contrat",
+        "message": "Un contrat de location a été créé pour le bien 6",
+        "type": "contrat",
+        "date_envoi": "2026-03-12T17:20:41.924Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 40,
+        "id_utilisateur": 16,
+        "titre": "Nouveau contrat",
+        "message": "Un contrat de location a été créé pour le bien 9",
+        "type": "contrat",
+        "date_envoi": "2026-03-12T13:23:28.143Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 35,
+        "id_utilisateur": 16,
+        "titre": "Nouveau contrat",
+        "message": "Un contrat de location a été créé pour le bien 5",
+        "type": "contrat",
+        "date_envoi": "2026-03-12T11:20:10.762Z",
+        "lu": false,
+        "date_lecture": null
+    }
+]
+
+//Voir uniquement les notifications non lues
+GET http://localhost:5000/api/notifications/non-lues
+Headers: Authorization: Bearer TON_TOKEN
+**Reponse**
+[
+    {
+        "id_notification": 51,
+        "id_utilisateur": 16,
+        "titre": "Statut du problème mis à jour",
+        "message": "Votre problème est maintenant: resolu",
+        "type": "probleme",
+        "date_envoi": "2026-03-16T01:39:16.592Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 50,
+        "id_utilisateur": 16,
+        "titre": "Statut du problème mis à jour",
+        "message": "Votre problème est maintenant: en_cours",
+        "type": "probleme",
+        "date_envoi": "2026-03-16T01:37:52.321Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 45,
+        "id_utilisateur": 16,
+        "titre": "Demande de visite acceptée",
+        "message": "Votre demande de visite a été acceptée",
+        "type": "visite",
+        "date_envoi": "2026-03-15T23:19:27.021Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 42,
+        "id_utilisateur": 16,
+        "titre": "Nouveau contrat",
+        "message": "Un contrat de location a été créé pour le bien 9",
+        "type": "contrat",
+        "date_envoi": "2026-03-14T13:07:15.592Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 41,
+        "id_utilisateur": 16,
+        "titre": "Nouveau contrat",
+        "message": "Un contrat de location a été créé pour le bien 6",
+        "type": "contrat",
+        "date_envoi": "2026-03-12T17:20:41.924Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 40,
+        "id_utilisateur": 16,
+        "titre": "Nouveau contrat",
+        "message": "Un contrat de location a été créé pour le bien 9",
+        "type": "contrat",
+        "date_envoi": "2026-03-12T13:23:28.143Z",
+        "lu": false,
+        "date_lecture": null
+    },
+    {
+        "id_notification": 35,
+        "id_utilisateur": 16,
+        "titre": "Nouveau contrat",
+        "message": "Un contrat de location a été créé pour le bien 5",
+        "type": "contrat",
+        "date_envoi": "2026-03-12T11:20:10.762Z",
+        "lu": false,
+        "date_lecture": null
+    }
+]
+
+//Voir uniquement les notifications non lues
+GET http://localhost:5000/api/notifications/non-lues
+Headers: Authorization: Bearer TON_TOKEN
+**Reponse**
+{
+    "total_non_lues": 7
+}
+
+// Marquer une notification comme lue
+PATCH http://localhost:5000/api/notifications/41/lire
+Headers: Authorization: Bearer TON_TOKEN
+**Reponse**
+{
+    "message": "Notification marquée comme lue",
+    "notification": {
+        "id_notification": 41,
+        "id_utilisateur": 16,
+        "titre": "Nouveau contrat",
+        "message": "Un contrat de location a été créé pour le bien 6",
+        "type": "contrat",
+        "date_envoi": "2026-03-12T17:20:41.924Z",
+        "lu": true,
+        "date_lecture": "2026-04-04T14:29:51.641Z"
+    }
+}
+//Marquer toutes les notifications comme lues
+PATCH http://localhost:5000/api/notifications/lire-tout
+Headers: Authorization: Bearer TON_TOKEN
+**Reponse**
+{
+    "message": "6 notification(s) marquée(s) comme lue(s)",
+    "notifications": [
+        {
+            "id_notification": 35,
+            "id_utilisateur": 16,
+            "titre": "Nouveau contrat",
+            "message": "Un contrat de location a été créé pour le bien 5",
+            "type": "contrat",
+            "date_envoi": "2026-03-12T11:20:10.762Z",
+            "lu": true,
+            "date_lecture": "2026-04-04T14:35:25.935Z"
+        },
+        {
+            "id_notification": 40,
+            "id_utilisateur": 16,
+            "titre": "Nouveau contrat",
+            "message": "Un contrat de location a été créé pour le bien 9",
+            "type": "contrat",
+            "date_envoi": "2026-03-12T13:23:28.143Z",
+            "lu": true,
+            "date_lecture": "2026-04-04T14:35:25.935Z"
+        },
+        {
+            "id_notification": 42,
+            "id_utilisateur": 16,
+            "titre": "Nouveau contrat",
+            "message": "Un contrat de location a été créé pour le bien 9",
+            "type": "contrat",
+            "date_envoi": "2026-03-14T13:07:15.592Z",
+            "lu": true,
+            "date_lecture": "2026-04-04T14:35:25.935Z"
+        },
+        {
+            "id_notification": 45,
+            "id_utilisateur": 16,
+            "titre": "Demande de visite acceptée",
+            "message": "Votre demande de visite a été acceptée",
+            "type": "visite",
+            "date_envoi": "2026-03-15T23:19:27.021Z",
+            "lu": true,
+            "date_lecture": "2026-04-04T14:35:25.935Z"
+        },
+        {
+            "id_notification": 50,
+            "id_utilisateur": 16,
+            "titre": "Statut du problème mis à jour",
+            "message": "Votre problème est maintenant: en_cours",
+            "type": "probleme",
+            "date_envoi": "2026-03-16T01:37:52.321Z",
+            "lu": true,
+            "date_lecture": "2026-04-04T14:35:25.935Z"
+        },
+        {
+            "id_notification": 51,
+            "id_utilisateur": 16,
+            "titre": "Statut du problème mis à jour",
+            "message": "Votre problème est maintenant: resolu",
+            "type": "probleme",
+            "date_envoi": "2026-03-16T01:39:16.592Z",
+            "lu": true,
+            "date_lecture": "2026-04-04T14:35:25.935Z"
+        }
+    ]
+}
+//Supprimer une notification
+DELETE http://localhost:5000/api/notifications/40
+Headers: Authorization: Bearer TON_TOKEN
+**Reponse**
+{
+    "message": "Notification supprimée avec succès"
+}
 
 
 
