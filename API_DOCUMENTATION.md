@@ -2489,6 +2489,119 @@ Headers: Authorization: Bearer TON_TOKEN
     "message": "Notification supprimée avec succès"
 }
 
+//Demande d'inscription (visiteur)
+POST http://localhost:5000/api/visiteurs/demande
+{
+    "nom": "Nouveau",
+    "prenoms": "Visiteur",
+    "email": "visiteur@email.com",
+    "telephone": "771234567",
+    "message": "Je souhaite devenir locataire"
+}
+**Reponse**
+{
+    "message": "Demande d'inscription envoyée avec succès",
+    "demande": {
+        "id_demande": 1,
+        "nom": "ali",
+        "prenoms": "bob",
+        "email": "alibob@gmail.com",
+        "telephone": "771234567",
+        "message": "Je souhaite devenir locataire",
+        "statut": "en_attente",
+        "date_demande": "2026-04-04T15:10:33.841Z"
+    }
+}
+//connecte toi en tant que locataire
+http://localhost:5000/api/auth/login
+**Reponse**
+{
+    "message": "Connexion réussie",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTUsImVtYWlsIjoieWVzc291Zm91emVuYWJvdTQ2QGdtYWlsLmNvbSIsInR5cGUiOiJwcm9wcmlldGFpcmUiLCJpYXQiOjE3NzUzMTU5ODksImV4cCI6MTc3NTQwMjM4OX0.AWGDYOUqodFfnYVHvY2NyXRmE2wFEIFXMT2Hhn54j-k",
+    "user": {
+        "id": 15,
+        "nom": "yessoufou",
+        "prenoms": "Zenabou",
+        "email": "yessoufouzenabou46@gmail.com",
+        "telephone": "0158868731",
+        "type": "proprietaire",
+        "roleInfo": {
+            "id_proprietaire": 4
+        },
+        "derniere_connexion": "2026-04-04T15:19:49.651Z"
+    }
+}
+//Voir toutes les demandes (proprietaire)
+GET http://localhost:5000/api/visiteurs/demandes
+Headers: Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+**Reponse**
+[
+    {
+        "id_demande": 1,
+        "nom": "ali",
+        "prenoms": "bob",
+        "email": "alibob@gmail.com",
+        "telephone": "771234567",
+        "message": "Je souhaite devenir locataire",
+        "statut": "en_attente",
+        "date_demande": "2026-04-04T15:10:33.841Z",
+        "nb_invitations": "0"
+    }
+]
+//Envoyer une invitation(proprietaire)
+POST http://localhost:5000/api/visiteurs/demandes/1/inviter
+Headers: Authorization: Bearer TON_TOKEN_PROPRIETAIRE
+**Reponse**
+{
+    "message": "Invitation envoyée avec succès",
+    "invitation": {
+        "id_invitation": 1,
+        "id_demande": 1,
+        "id_proprietaire": 4,
+        "token": "44fc04f31cfdfcfba878656e1100b1b833a1e1517701909c3472ede35a7d45db",
+        "statut": "envoyee",
+        "date_invitation": "2026-04-04T15:37:44.213Z",
+        "date_utilisation": null,
+        "invitation_url": "http://localhost:5173/register-from-invite?token=44fc04f31cfdfcfba878656e1100b1b833a1e1517701909c3472ede35a7d45db"
+    }
+}
+//Valider une invitation
+GET http://localhost:5000/api/visiteurs/invitation/LE_TOKEN/valider
+**Repone**
+{
+    "message": "Invitation valide",
+    "invitation": {
+        "id_invitation": 1,
+        "id_demande": 1,
+        "id_proprietaire": 4,
+        "token": "44fc04f31cfdfcfba878656e1100b1b833a1e1517701909c3472ede35a7d45db",
+        "statut": "envoyee",
+        "date_invitation": "2026-04-04T15:37:44.213Z",
+        "date_utilisation": null
+    },
+    "demande": {
+        "nom": "ali",
+        "prenoms": "bob",
+        "email": "alibob@gmail.com",
+        "telephone": "771234567"
+    }
+}
+//Confirmer inscription
+POST http://localhost:5000/api/visiteurs/invitation/confirmer
+{
+    "token": "LE_TOKEN_RECU",
+    "mot_de_passe": "password123"
+}
+**Reponse**
+{
+    "message": "Inscription confirmée avec succès",
+    "user": {
+        "id": 17,
+        "nom": "ali",
+        "prenoms": "bob",
+        "email": "alibob@gmail.com"
+    }
+}
 
 
 

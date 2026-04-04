@@ -63,4 +63,8 @@ app.use('/api/photos', photoRoutes);
 const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
 
+//  ROUTES DES VISITEURS
+const visiteurRoutes = require('./routes/visiteurRoutes');
+app.use('/api/visiteurs', visiteurRoutes);
+
 module.exports = app;
