@@ -1,7 +1,8 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
-import Sidebar from './components/Sidebar';
+import SidebarModern from './components/SidebarModern';
+import TopHeader from './components/TopHeader';
 import Login from './pages/Login';
 import RegisterStepRole from "./pages/RegisterStepRole";
 import VisitorRequest from "./pages/VisitorRequest";
@@ -12,6 +13,7 @@ import Register from './pages/Register';
 
 // Pages Propriétaire
 import OwnerProperties from './pages/owner/OwnerProperties';
+import OwnerDashboardModern from './pages/owner/OwnerDashboardModern';
 import Contracts from './pages/owner/Contracts';
 import MaintenanceRecues from './pages/owner/MaintenanceRecues';
 import VisitRequests from './pages/owner/VisitRequests';
@@ -33,16 +35,18 @@ const PublicRoute = ({ children }) => {
     }
     return children;
 };
-
 const Layout = ({ children }) => {
     const { user } = useContext(AuthContext);
     if (!user) return <Navigate to="/login" />;
 
     return (
-        <div className="d-flex">
-            <Sidebar />
-            <div className="flex-grow-1 p-4">
-                {children}
+        <div className="main-layout">
+            <SidebarModern />
+            <div className="main-content">
+                <TopHeader />
+                <div className="content-container">
+                    {children}
+                </div>
             </div>
         </div>
     );
@@ -62,7 +66,7 @@ function App() {
                     <Route path="/" element={<PublicRoute><HomePage /></PublicRoute>} />
 
                     {/* Routes Propriétaire */}
-                    <Route path="/owner-dashboard" element={<Layout><OwnerProperties /></Layout>} />
+                    <Route path="/owner-dashboard" element={<Layout><OwnerDashboardModern /></Layout>} />
                     <Route path="/owner/properties" element={<Layout><OwnerProperties /></Layout>} />
                     <Route path="/owner/contracts" element={<Layout><Contracts /></Layout>} />
                     <Route path="/owner/maintenance" element={<Layout><MaintenanceRecues /></Layout>} />
