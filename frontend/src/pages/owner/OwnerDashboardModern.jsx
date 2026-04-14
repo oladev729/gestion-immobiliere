@@ -24,11 +24,11 @@ const OwnerDashboardModern = () => {
       setStats({
         revenue: 7852000,
         revenueChange: 2.1,
-        orders: 2568,
+        orders: 1000,
         ordersChange: -2.1,
-        properties: 12,
-        contracts: 8,
-        maintenance: 3
+        properties: 1000,
+        contracts: 1000,
+
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -37,10 +37,10 @@ const OwnerDashboardModern = () => {
     }
   };
 
-  const StatCard = ({ title, value, change, icon, color = 'blue' }) => {
+  const StatCard = ({ title, value, change, icon, color = 'blue', isCurrency = false }) => {
     const isPositive = change > 0;
     const changeColor = isPositive ? 'green' : 'red';
-    
+
     const colorClasses = {
       blue: 'from-blue-500 to-blue-600',
       green: 'from-green-500 to-green-600',
@@ -61,11 +61,11 @@ const OwnerDashboardModern = () => {
           </div>
         </div>
         <div className="stat-value">
-          {value.toLocaleString('fr-FR', {
+          {isCurrency ? value.toLocaleString('fr-FR', {
             style: 'currency',
             currency: 'XOF',
             minimumFractionDigits: 0
-          })}
+          }) : value.toLocaleString('fr-FR')}
         </div>
         <div className="stat-title">{title}</div>
       </div>
@@ -87,12 +87,12 @@ const OwnerDashboardModern = () => {
         {data.map((item, index) => (
           <div key={index} className="bar-group">
             <div className="bar-container">
-              <div 
-                className="bar current" 
+              <div
+                className="bar current"
                 style={{ height: `${item.current}%` }}
               />
-              <div 
-                className="bar previous" 
+              <div
+                className="bar previous"
                 style={{ height: `${item.previous}%` }}
               />
             </div>
@@ -100,23 +100,14 @@ const OwnerDashboardModern = () => {
           </div>
         ))}
       </div>
-      <div className="chart-legend">
-        <div className="legend-item">
-          <div className="legend-color current" />
-          <span>6 derniers jours</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-color previous" />
-          <span>Semaine dernière</span>
-        </div>
-      </div>
+
     </div>
   );
 
   const DonutChart = ({ data }) => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     let currentAngle = 0;
-    
+
     return (
       <div className="donut-chart">
         <div className="donut-container">
@@ -126,16 +117,16 @@ const OwnerDashboardModern = () => {
               const angle = (percentage / 100) * 360;
               const startAngle = currentAngle;
               const endAngle = currentAngle + angle;
-              
+
               const x1 = 50 + 40 * Math.cos((startAngle - 90) * Math.PI / 180);
               const y1 = 50 + 40 * Math.sin((startAngle - 90) * Math.PI / 180);
               const x2 = 50 + 40 * Math.cos((endAngle - 90) * Math.PI / 180);
               const y2 = 50 + 40 * Math.sin((endAngle - 90) * Math.PI / 180);
-              
+
               const largeArc = angle > 180 ? 1 : 0;
-              
+
               currentAngle = endAngle;
-              
+
               return (
                 <path
                   key={index}
@@ -150,7 +141,7 @@ const OwnerDashboardModern = () => {
           </svg>
           <div className="donut-center">
             <div className="donut-total">{total}</div>
-            <div className="donut-label">Commandes</div>
+            <div className="donut-label">Contrats</div>
           </div>
         </div>
         <div className="donut-legend">
@@ -224,76 +215,74 @@ const OwnerDashboardModern = () => {
   ];
 
   const donutChartData = [
-    { label: 'Après-midi', value: 1890, color: '#3b82f6' },
-    { label: 'Soir', value: 1456, color: '#10b981' },
-    { label: 'Matin', value: 892, color: '#f59e0b' },
-  ];
-
-  const ratingsData = [
-    { label: 'Hygiène', value: 85, color: '#3b82f6' },
-    { label: 'Goût', value: 85, color: '#10b981' },
-    { label: 'Emballage', value: 92, color: '#f59e0b' },
+    { label: 'Revenus', value: 7852000, color: '#3b82f6' },
+    { label: 'Biens', value: 1456, color: '#10b981' },
+    { label: 'Contrat', value: 892, color: '#f59e0b' },
   ];
 
   const mostOrdered = [
-    { name: 'Fresh Salad Bowl', price: 45000 },
-    { name: 'Chicken Noodles', price: 75000 },
-    { name: 'Smoothie Fruits', price: 45000 },
-    { name: 'Hot Chicken Wings', price: 45000 },
+    { name: 'Villa', price: 45000 },
+    { name: 'Appartement', price: 75000 },
+    { name: 'Studio', price: 45000 },
+    { name: 'Maison', price: 45000 },
   ];
+
+  const RelationIllustration = () => (
+    <div className="relation-illustration">
+      <div className="relation-entity">
+        <div className="entity-icon owner">👔</div>
+        <div className="entity-label">Propriétaire</div>
+      </div>
+      <div className="relation-link">
+        <div className="link-item up">
+          <span className="link-text">🔑 Accès au Bien</span>
+          <div className="link-arrow">→</div>
+        </div>
+        <div className="link-icon">🤝</div>
+        <div className="link-item down">
+          <div className="link-arrow">←</div>
+          <span className="link-text">💶 Loyer & Contrat</span>
+        </div>
+      </div>
+      <div className="relation-entity">
+        <div className="entity-icon tenant">👤</div>
+        <div className="entity-label">Locataire</div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="dashboard-modern">
       {/* Stats Cards */}
       <div className="stats-grid">
-        <StatCard 
-          title="Revenus" 
-          value={stats.revenue} 
+        <StatCard
+          title="Revenus"
+          value={stats.revenue}
           change={stats.revenueChange}
           icon="💰"
           color="green"
+          isCurrency={true}
         />
-        <StatCard 
-          title="Commandes" 
-          value={stats.orders} 
+        <StatCard
+          title="Contrats"
+          value={stats.orders}
           change={stats.ordersChange}
-          icon="📦"
+          icon="📄"
           color="blue"
         />
-        <StatCard 
-          title="Biens" 
-          value={stats.properties} 
+        <StatCard
+          title="Biens"
+          value={stats.properties}
           change={0}
           icon="🏢"
           color="purple"
         />
-        <StatCard 
-          title="Maintenance" 
-          value={stats.maintenance} 
-          change={0}
-          icon="🔧"
-          color="orange"
-        />
+
       </div>
 
-      {/* Charts Row */}
-      <div className="charts-row">
-        <ChartCard title="Revenus - 1 au 12 Décembre 2020">
-          <SimpleBarChart data={barChartData} />
-        </ChartCard>
-        
-        <ChartCard title="Temps de Commande">
-          <DonutChart data={donutChartData} />
-        </ChartCard>
-      </div>
-
-      {/* Bottom Row */}
+      {/* Content Row */}
       <div className="bottom-row">
-        <ChartCard title="Votre Note">
-          <RatingCircles ratings={ratingsData} />
-        </ChartCard>
-        
-        <ChartCard title="Plats les Plus Commandés">
+        <ChartCard title=" Les Biens les plus Loués">
           <div className="ordered-list">
             {mostOrdered.map((item, index) => (
               <div key={index} className="ordered-item">
@@ -310,6 +299,10 @@ const OwnerDashboardModern = () => {
               </div>
             ))}
           </div>
+        </ChartCard>
+
+        <ChartCard title="Lien Propriétaire - Locataire">
+          <RelationIllustration />
         </ChartCard>
       </div>
 
@@ -653,6 +646,86 @@ const OwnerDashboardModern = () => {
 
         .animate-fade-in {
           animation: fadeIn 350ms ease-out;
+        }
+
+        .relation-illustration {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 2rem 1rem;
+          background: #f8fafc;
+          border-radius: 1rem;
+          margin-top: 1rem;
+        }
+
+        .relation-entity {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .entity-icon {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 2rem;
+          color: white;
+          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .entity-icon.owner { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .entity-icon.tenant { background: linear-gradient(135deg, #10b981, #059669); }
+
+        .entity-label {
+          font-weight: 600;
+          color: #1e293b;
+          font-size: 1rem;
+        }
+
+        .relation-link {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          padding: 0 1rem;
+        }
+
+        .link-icon {
+          font-size: 2.5rem;
+          margin: 1rem 0;
+          z-index: 10;
+        }
+
+        .link-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #64748b;
+          font-size: 0.875rem;
+          font-weight: 500;
+          position: relative;
+        }
+
+        .link-item.up { color: #3b82f6; }
+        .link-item.down { color: #10b981; }
+
+        .link-text {
+          background: white;
+          padding: 0.25rem 0.75rem;
+          border-radius: 999px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        }
+
+        .link-arrow {
+          font-size: 1.25rem;
+          font-weight: bold;
         }
 
         @media (max-width: 1024px) {

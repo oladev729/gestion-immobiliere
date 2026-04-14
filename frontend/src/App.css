@@ -93,37 +93,7 @@ nav, .sidebar, [class*="sidebar"] {
 }
 
 
-/* ===== INPUTS ===== */
-.form-control, .form-select, textarea.form-control {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  color: #ffffff !important;
-  backdrop-filter: blur(8px);
-}
-
-
-.form-control::placeholder, textarea.form-control::placeholder {
-  color: rgba(255, 255, 255, 0.45) !important;
-}
-
-
-.form-control:focus, .form-select:focus {
-  background: rgba(255, 255, 255, 0.18) !important;
-  border-color: rgba(255, 255, 255, 0.6) !important;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15) !important;
-  color: #ffffff !important;
-}
-
-
-.form-select option {
-  background: #1a1a2e;
-  color: #ffffff;
-}
-
-
-.form-label {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
+/* Removed bad INPUTS block that forced white color globally */
 
 
 /* ===== MODAL ===== */
@@ -146,12 +116,7 @@ nav, .sidebar, [class*="sidebar"] {
 .btn-close { filter: invert(1); }
 
 
-/* ===== ALERTS ===== */
-.alert { backdrop-filter: blur(8px); border-radius: 10px !important; }
-.alert-info    { background: rgba(13,202,240,0.2) !important; color: #a0f0ff !important; border-color: rgba(13,202,240,0.3) !important; }
-.alert-danger  { background: rgba(220,53,69,0.2) !important;  color: #ffaaaa !important; border-color: rgba(220,53,69,0.3) !important; }
-.alert-success { background: rgba(25,135,84,0.2) !important;  color: #a0f5c0 !important; border-color: rgba(25,135,84,0.3) !important; }
-.alert-warning { background: rgba(255,193,7,0.2) !important;  color: #ffe080 !important; border-color: rgba(255,193,7,0.3) !important; }
+/* Removed bad ALERTS block that forced unreadable green-on-green text */
 
 
 /* ===== DIVERS ===== */

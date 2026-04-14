@@ -34,7 +34,7 @@ const VisitorRequest = () => {
         message: formData.message,
       };
 
-      await api.post("/demande-inscription-visiteur", payload);
+      await api.post("/visiteurs/demande", payload);
 
       setInfo(
         "Votre demande a été enregistrée. " +

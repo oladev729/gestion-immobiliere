@@ -8,7 +8,7 @@ const RegisterStepRole = () => {
 
   const handleContinue = () => {
   if (role === "locataire") {
-    setShowLocataireInfo(true);
+    setShowInfo(true);
     return;                  
   }
 
@@ -51,20 +51,16 @@ const RegisterStepRole = () => {
           {/* SI locataire choisi et message à afficher */}
           {showInfo ? (
             <>
-              <p style={{ fontWeight: 600, color: "#000000" }}>
-                Merci de demander à votre propriétaire de vous inviter.
-              </p>
-              <p style={{ color: "#000000", marginBottom: 24 }}>
-                Une fois l'invitation reçue par e-mail, suivez le lien pour
-                confirmer votre inscription.
+              <p style={{ fontWeight: 600, color: "#000000", marginBottom: 24 }}>
+                Merci de demander à votre propriétaire de vous inviter.pour cela cliquer sur je suis visiteur .
               </p>
 
               <button
                 className="btn btn-primary w-100 mb-3"
                 style={{ borderRadius: "999px" }}
-                onClick={handleBack}
+                onClick={() => setShowInfo(false)}
               >
-                Retour à l’accueil
+                Retour
               </button>
             </>
           ) : (

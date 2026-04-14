@@ -92,49 +92,11 @@ const HomePage = () => {
               Des centaines de biens disponibles : appartements, maisons, studios
               à louer en toute simplicité.
             </p>
-            <Link
-              to="/register/role"
-              className="btn btn-primary btn-lg px-5 me-3"
-            >
-              Créer un compte gratuit
-            </Link>
-            <a href="#biens" className="btn btn-outline-light btn-lg px-5">
-              Voir les biens
-            </a>
+            
           </div>
         </div>
 
-        {/* CHIFFRES */}
-        <div
-          className="py-4"
-          style={{
-            background: "rgba(13, 110, 253, 0.25)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            borderTop: "1px solid rgba(255,255,255,0.15)",
-            borderBottom: "1px solid rgba(255,255,255,0.15)",
-          }}
-        >
-          <div className="container">
-            <div className="row text-center g-3">
-              <div className="col-md-4">
-                <h2 className="fw-bold display-6 text-white">
-                  {biens.length}+
-                </h2>
-                <p className="mb-0 text-white">Biens disponibles</p>
-              </div>
-              <div className="col-md-4">
-                <h2 className="fw-bold display-6 text-white">100%</h2>
-                <p className="mb-0 text-white">Annonces vérifiées</p>
-              </div>
-              <div className="col-md-4">
-                <h2 className="fw-bold display-6 text-white">24h</h2>
-                <p className="mb-0 text-white">Réponse garantie</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
+       
         {/* FILTRES + BIENS */}
         <div id="biens" className="py-5">
           <div className="container">
@@ -334,6 +296,38 @@ const HomePage = () => {
             )}
           </div>
         </div>
+
+         {/* CHIFFRES */}
+        <div
+          className="py-4"
+          style={{
+            background: "rgba(13, 110, 253, 0.25)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            borderTop: "1px solid rgba(255,255,255,0.15)",
+            borderBottom: "1px solid rgba(255,255,255,0.15)",
+          }}
+        >
+          <div className="container">
+            <div className="row text-center g-3">
+              <div className="col-md-4">
+                <h2 className="fw-bold display-6 text-white">
+                  {biens.length}+
+                </h2>
+                <p className="mb-0 text-white">Biens disponibles</p>
+              </div>
+              <div className="col-md-4">
+                <h2 className="fw-bold display-6 text-white">100%</h2>
+                <p className="mb-0 text-white">Annonces vérifiées</p>
+              </div>
+              <div className="col-md-4">
+                <h2 className="fw-bold display-6 text-white">24h</h2>
+                <p className="mb-0 text-white">Réponse garantie</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
 
         {/* COMMENT CA MARCHE */}
         <div
