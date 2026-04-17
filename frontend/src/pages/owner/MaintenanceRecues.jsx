@@ -163,7 +163,7 @@ export default function MaintenanceRecues() {
                             {photosProbleme.map((photo, idx) => (
                               <img
                                 key={idx}
-                                src={`http://localhost:5000${photo.url_photosbp}`}
+                                src={`http://127.0.0.1:5055${photo.url_photosbp}`}
                                 alt={`photo-${idx}`}
                                 style={{ width: 70, height: 70, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', border: '2px solid rgba(255,255,255,0.3)' }}
                                 onClick={() => setPhotosModal(photosProbleme)}
@@ -221,7 +221,7 @@ export default function MaintenanceRecues() {
                   {photosModal.map((photo, idx) => (
                     <div className="col-md-4" key={idx}>
                       <img
-                        src={`http://localhost:5000${photo.url_photosbp}`}
+                        src={`http://127.0.0.1:5055${photo.url_photosbp}`}
                         alt={`photo-${idx}`}
                         className="img-fluid rounded"
                         style={{ width: '100%', height: 200, objectFit: 'cover' }}

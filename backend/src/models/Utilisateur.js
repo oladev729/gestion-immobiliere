@@ -18,20 +18,25 @@ class Utilisateur {
 
     // Créer un nouvel utilisateur
     static async create(userData) {
-        const { nom, prenoms, email, telephone, mot_de_passe, type_utilisateur } = userData;
-        
-        // Hasher le mot de passe
-        const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
-        
-        const query = `
-            INSERT INTO utilisateur (nom, prenoms, email, telephone, mot_de_passe, type_utilisateur)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id_utilisateur, nom, prenoms, email, type_utilisateur
-        `;
-        
-        const values = [nom, prenoms, email, telephone, hashedPassword, type_utilisateur];
-        const result = await db.query(query, values);
-        return result.rows[0];
+        try {
+            const { nom, prenoms, email, telephone, mot_de_passe, type_utilisateur } = userData;
+            
+            // Hasher le mot de passe
+            const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
+            
+            const query = `
+                INSERT INTO utilisateur (nom, prenoms, email, telephone, mot_de_passe, type_utilisateur)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id_utilisateur, nom, prenoms, email, type_utilisateur
+            `;
+            
+            const values = [nom, prenoms, email, telephone, hashedPassword, type_utilisateur];
+            const result = await db.query(query, values);
+            return result.rows[0];
+        } catch (error) {
+            console.error('❌ Erreur SQL Utilisateur.create:', error.message);
+            throw error;
+        }
     }
 
     // Mettre à jour un utilisateur

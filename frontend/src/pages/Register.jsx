@@ -41,11 +41,11 @@ const Register = () => {
         textAlign: "center",
       }}
     >
-    <p>
-      <h4 className="logo-immogest">ImmoGest</h4>
-      Ouvrir un compte gratuit 
-    <p>Créer de meilleures relations entre propriétaires et locataires !</p>  
-       </p>
+      <div className="mb-4">
+        <h4 className="logo-immogest">ImmoGest</h4>
+        <p className="mb-1">Ouvrir un compte gratuit</p>
+        <p className="text-muted small">Créer de meilleures relations entre propriétaires et locataires !</p>
+      </div>
       <div className="d-flex justify-content-center">
         <div
           style={{
@@ -57,16 +57,16 @@ const Register = () => {
             textAlign: "left",
           }}
         >
-         
+
           <p
-  style={{
-    fontWeight: 700,
-    color: "#000000",
-    marginBottom: "20px",   // espace ajouté
-  }}
->
-  "Vous étant propriétaire devriez inviter vos locataire"
-</p>
+            style={{
+              fontWeight: 700,
+              color: "#000000",
+              marginBottom: "20px",   // espace ajouté
+            }}
+          >
+            "Vous étant propriétaire devriez inviter vos locataire"
+          </p>
 
 
           <hr style={{ marginTop: 0, marginBottom: 16 }} />
@@ -145,7 +145,7 @@ const Register = () => {
             {typeFromStep === "proprietaire" && (
               <div className="mb-3">
                 <label className="small mb-1" style={{ color: "#000000" }}>
-                  Adresse fiscale (Ex: Cotonou)
+                  Adresse fiscale (Ex: XX BP Numéro)
                 </label>
                 <input
                   type="text"

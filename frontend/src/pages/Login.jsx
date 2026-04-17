@@ -77,14 +77,13 @@ const Login = () => {
             textAlign: "left",
           }}
         >
-         
+
           <p
             className="small"
             style={{ color: "#000000", marginBottom: 16 }}
           >
-            Accédez à votre compte
+            Accédez à votre compte Propriétaire/Locataire
           </p>
-
           <hr style={{ marginTop: 0, marginBottom: 16 }} />
 
           {error && <div className="alert alert-danger">{error}</div>}

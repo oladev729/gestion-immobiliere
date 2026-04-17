@@ -37,13 +37,13 @@ const RegisterFromInvite = () => {
 
       try {
         const res = await api.get(
-          `/invitation-locataire/verify?token=${encodeURIComponent(token)}`
+          `/visiteurs/confirm/${encodeURIComponent(token)}`
         );
 
-        if (!res.data.valid) {
+        if (!res.data.donnees) {
           setError("Cette invitation n'est plus valide.");
         } else {
-          setVisiteur(res.data.visiteur);
+          setVisiteur(res.data.donnees);
         }
       } catch (e) {
         setError(
@@ -71,7 +71,7 @@ const RegisterFromInvite = () => {
         telephone,
       };
 
-      const res = await api.post("/auth/register-from-invite", payload);
+      const res = await api.post("/visiteurs/invitation/confirmer", payload);
 
       setInfo("Inscription confirmée. Vous êtes maintenant connecté.");
 

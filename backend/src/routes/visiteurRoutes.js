@@ -16,6 +16,9 @@ router.get('/invitation/:token/valider', visiteurController.validerInvitation);
 // Confirmer inscription après invitation
 router.post('/invitation/confirmer', visiteurController.confirmerInscription);
 
+// Nouvelle route pour confirmation depuis email
+router.get('/confirm/:token', visiteurController.confirmInvitation);
+
 // ============================================================
 // ROUTES PROTÉGÉES (propriétaire/admin)
 // ============================================================
@@ -23,11 +26,17 @@ router.post('/invitation/confirmer', visiteurController.confirmerInscription);
 // Voir toutes les demandes
 router.get('/demandes', authenticateToken, visiteurController.getDemandes);
 
+// Voir les demandes en attente (pour la page inviter visiteur)
+router.get('/demandes-en-attente', authenticateToken, visiteurController.getDemandesEnAttente);
+
 // Voir une demande spécifique
 router.get('/demandes/:id', authenticateToken, visiteurController.getDemandes);
 
 // Envoyer une invitation (propriétaire)
 router.post('/demandes/:id_demande/inviter', authenticateToken, visiteurController.envoyerInvitation);
+
+// Nouvelle route simplifiée pour inviter un visiteur
+router.post('/inviter/:demandeId', authenticateToken, visiteurController.inviterVisiteur);
 
 // Statistiques
 router.get('/stats', authenticateToken, visiteurController.getStats);

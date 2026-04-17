@@ -10,6 +10,9 @@ const HomePage = () => {
     prix_max: "",
   });
   const [loading, setLoading] = useState(true);
+  const [selectedBien, setSelectedBien] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
 
   const fetchBiens = async () => {
     setLoading(true);
@@ -26,6 +29,19 @@ const HomePage = () => {
   useEffect(() => {
     fetchBiens();
   }, []);
+
+  const handleVoirPlus = async (bienId) => {
+    setLoadingPhotos(true);
+    setShowModal(true);
+    try {
+      const res = await api.get(`/biens/${bienId}`);
+      setSelectedBien(res.data);
+    } catch (error) {
+      console.error("Erreur lors de la récupération du bien:", error);
+    } finally {
+      setLoadingPhotos(false);
+    }
+  };
 
   return (
     <div
@@ -195,7 +211,7 @@ const HomePage = () => {
                     >
                       {bien.photo_principale ? (
                         <img
-                          src={`http://localhost:5000${bien.photo_principale}`}
+                          src={`http://127.0.0.1:5055${bien.photo_principale}`}
                           alt={bien.titre}
                           style={{
                             width: "100%",
@@ -275,12 +291,13 @@ const HomePage = () => {
                             </span>
                           )}
                         </div>
-                        <Link
-                          to="/register/role"
-                          className="btn btn-primary w-100 mt-3"
+                        <button
+                          onClick={() => handleVoirPlus(bien.id_bien)}
+                          className="btn btn-primary w-100 mt-3 fw-bold"
+                          style={{ borderRadius: "12px", padding: "10px" }}
                         >
-                          Demander une visite
-                        </Link>
+                          Voir plus
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -430,6 +447,104 @@ const HomePage = () => {
           </small>
         </footer>
       </div>
+      
+      {/* MODALE DE DÉTAILS DU BIEN */}
+      {showModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#111827', width: '100%', maxWidth: '900px',
+            maxHeight: '90vh', borderRadius: '24px', overflowY: 'auto',
+            border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+            position: 'relative', animation: 'fadeInUp 0.4s ease'
+          }}>
+            <button 
+              onClick={() => { setShowModal(false); setSelectedBien(null); }}
+              style={{
+                position: 'absolute', top: '20px', right: '20px', zIndex: 10,
+                background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
+                width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer'
+              }}
+            >✕</button>
+
+            {loadingPhotos ? (
+              <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="spinner-border text-primary" role="status" />
+              </div>
+            ) : selectedBien && (
+              <div style={{ color: '#fff' }}>
+                {/* Galerie Photo simple (Grille) */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '8px', padding: '8px', background: '#000' }}>
+                  {selectedBien.photos && selectedBien.photos.length > 0 ? (
+                    selectedBien.photos.map((p, idx) => (
+                      <img 
+                        key={idx} 
+                        src={`http://127.0.0.1:5055${p.url_photobien}`} 
+                        alt={`Photo ${idx}`} 
+                        style={{ width: '100%', height: '300px', objectFit: 'cover', cursor: 'zoom-in' }} 
+                      />
+                    ))
+                  ) : (
+                    <div style={{ height: '300px', gridColumn: '1/-1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1f2937' }}>
+                      Pas de photos supplémentaires
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ padding: '2.5rem' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                      <h2 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '0.5rem' }}>{selectedBien.titre}</h2>
+                      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.1rem' }}>📍 {selectedBien.adresse}, {selectedBien.ville}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '1.8rem', fontWeight: '800', color: '#7ee8a2', margin: 0 }}>{Number(selectedBien.loyer_mensuel).toLocaleString()} FCFA</p>
+                      <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>Loyer mensuel</p>
+                    </div>
+                  </div>
+
+                  <hr style={{ borderColor: 'rgba(255,255,255,0.1)', margin: '2rem 0' }} />
+
+                  <div className="row g-4">
+                    <div className="col-md-8">
+                      <h4 style={{ fontWeight: '700', marginBottom: '1.2rem' }}>Description du bien</h4>
+                      <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.8', fontSize: '1.1rem', whiteSpace: 'pre-line' }}>
+                        {selectedBien.description || "Aucune description fournie pour ce bien."}
+                      </p>
+                    </div>
+                    <div className="col-md-4">
+                      <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <h5 style={{ fontWeight: '700', marginBottom: '1rem' }}>Caractéristiques</h5>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
+                          <li><i className="bi bi-arrows-fullscreen me-2"></i> {selectedBien.superficie} m²</li>
+                          <li><i className="bi bi-door-open me-2"></i> {selectedBien.nombre_pieces} pièces</li>
+                          <li><i className="bi bi-house-check me-2"></i> {selectedBien.type_bien}</li>
+                          {selectedBien.meuble && <li><i className="bi bi-check-circle me-2"></i> Meublé</li>}
+                        </ul>
+                        
+                        <Link to="/register/role" className="btn btn-primary w-100 mt-4 fw-bold p-3" style={{ borderRadius: '12px' }}>
+                          S'inscrire pour visiter
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };

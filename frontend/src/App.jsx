@@ -6,6 +6,7 @@ import TopHeader from './components/TopHeader';
 import Login from './pages/Login';
 import RegisterStepRole from "./pages/RegisterStepRole";
 import VisitorRequest from "./pages/VisitorRequest";
+import InviterVisiteur from "./pages/owner/InviterVisiteur";
 import RegisterFromInvite from "./pages/RegisterFromInvite";
 import Register from './pages/Register';
 
@@ -67,6 +68,7 @@ function App() {
 
                     {/* Routes Propriétaire */}
                     <Route path="/owner-dashboard" element={<Layout><OwnerDashboardModern /></Layout>} />
+                    <Route path="/owner/inviter-visiteur" element={<Layout><InviterVisiteur /></Layout>} />
                     <Route path="/owner/properties" element={<Layout><OwnerProperties /></Layout>} />
                     <Route path="/owner/contracts" element={<Layout><Contracts /></Layout>} />
                     <Route path="/owner/maintenance" element={<Layout><MaintenanceRecues /></Layout>} />

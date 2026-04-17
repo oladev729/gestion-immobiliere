@@ -9,6 +9,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Logger Global pour débugger la connexion
+app.use((req, res, next) => {
+    console.log(`🌐 [${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+    next();
+});
+
 // Servir les fichiers uploadés (photos)
 app.use('/uploads', express.static('C:\\Users\\PC\\Desktop\\gestion-immobiliere\\backend\\uploads'));
 

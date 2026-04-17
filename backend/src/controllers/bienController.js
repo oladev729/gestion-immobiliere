@@ -60,10 +60,10 @@ const bienController = {
 
             const biens = await Bien.findByProprietaire(proprietaire.rows[0].id_proprietaire);
             
-            // Ajouter les photos pour chaque bien
+            // Ajouter les photos pour chaque bien (en mettant la principale en premier)
             for (let bien of biens) {
                 const photos = await db.query(
-                    'SELECT url_photobien, legende FROM photosbien WHERE id_bien = $1',
+                    'SELECT url_photobien, legende, est_principale FROM photosbien WHERE id_bien = $1 ORDER BY est_principale DESC, date_ajout ASC',
                     [bien.id_bien]
                 );
                 bien.photos = photos.rows;
@@ -91,10 +91,10 @@ const bienController = {
 
             const biens = await Bien.findAllDisponibles(filtres);
             
-            // Ajouter la première photo pour chaque bien
+            // Ajouter la photo principale pour chaque bien
             for (let bien of biens) {
                 const photos = await db.query(
-                    'SELECT url_photobien FROM photosbien WHERE id_bien = $1 LIMIT 1',
+                    'SELECT url_photobien FROM photosbien WHERE id_bien = $1 ORDER BY est_principale DESC, date_ajout ASC LIMIT 1',
                     [bien.id_bien]
                 );
                 bien.photo_principale = photos.rows[0]?.url_photobien || null;
@@ -235,6 +235,13 @@ const bienController = {
             if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
                 return res.status(403).json({ 
                     message: 'Vous n\'êtes pas autorisé à modifier ce bien' 
+                });
+            }
+
+            // Bloquer les changements manuels vers "disponible" ou "loue"
+            if (statut === 'disponible' || statut === 'loue') {
+                return res.status(400).json({
+                    message: `Le statut "${statut}" est géré automatiquement par le système de contrat et ne peut pas être modifié manuellement.`
                 });
             }
 

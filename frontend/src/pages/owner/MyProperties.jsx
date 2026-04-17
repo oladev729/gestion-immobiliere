@@ -23,7 +23,7 @@ const MyProperties = () => {
                         <div className="card h-100 shadow-sm">
                             {bien.photos && bien.photos.length > 0 ? (
                                 <img
-                                    src={`http://localhost:5000${bien.photos[0].url_photobien}`}
+                                    src={`http://127.0.0.1:5055${bien.photos[0].url_photobien}`}
                                     className="card-img-top"
                                     alt={bien.titre}
                                     style={{ height: 180, objectFit: 'cover' }}

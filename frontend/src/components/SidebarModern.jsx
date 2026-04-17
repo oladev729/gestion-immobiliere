@@ -45,6 +45,12 @@ const SidebarModern = () => {
       icon: '💰',
       description: 'Suivi des loyers'
     },
+    { 
+      name: 'Inviter Visiteur', 
+      path: '/owner/inviter-visiteur', 
+      icon: '👤+',
+      description: 'Gérer les nouvelles demandes'
+    },
   ];
 
   const tenantLinks = [

@@ -109,7 +109,7 @@ const AvailableProperties = () => {
                     <div className="col-md-6 mb-3" key={bien.id_bien}>
                         <div className="card shadow-sm border-0 h-100">
                             {bien.photo_principale ? (
-                                <img src={`http://localhost:5000${bien.photo_principale}`}
+                                <img src={`http://127.0.0.1:5055${bien.photo_principale}`}
                                     className="card-img-top" alt={bien.titre}
                                     style={{ height: 180, objectFit: 'cover' }} />
                             ) : (
