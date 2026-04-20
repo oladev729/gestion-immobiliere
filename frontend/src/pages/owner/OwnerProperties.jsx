@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
+import { useSearch } from '../../context/SearchContext';
 
 const OwnerProperties = () => {
+    const { searchTerm } = useSearch();
     const [biens, setBiens] = useState([]);
     const [formStep, setFormStep] = useState(0); // 0: List, 1: Step 1, 2: Step 2
     const [photoPrincipale, setPhotoPrincipale] = useState(null);
@@ -9,6 +11,8 @@ const OwnerProperties = () => {
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [currentBienId, setCurrentBienId] = useState(null);
 
     const [form, setForm] = useState({
         titre: '',
@@ -39,6 +43,41 @@ const OwnerProperties = () => {
 
     useEffect(() => { fetchBiens(); }, []);
 
+    const biensFiltres = biens.filter(b => 
+        b.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.ville.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.adresse.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const openCreateForm = () => {
+        setIsEditing(false);
+        setCurrentBienId(null);
+        setForm({
+            titre: '', description: '', type_bien: 'appartement',
+            loyer_mensuel: '', adresse: '', ville: '',
+            code_postal: '', superficie: '', nombre_pieces: '', meuble: false
+        });
+        setFormStep(1);
+    };
+
+    const handleEdit = (bien) => {
+        setIsEditing(true);
+        setCurrentBienId(bien.id_bien);
+        setForm({
+            titre: bien.titre || '',
+            description: bien.description || '',
+            type_bien: bien.type_bien || 'appartement',
+            loyer_mensuel: bien.loyer_mensuel || '',
+            adresse: bien.adresse || '',
+            ville: bien.ville || '',
+            code_postal: bien.code_postal || '',
+            superficie: bien.superficie || '',
+            nombre_pieces: bien.nombre_pieces || '',
+            meuble: bien.meuble || false
+        });
+        setFormStep(1);
+    };
+
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
         setSuccessMsg('');
@@ -46,8 +85,14 @@ const OwnerProperties = () => {
         setLoading(true);
 
         try {
-            const res = await api.post('/biens', form);
-            const id_bien = res.data.bien.id_bien;
+            let res;
+            if (isEditing) {
+                res = await api.put(`/biens/${currentBienId}`, form);
+            } else {
+                res = await api.post('/biens', form);
+            }
+            
+            const id_bien = isEditing ? currentBienId : res.data.bien.id_bien;
 
             if (photoPrincipale || photosDetails.length > 0) {
                 const formData = new FormData();
@@ -59,18 +104,13 @@ const OwnerProperties = () => {
                 });
             }
 
-            setSuccessMsg('Bien créé avec succès !');
+            setSuccessMsg(isEditing ? 'Bien mis à jour avec succès !' : 'Bien créé avec succès !');
             setFormStep(0);
             setPhotoPrincipale(null);
             setPhotosDetails([]);
-            setForm({
-                titre: '', description: '', type_bien: 'appartement',
-                loyer_mensuel: '', adresse: '', ville: '',
-                code_postal: '', superficie: '', nombre_pieces: '', meuble: false
-            });
             fetchBiens();
         } catch (err) {
-            setErrorMsg(err.response?.data?.message || 'Erreur lors de la création du bien');
+            setErrorMsg(err.response?.data?.message || 'Erreur lors de l\'enregistrement du bien');
         } finally {
             setLoading(false);
         }
@@ -87,8 +127,6 @@ const OwnerProperties = () => {
             }
         }
     };
-
-
 
     const ProgressBar = () => (
         <div style={{ marginBottom: '2rem' }}>
@@ -109,29 +147,30 @@ const OwnerProperties = () => {
         <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '2rem' }}>
             <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
-                {/* ALERTES PENSÉES DESIGN */}
                 {successMsg && (
                     <div style={{ backgroundColor: '#ecfdf5', color: '#065f46', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', border: '1px solid #a7f3d0' }}>
-                        ✅ {successMsg}
+                        {successMsg}
                     </div>
                 )}
                 {errorMsg && (
                     <div style={{ backgroundColor: '#fef2f2', color: '#991b1b', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', border: '1px solid #fecaca' }}>
-                        ❌ {errorMsg}
+                        {errorMsg}
                     </div>
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                     <div>
-                        <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: '#111827', margin: 0 }}>Mes Biens</h1>
+                        <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: '#111827', margin: 0 }}>
+                            {formStep === 0 ? 'Mes Biens' : isEditing ? 'Modifier le bien' : 'Ajouter un nouveau bien'}
+                        </h1>
                         <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>Gérez vos biens immobilier en toute simplicité.</p>
                     </div>
                     {formStep === 0 && (
                         <button
-                            onClick={() => setFormStep(1)}
-                            style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '0.75rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(37,99,235,0.2)' }}
+                            onClick={openCreateForm}
+                            style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '0.75rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(37,99,235,0.2)', textDecoration: 'none' }}
                         >
-                            + Ajouter un bien
+                            Ajouter un bien
                         </button>
                     )}
                 </div>
@@ -141,7 +180,6 @@ const OwnerProperties = () => {
                         <div style={{ backgroundColor: '#ffffff', borderRadius: '1rem', padding: '2rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
                             <ProgressBar />
 
-                            {/* ÉTAPE 1 */}
                             {formStep === 1 && (
                                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                                     <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem', color: '#111827' }}>Informations générales</h2>
@@ -165,7 +203,7 @@ const OwnerProperties = () => {
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Loyer mensuel (FCFA)</label>
                                             <input style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }} type="number"
-                                                placeholder="ex: 150000" required
+                                                placeholder="ex: 150000" required min="0"
                                                 value={form.loyer_mensuel} onChange={e => setForm({ ...form, loyer_mensuel: e.target.value })} />
                                         </div>
                                         <div style={{ gridColumn: 'span 2' }}>
@@ -176,7 +214,7 @@ const OwnerProperties = () => {
                                         </div>
                                         <div style={{ gridColumn: 'span 2' }}>
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#1e293b' }}>
-                                                Photo de couverture (Principale - affichée sur la carte)
+                                                Photo de couverture {isEditing && "(Laissez vide pour conserver l'actuelle)"}
                                             </label>
                                             <input 
                                                 style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', marginBottom: '1rem' }} 
@@ -186,23 +224,6 @@ const OwnerProperties = () => {
                                             {photoPrincipale && (
                                                 <div style={{ marginBottom: '1.5rem' }}>
                                                     <img src={URL.createObjectURL(photoPrincipale)} alt="preview principale" style={{ width: '120px', height: '80px', borderRadius: '0.5rem', objectFit: 'cover', border: '2px solid #2563eb' }} />
-                                                    <p style={{ fontSize: '0.75rem', color: '#2563eb', marginTop: '0.25rem' }}>Photo principale sélectionnée</p>
-                                                </div>
-                                            )}
-
-                                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#1e293b' }}>
-                                                Photos pour les détails (Galerie photo)
-                                            </label>
-                                            <input 
-                                                style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }} 
-                                                type="file" accept="image/*" multiple
-                                                onChange={e => setPhotosDetails(Array.from(e.target.files))} 
-                                            />
-                                            {photosDetails.length > 0 && (
-                                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                                                    {photosDetails.map((p, i) => (
-                                                        <img key={i} src={URL.createObjectURL(p)} alt="preview detail" style={{ width: '60px', height: '60px', borderRadius: '0.4rem', objectFit: 'cover' }} />
-                                                    ))}
                                                 </div>
                                             )}
                                         </div>
@@ -220,7 +241,6 @@ const OwnerProperties = () => {
                                 </div>
                             )}
 
-                            {/* ÉTAPE 2 */}
                             {formStep === 2 && (
                                 <div style={{ animation: 'fadeIn 0.3s ease' }}>
                                     <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem', color: '#111827' }}>Emplacement & Détails techniques</h2>
@@ -240,26 +260,26 @@ const OwnerProperties = () => {
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Code postal</label>
                                             <input style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
-                                                placeholder="ex: 00225"
+                                                type="number" min="0" placeholder="ex: 00225"
                                                 value={form.code_postal} onChange={e => setForm({ ...form, code_postal: e.target.value })} />
                                         </div>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Superficie (m²)</label>
                                             <input style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }} type="number"
-                                                placeholder="ex: 85"
+                                                placeholder="ex: 85" min="0"
                                                 value={form.superficie} onChange={e => setForm({ ...form, superficie: e.target.value })} />
                                         </div>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Nombre de pièces</label>
                                             <input style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }} type="number"
-                                                placeholder="ex: 3"
+                                                placeholder="ex: 3" min="0"
                                                 value={form.nombre_pieces} onChange={e => setForm({ ...form, nombre_pieces: e.target.value })} />
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
                                         <button onClick={() => setFormStep(1)} style={{ padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', backgroundColor: '#fff', fontWeight: '600', cursor: 'pointer' }}>Retour</button>
                                         <button onClick={handleSubmit} disabled={loading} style={{ padding: '0.75rem 2rem', borderRadius: '0.5rem', border: 'none', backgroundColor: '#059669', color: '#fff', fontWeight: '600', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>
-                                            {loading ? 'Création...' : 'Créer le bien'}
+                                            {loading ? 'Enregistrement...' : isEditing ? 'Mettre à jour' : 'Créer le bien'}
                                         </button>
                                     </div>
                                 </div>
@@ -270,7 +290,7 @@ const OwnerProperties = () => {
 
                 {formStep === 0 && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
-                        {biens.map(bien => (
+                        {biensFiltres.map(bien => (
                             <div key={bien.id_bien} style={{ backgroundColor: '#ffffff', borderRadius: '1rem', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', transition: 'transform 0.2s' }}>
                                 <div style={{ position: 'relative', height: '200px' }}>
                                     {bien.photos?.[0] ? (
@@ -300,40 +320,29 @@ const OwnerProperties = () => {
                                     <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#4b5563', padding: '1rem 0', borderTop: '1px solid #f1f5f9' }}>
                                         <span><i className="bi bi-arrows-fullscreen"></i> {bien.superficie} m²</span>
                                         <span><i className="bi bi-door-open"></i> {bien.nombre_pieces} pièces</span>
-                                        {bien.meuble && <span><i className="bi bi-check-lg"></i> Meublé</span>}
                                     </div>
                                 </div>
-                                <div style={{ padding: '1.25rem 1.5rem', backgroundColor: '#f8fafc', borderTop: '1px solid #e5e7eb', display: 'flex' }}>
+                                <div style={{ padding: '1.25rem 1.5rem', backgroundColor: '#f8fafc', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '0.5rem' }}>
+                                    <button 
+                                        onClick={() => handleEdit(bien)}
+                                        style={{ flex: 1, padding: '0.6rem', borderRadius: '0.5rem', border: '1px solid #dbeafe', backgroundColor: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', textDecoration: 'none' }}
+                                    >
+                                        Modifier
+                                    </button>
                                     <button 
                                         onClick={() => handleDelete(bien.id_bien)} 
-                                        style={{ 
-                                            flex: 1,
-                                            padding: '0.6rem', 
-                                            borderRadius: '0.5rem', 
-                                            border: '1px solid #fee2e2', 
-                                            backgroundColor: '#fff', 
-                                            color: '#ef4444', 
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '0.5rem',
-                                            fontWeight: '600',
-                                            transition: 'all 0.2s'
-                                        }}
-                                        onMouseOver={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                                        onMouseOut={e => e.currentTarget.style.backgroundColor = '#fff'}
+                                        style={{ padding: '0.6rem 1rem', borderRadius: '0.5rem', border: '1px solid #fee2e2', backgroundColor: '#fff', color: '#ef4444', cursor: 'pointer', fontWeight: '600', textDecoration: 'none' }}
+                                        title="Supprimer"
                                     >
-                                        <i className="bi bi-trash"></i>
-                                        Supprimer ce bien
+                                        Supprimer
                                     </button>
                                 </div>
                             </div>
                         ))}
-                        {biens.length === 0 && !loading && (
+                        {biensFiltres.length === 0 && !loading && (
                             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', backgroundColor: '#ffffff', borderRadius: '1rem', border: '2px dashed #e2e8f0', color: '#94a3b8' }}>
                                 <i className="bi bi-house-add" style={{ fontSize: '3rem', marginBottom: '1rem', display: 'block' }}></i>
-                                Aucun bien enregistré.
+                                {searchTerm ? 'Aucun bien ne correspond à votre recherche.' : 'Aucun bien enregistré.'}
                             </div>
                         )}
                     </div>

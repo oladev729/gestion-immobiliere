@@ -59,20 +59,27 @@ class DemandeVisite {
     // ============================================================
     static async findDemandesRecues(id_proprietaire) {
         const query = `
-            SELECT d.*, 
-                   b.titre as bien_titre,
-                   b.adresse as bien_adresse,
-                   b.ville as bien_ville,
-                   u.nom as locataire_nom,
-                   u.prenoms as locataire_prenoms,
-                   u.email as locataire_email,
-                   u.telephone as locataire_telephone
+            SELECT d.id_demande, d.id_bien, d.date_visite, d.date_demande, d.message, d.statut_demande,
+                   b.titre as bien_titre, b.adresse as bien_adresse, b.ville as bien_ville,
+                   u.nom as locataire_nom, u.prenoms as locataire_prenoms, u.email as locataire_email, u.telephone as locataire_telephone,
+                   'locataire' as type_demandeur
             FROM demander_visite d
             JOIN bien b ON d.id_bien = b.id_bien
             JOIN locataire l ON d.id_locataire = l.id_locataire
             JOIN utilisateur u ON l.id_utilisateur = u.id_utilisateur
             WHERE d.id_proprietaire = $1
-            ORDER BY d.date_demande DESC
+            
+            UNION ALL
+            
+            SELECT dv.id_demande, dv.id_bien, dv.date_visite_souhaitee as date_visite, dv.date_demande, dv.message, dv.statut as statut_demande,
+                   b.titre as bien_titre, b.adresse as bien_adresse, b.ville as bien_ville,
+                   dv.nom as locataire_nom, dv.prenoms as locataire_prenoms, dv.email as locataire_email, dv.telephone as locataire_telephone,
+                   'visiteur' as type_demandeur
+            FROM demande_inscription_visiteur dv
+            JOIN bien b ON dv.id_bien = b.id_bien
+            WHERE b.id_proprietaire = $1
+            
+            ORDER BY date_demande DESC
         `;
         const result = await db.query(query, [id_proprietaire]);
         return result.rows;
@@ -101,10 +108,11 @@ class DemandeVisite {
     }
 
     // ============================================================
-    // RÉCUPÉRER UNE DEMANDE PAR SON ID
+    // RÉCUPÉRER UNE DEMANDE PAR SON ID (gère visiteurs et locataires)
     // ============================================================
     static async findById(id_demande) {
-        const query = `
+        // D'abord chercher dans les demandes de locataires
+        const queryLocataire = `
             SELECT d.*, 
                    b.titre as bien_titre,
                    b.adresse as bien_adresse,
@@ -114,7 +122,8 @@ class DemandeVisite {
                    ul.email as locataire_email,
                    ul.telephone as locataire_telephone,
                    up.nom as proprietaire_nom,
-                   up.prenoms as proprietaire_prenoms
+                   up.prenoms as proprietaire_prenoms,
+                   'locataire' as type_demandeur
             FROM demander_visite d
             JOIN bien b ON d.id_bien = b.id_bien
             JOIN locataire l ON d.id_locataire = l.id_locataire
@@ -123,8 +132,34 @@ class DemandeVisite {
             JOIN utilisateur up ON p.id_utilisateur = up.id_utilisateur
             WHERE d.id_demande = $1
         `;
-        const result = await db.query(query, [id_demande]);
-        return result.rows[0];
+        
+        let result = await db.query(queryLocataire, [id_demande]);
+        if (result.rows.length > 0) {
+            return result.rows[0];
+        }
+        
+        // Si pas trouvé, chercher dans les demandes de visiteurs
+        const queryVisiteur = `
+            SELECT dv.*,
+                   b.titre as bien_titre,
+                   b.adresse as bien_adresse,
+                   b.ville as bien_ville,
+                   dv.nom as locataire_nom,
+                   dv.prenoms as locataire_prenoms,
+                   dv.email as locataire_email,
+                   dv.telephone as locataire_telephone,
+                   u.nom as proprietaire_nom,
+                   u.prenoms as proprietaire_prenoms,
+                   'visiteur' as type_demandeur
+            FROM demande_inscription_visiteur dv
+            LEFT JOIN bien b ON dv.id_bien = b.id_bien
+            LEFT JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
+            LEFT JOIN utilisateur u ON p.id_utilisateur = u.id_utilisateur
+            WHERE dv.id_demande = $1
+        `;
+        
+        result = await db.query(queryVisiteur, [id_demande]);
+        return result.rows[0] || null;
     }
 
     // ============================================================

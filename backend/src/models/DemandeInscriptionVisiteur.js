@@ -5,23 +5,65 @@ class DemandeInscriptionVisiteur {
     // CRÉER UNE DEMANDE D'INSCRIPTION (visiteur)
     // ============================================================
     static async create(demandeData) {
-        const { nom, prenoms, email, telephone, message } = demandeData;
+        const { nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee } = demandeData;
 
         const query = `
-            INSERT INTO demande_inscription_visiteur (nom, prenoms, email, telephone, message, statut)
-            VALUES ($1, $2, $3, $4, $5, 'en_attente')
+            INSERT INTO demande_inscription_visiteur (nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee, statut)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente')
             RETURNING *
         `;
 
-        const values = [nom, prenoms, email, telephone || null, message || null];
+        const values = [nom, prenoms, email, telephone || null, message || null, id_bien || null, date_visite_souhaitee || null];
         const result = await db.query(query, values);
         return result.rows[0];
+    }
+
+    // Trouver toutes les demandes avec filtre optionnel
+    static async findAll(statut = null) {
+        try {
+            let query = `
+                SELECT 
+                    di.*,
+                    CASE 
+                        WHEN di.statut = 'en_attente' THEN 'En attente'
+                        WHEN di.statut = 'invite' THEN 'Invitée'
+                        WHEN di.statut = 'traitee' THEN 'Traînée'
+                        ELSE di.statut
+                    END as statut_libelle
+                FROM demande_inscription_visiteur di
+                ORDER BY di.date_demande DESC
+            `;
+            
+            let params = [];
+            if (statut) {
+                query = `
+                    SELECT 
+                        di.*,
+                        CASE 
+                            WHEN di.statut = 'en_attente' THEN 'En attente'
+                            WHEN di.statut = 'invite' THEN 'Invitée'
+                            WHEN di.statut = 'traitee' THEN 'Traînée'
+                            ELSE di.statut
+                        END as statut_libelle
+                    FROM demande_inscription_visiteur di
+                    WHERE di.statut = $1
+                    ORDER BY di.date_demande DESC
+                `;
+                params = [statut];
+            }
+            
+            const result = await db.query(query, params);
+            return result.rows;
+        } catch (error) {
+            console.error('Erreur findAll DemandeInscriptionVisiteur:', error);
+            throw error;
+        }
     }
 
     // ============================================================
     // RÉCUPÉRER TOUTES LES DEMANDES (admin/propriétaire)
     // ============================================================
-    static async findAll(statut = null) {
+    static async findAllAdmin(statut = null) {
         let query = `
             SELECT d.*, 
                    COUNT(i.id_invitation) as nb_invitations

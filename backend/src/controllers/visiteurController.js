@@ -8,38 +8,38 @@ const visiteurController = {
     // DEMANDE D'INSCRIPTION (visiteur)
     // ============================================================
     async demandeInscription(req, res) {
-        console.log('📥 Nouvelle demande d\'inscription reçue:', req.body);
+        console.log('?? Nouvelle demande d\'inscription reçue:', req.body);
         try {
             const { nom, prenoms, email, telephone, message } = req.body;
 
             if (!email) {
-                console.warn('⚠️ Tentative d\'inscription sans email');
+                console.warn('?? Tentative d\'inscription sans email');
                 return res.status(400).json({ message: 'L\'email est requis' });
             }
 
             // Vérifier si l'email existe déjà
-            console.log('🔍 Vérification de l\'existence de l\'email:', email);
+            console.log('?? Vérification de l\'existence de l\'email:', email);
             const existing = await DemandeInscriptionVisiteur.findByEmail(email);
             if (existing) {
-                console.log('❌ Email déjà existant');
+                console.log('?? Email déjà existant');
                 return res.status(400).json({ 
                     message: 'Une demande avec cet email existe déjà' 
                 });
             }
 
-            console.log('💾 Création de la demande...');
+            console.log('?? Création de la demande...');
             const demande = await DemandeInscriptionVisiteur.create({
                 nom, prenoms, email, telephone, message
             });
 
-            console.log('✅ Demande créée avec succès');
+            console.log('?? Demande créée avec succès');
             res.status(201).json({
                 message: 'Demande d\'inscription envoyée avec succès',
                 demande
             });
 
         } catch (error) {
-            console.error('🔥 Erreur CRITIQUE demande inscription:', error);
+            console.error('?? Erreur CRITIQUE demande inscription:', error);
             res.status(500).json({ 
                 message: 'Erreur serveur',
                 error: error.message,
@@ -49,21 +49,164 @@ const visiteurController = {
     },
 
     // ============================================================
-    // VOIR TOUTES LES DEMANDES (propriétaire/admin)
+    // DEMANDE DE VISITE POUR UN BIEN SPÉCIFIQUE (visiteur)
     // ============================================================
-    async getDemandes(req, res) {
-        console.log('📥 Récupération de toutes les demandes');
+    async demandeVisiteBien(req, res) {
+        console.log('?? Nouvelle demande de visite pour bien:', req.params.id_bien);
         try {
-            const { statut } = req.query;
-            const demandes = await DemandeInscriptionVisiteur.findAll(statut);
-            console.log(`✅ ${demandes.length} demandes récupérées`);
-            res.json(demandes);
+            const { id_bien } = req.params;
+            const { nom, prenoms, email, telephone, message, date_visite_souhaitee } = req.body;
+
+            if (!email) {
+                return res.status(400).json({ message: 'L\'email est requis' });
+            }
+
+            // Vérifier si le bien existe
+            const bien = await db.query('SELECT * FROM bien WHERE id_bien = $1', [id_bien]);
+            if (bien.rows.length === 0) {
+                return res.status(404).json({ message: 'Bien non trouvé' });
+            }
+
+            // Vérifier si une demande existe déjà pour ce bien et cet email
+            const existing = await db.query(
+                'SELECT * FROM demande_inscription_visiteur WHERE id_bien = $1 AND email = $2 AND statut = $3',
+                [id_bien, email, 'en_attente']
+            );
+            
+            if (existing.rows.length > 0) {
+                return res.status(400).json({ 
+                    message: 'Une demande de visite existe déjà pour ce bien' 
+                });
+            }
+
+            // Créer la demande de visite liée au bien avec la date souhaitée
+            const demande = await db.query(`
+                INSERT INTO demande_inscription_visiteur 
+                (nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee, statut, date_demande)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente', CURRENT_TIMESTAMP)
+                RETURNING *
+            `, [nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee || null]);
+
+            console.log('?? Demande de visite créée avec succès:', demande.rows[0]);
+            res.status(201).json({
+                message: 'Demande de visite envoyée avec succès',
+                demande: demande.rows[0]
+            });
+
         } catch (error) {
-            console.error('🔥 Erreur récupération demandes:', error);
+            console.error('?? Erreur demande visite bien:', error);
             res.status(500).json({ 
                 message: 'Erreur serveur',
-                error: error.message 
+                error: error.message
             });
+        }
+    },
+
+    // ============================================================
+    // VOIR TOUTES LES DEMANDES (propriétaire connecté) - VISITEURS + LOCATAIRES
+    // ============================================================
+    async getDemandes(req, res) {
+        console.log('Récupération des demandes pour propriétaire:', req.user.id);
+        try {
+            const { statut } = req.query;
+            
+            // Récupérer l'ID du propriétaire connecté
+            const proprietaireResult = await db.query(
+                'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
+                [req.user.id]
+            );
+            
+            if (proprietaireResult.rows.length === 0) {
+                console.log('Aucun propriétaire trouvé pour cet utilisateur');
+                return res.json([]);
+            }
+            
+            const id_proprietaire = proprietaireResult.rows[0].id_proprietaire;
+            console.log('Propriétaire ID:', id_proprietaire);
+            
+            // Récupérer les demandes des visiteurs pour ce propriétaire
+            let demandesVisiteurs = [];
+            try {
+                const queryVisiteurs = `
+                    SELECT d.*, 
+                           b.titre as bien_titre,
+                           b.adresse as bien_adresse,
+                           b.ville as bien_ville,
+                           'visiteur' as type_demandeur
+                    FROM demande_inscription_visiteur d
+                    LEFT JOIN bien b ON d.id_bien = b.id_bien
+                    WHERE b.id_proprietaire = $1
+                    ${statut ? 'AND d.statut = $2' : ''}
+                    ORDER BY d.date_demande DESC
+                `;
+                
+                const paramsVisiteurs = statut ? [id_proprietaire, statut] : [id_proprietaire];
+                const resultVisiteurs = await db.query(queryVisiteurs, paramsVisiteurs);
+                demandesVisiteurs = resultVisiteurs.rows;
+            } catch (error) {
+                console.log('Erreur récupération demandes visiteurs:', error.message);
+            }
+            
+            // Récupérer les demandes de visite des locataires pour ce propriétaire
+            let demandesLocataires = [];
+            try {
+                const queryLocataires = `
+                    SELECT 
+                        dv.*,
+                        u.nom as locataire_nom,
+                        u.prenoms as locataire_prenoms,
+                        u.email as locataire_email,
+                        b.titre as bien_titre,
+                        b.adresse as bien_adresse,
+                        b.ville as bien_ville,
+                        CASE 
+                            WHEN dv.statut_demande = 'en_attente' THEN 'En attente'
+                            WHEN dv.statut_demande = 'acceptee' THEN 'Acceptée'
+                            WHEN dv.statut_demande = 'refusee' THEN 'Refusée'
+                            ELSE dv.statut_demande
+                        END as statut_libelle,
+                        'locataire' as type_demandeur
+                    FROM demander_visite dv
+                    LEFT JOIN utilisateur u ON dv.id_locataire = u.id_utilisateur
+                    LEFT JOIN bien b ON dv.id_bien = b.id_bien
+                    WHERE dv.id_proprietaire = $1
+                    ${statut ? 'AND dv.statut_demande = $2' : ''}
+                    ORDER BY dv.date_demande DESC
+                `;
+                
+                const params = statut ? [id_proprietaire, statut] : [id_proprietaire];
+                const resultLocataires = await db.query(queryLocataires, params);
+                demandesLocataires = resultLocataires.rows;
+            } catch (error) {
+                console.log('Table demander_visite non trouvée ou vide:', error.message);
+            }
+            
+            // Ajouter le type demandeur pour les demandes visiteur
+            const demandesVisiteursFormatees = demandesVisiteurs.map(demande => ({
+                ...demande,
+                type_demandeur: 'visiteur',
+                locataire_nom: demande.nom,
+                locataire_prenoms: demande.prenoms,
+                locataire_email: demande.email,
+                locataire_telephone: demande.telephone,
+                statut_libelle: demande.statut === 'en_attente' ? 'En attente' : 
+                              demande.statut === 'acceptee' ? 'Acceptée' : 
+                              demande.statut === 'refusee' ? 'Refusée' : demande.statut
+            }));
+            
+            // Combiner toutes les demandes
+            const toutesDemandes = [...demandesVisiteursFormatees, ...demandesLocataires];
+            
+            // Trier par date de demande
+            toutesDemandes.sort((a, b) => new Date(b.date_demande || b.date_inscription) - new Date(a.date_demande || a.date_inscription));
+            
+            console.log('Demandes récupérées:', demandesVisiteursFormatees.length, 'visiteurs +', demandesLocataires.length, 'locataires =', toutesDemandes.length, 'total');
+            
+            res.json(toutesDemandes);
+
+        } catch (error) {
+            console.error('Erreur récupération demandes:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
         }
     },
 
@@ -125,7 +268,7 @@ const visiteurController = {
 
             // Ici, tu enverrais un email avec le lien d'invitation
             const invitationUrl = `http://localhost:5173/register-from-invite?token=${invitation.token}`;
-            console.log('🔗 Lien d\'invitation:', invitationUrl);
+            console.log('?? Lien d\'invitation:', invitationUrl);
 
             res.status(201).json({
                 message: 'Invitation envoyée avec succès',
@@ -243,10 +386,10 @@ const visiteurController = {
     },
 
     // ============================================================
-    // VOIR LES DEMANDES EN ATTENTE (pour la page inviter visiteur)
+    // VOIR LES DEMANDES EN ATTENTE (pour la page inviter visiteur) - CORRIGÉ
     // ============================================================
     async getDemandesEnAttente(req, res) {
-        console.log('📥 Récupération des demandes en attente pour propriétaire:', req.user.id);
+        console.log('?? Récupération des demandes en attente pour propriétaire:', req.user.id);
         
         try {
             // En mode démo (pool is null), on court-circuite la vérification réelle
@@ -260,27 +403,30 @@ const visiteurController = {
                 );
 
                 if (proprietaire.rows.length === 0) {
-                    console.warn('⚠️ Utilisateur non reconnu comme propriétaire:', req.user.id);
+                    console.warn('?? Utilisateur non reconnu comme propriétaire:', req.user.id);
                     return res.status(403).json({ 
                         message: 'Seul un propriétaire peut voir les demandes en attente' 
                     });
                 }
+
+                // Récupérer les demandes en attente POUR CE PROPRIÉTAIRE UNIQUEMENT
+                const demandes = await db.query(`
+                    SELECT 
+                        di.*,
+                        b.titre as bien_titre,
+                        'visiteur' as type_demandeur
+                    FROM demande_inscription_visiteur di
+                    LEFT JOIN bien b ON di.id_bien = b.id_bien
+                    WHERE di.statut = 'en_attente' AND b.id_proprietaire = $1
+                    ORDER BY di.date_demande DESC
+                `, [proprietaire.rows[0].id_proprietaire]);
+
+                console.log(`?? ${demandes.rows.length} demandes en attente trouvées pour ce propriétaire`);
+                res.json({ demandes: demandes.rows });
             }
 
-            // Récupérer les demandes en attente
-            const demandes = await db.query(`
-                SELECT 
-                    di.*
-                FROM demande_inscription_visiteur di
-                WHERE di.statut = 'en_attente'
-                ORDER BY di.date_demande DESC
-            `);
-
-            console.log(`✅ ${demandes.rows.length} demandes en attente trouvées`);
-            res.json({ demandes: demandes.rows });
-
         } catch (error) {
-            console.error('🔥 Erreur récupération demandes en attente:', error);
+            console.error('?? Erreur récupération demandes en attente:', error);
             res.status(500).json({ 
                 message: 'Erreur serveur',
                 error: error.message 
@@ -392,8 +538,8 @@ const visiteurController = {
                 html: `<p>Bonjour <b>${prenoms}</b>,</p><p>Votre propriétaire vous invite à rejoindre <b>ImmoGest</b>.</p><p>Veuillez cliquer sur le bouton ci-dessous pour confirmer votre compte et choisir votre mot de passe :</p><a href="${confirmationUrl}" style="padding: 10px 20px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 5px;">Confirmer mon compte</a>`,
             });
 
-            console.log("📧 Message envoyé: %s", info.messageId);
-            console.log("🔗 URL de visualisation de l'email: %s", nodemailer.getTestMessageUrl(info));
+            console.log("?? Message envoyé: %s", info.messageId);
+            console.log("?? URL de visualisation de l'email: %s", nodemailer.getTestMessageUrl(info));
 
             res.json({
                 message: 'Invitation envoyée avec succès',
@@ -459,6 +605,98 @@ const visiteurController = {
 
         } catch (error) {
             console.error('Erreur confirmation invitation:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // DASHBOARD VISITEUR (récupérer les demandes par email)
+    // ============================================================
+    async getVisitorDashboardData(req, res) {
+        try {
+            const { email } = req.query;
+            if (!email) return res.status(400).json({ message: "L'email est requis" });
+
+            const requests = await db.query(`
+                SELECT di.*, b.titre as bien_titre, b.ville as bien_ville, b.adresse as bien_adresse,
+                       p.nom as proprietaire_nom, p.prenoms as proprietaire_prenoms, u.email as proprietaire_email
+                FROM demande_inscription_visiteur di
+                LEFT JOIN bien b ON di.id_bien = b.id_bien
+                LEFT JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
+                LEFT JOIN utilisateur u ON p.id_utilisateur = u.id_utilisateur
+                WHERE di.email = $1
+                ORDER BY di.date_demande DESC
+            `, [email]);
+
+            res.json(requests.rows);
+        } catch (error) {
+            console.error('Erreur dashboard visiteur:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // MESSAGERIE VISITEUR (récupérer les messages)
+    // ============================================================
+    async getVisitorMessages(req, res) {
+        try {
+            const { demandeId } = req.params;
+
+            // Récupérer les messages liés à cette demande spécifique
+            const messages = await db.query(`
+                SELECT m.*, 
+                       u.nom as proprietaire_nom, u.prenoms as proprietaire_prenoms, u.email as proprietaire_email
+                FROM messages m
+                LEFT JOIN bien b ON m.id_bien = b.id_bien
+                LEFT JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
+                LEFT JOIN utilisateur u ON p.id_utilisateur = u.id_utilisateur
+                WHERE m.id_demande = $1
+                ORDER BY m.date_envoi ASC
+            `, [demandeId]);
+
+            const visitorInfoResult = await db.query(`
+                SELECT di.*, b.titre as bien_titre,
+                       u.nom as proprietaire_nom, u.prenoms as proprietaire_prenoms, u.email as proprietaire_email
+                FROM demande_inscription_visiteur di
+                LEFT JOIN bien b ON di.id_bien = b.id_bien
+                LEFT JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
+                LEFT JOIN utilisateur u ON p.id_utilisateur = u.id_utilisateur
+                WHERE di.id_demande = $1
+            `, [demandeId]);
+
+            res.json({
+                messages: messages.rows,
+                visitorInfo: visitorInfoResult.rows[0]
+            });
+        } catch (error) {
+            console.error('Erreur messages visiteur:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // MESSAGERIE VISITEUR (envoyer un message)
+    // ============================================================
+    async sendVisitorMessage(req, res) {
+        try {
+            const { demandeId } = req.params;
+            const { contenu, expediteur_type } = req.body;
+
+            const demande = await db.query('SELECT * FROM demande_inscription_visiteur WHERE id_demande = $1', [demandeId]);
+            if (demande.rows.length === 0) return res.status(404).json({ message: 'Demande non trouvée' });
+
+            const { id_bien, email } = demande.rows[0];
+
+            // On insère dans la table messages
+            const newMessage = await db.query(`
+                INSERT INTO messages (contenu, id_bien, date_envoi, expediteur_type, id_demande, id_expediteur)
+                VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4, 0)
+                RETURNING *
+            `, [contenu, id_bien, expediteur_type, demandeId]);
+
+            res.status(201).json({ message: newMessage.rows[0] });
+        } catch (error) {
+            console.error('Erreur envoi message visiteur:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },

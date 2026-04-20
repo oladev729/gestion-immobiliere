@@ -15,15 +15,26 @@ const HomePage = () => {
   const [loadingPhotos, setLoadingPhotos] = useState(false);
 
   const fetchBiens = async () => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (filtres.ville) params.append("ville", filtres.ville);
-    if (filtres.type_bien) params.append("type_bien", filtres.type_bien);
-    if (filtres.prix_max) params.append("prix_max", filtres.prix_max);
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filtres.ville) params.append("ville", filtres.ville);
+      if (filtres.type_bien) params.append("type_bien", filtres.type_bien);
+      if (filtres.prix_max) params.append("prix_max", filtres.prix_max);
 
-    const res = await api.get(`/biens/disponibles?${params.toString()}`);
-    setBiens(res.data);
-    setLoading(false);
+      const res = await api.get(`/biens/disponibles?${params.toString()}`);
+      if (Array.isArray(res.data)) {
+        setBiens(res.data);
+      } else {
+        console.error("Format de réponse invalide:", res.data);
+        setBiens([]);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des biens:", error);
+      setBiens([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -211,12 +222,16 @@ const HomePage = () => {
                     >
                       {bien.photo_principale ? (
                         <img
-                          src={`http://127.0.0.1:5055${bien.photo_principale}`}
+                          src={`${api.defaults.baseURL.replace('/api', '')}${bien.photo_principale}`}
                           alt={bien.titre}
                           style={{
                             width: "100%",
                             height: 200,
                             objectFit: "cover",
+                          }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "https://images.unsplash.com/photo-1582408921715-18e7806365c1?w=400&q=80";
                           }}
                         />
                       ) : (
@@ -483,9 +498,13 @@ const HomePage = () => {
                     selectedBien.photos.map((p, idx) => (
                       <img 
                         key={idx} 
-                        src={`http://127.0.0.1:5055${p.url_photobien}`} 
+                        src={`${api.defaults.baseURL.replace('/api', '')}${p.url_photobien}`} 
                         alt={`Photo ${idx}`} 
-                        style={{ width: '100%', height: '300px', objectFit: 'cover', cursor: 'zoom-in' }} 
+                        style={{ width: '100%', height: '300px', objectFit: 'cover', cursor: 'zoom-in' }}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://images.unsplash.com/photo-1582408921715-18e7806365c1?w=400&q=80";
+                        }}
                       />
                     ))
                   ) : (
@@ -526,8 +545,8 @@ const HomePage = () => {
                           {selectedBien.meuble && <li><i className="bi bi-check-circle me-2"></i> Meublé</li>}
                         </ul>
                         
-                        <Link to="/register/role" className="btn btn-primary w-100 mt-4 fw-bold p-3" style={{ borderRadius: '12px' }}>
-                          S'inscrire pour visiter
+                        <Link to={`/visitor-request?id_bien=${selectedBien.id_bien}&titre=${encodeURIComponent(selectedBien.titre)}`} className="btn btn-primary w-100 mt-4 fw-bold p-3" style={{ borderRadius: '12px' }}>
+                          Demander une visite
                         </Link>
                       </div>
                     </div>

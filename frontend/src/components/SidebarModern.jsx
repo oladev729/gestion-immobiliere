@@ -4,80 +4,26 @@ import { AuthContext } from '../context/AuthContext';
 import '../styles/design-system.css';
 
 const SidebarModern = () => {
-  const { user, logout } = React.useContext(AuthContext);
+  const { user } = React.useContext(AuthContext);
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const ownerLinks = [
-    { 
-      name: 'Tableau de bord', 
-      path: '/owner-dashboard', 
-      icon: '🏠',
-      description: 'Vue d\'ensemble'
-    },
-    { 
-      name: 'Mes Biens', 
-      path: '/owner/properties', 
-      icon: '🏢',
-      description: 'Gérer vos propriétés'
-    },
-    { 
-      name: 'Contrats', 
-      path: '/owner/contracts', 
-      icon: '📄',
-      description: 'Baux locatifs'
-    },
-    { 
-      name: 'Maintenance', 
-      path: '/owner/maintenance', 
-      icon: '🔧',
-      description: 'Demandes de maintenance'
-    },
-    { 
-      name: 'Visites', 
-      path: '/owner/visits', 
-      icon: '📅',
-      description: 'Demandes de visite'
-    },
-    { 
-      name: 'Paiements', 
-      path: '/owner/payments', 
-      icon: '💰',
-      description: 'Suivi des loyers'
-    },
-    { 
-      name: 'Inviter Visiteur', 
-      path: '/owner/inviter-visiteur', 
-      icon: '👤+',
-      description: 'Gérer les nouvelles demandes'
-    },
+    { name: 'Tableau de bord', path: '/owner-dashboard', description: 'Vue d\'ensemble' },
+    { name: 'Mes Biens', path: '/owner/properties', description: 'Gérer vos propriétés' },
+    { name: 'Contrats', path: '/owner/contracts', description: 'Baux locatifs' },
+    { name: 'Maintenance', path: '/owner/maintenance', description: 'Demandes de maintenance' },
+    { name: 'Visites', path: '/owner/visits', description: 'Demandes de visite' },
+    { name: 'Paiements', path: '/owner/payments', description: 'Suivi des loyers' },
+    { name: 'Messagerie', path: '/messaging', description: 'Discuter avec les visiteurs' },
+    { name: 'Inviter Visiteur', path: '/owner/inviter-visiteur', description: 'Gérer les nouvelles demandes' },
   ];
 
   const tenantLinks = [
-    { 
-      name: 'Recherche', 
-      path: '/tenant/properties', 
-      icon: '🔍',
-      description: 'Trouver un bien'
-    },
-    { 
-      name: 'Mes Locations', 
-      path: '/tenant/rentals', 
-      icon: '🔑',
-      description: 'Mes contrats'
-    },
-    { 
-      name: 'Signaler', 
-      path: '/tenant/report', 
-      icon: '⚠️',
-      description: 'Problèmes et maintenance'
-    },
-    { 
-      name: 'Paiements', 
-      path: '/tenant/payment', 
-      icon: '💳',
-      description: 'Payer mon loyer'
-    },
+    { name: 'Recherche', path: '/tenant/properties', description: 'Trouver un bien' },
+    { name: 'Mes Locations', path: '/tenant/rentals', description: 'Mes contrats' },
+    { name: 'Signaler', path: '/tenant/report', description: 'Problèmes et maintenance' },
+    { name: 'Paiements', path: '/tenant/payment', description: 'Payer mon loyer' },
   ];
 
   const links = user?.type === 'proprietaire' || user?.type_utilisateur === 'proprietaire' 
@@ -93,9 +39,6 @@ const SidebarModern = () => {
       {/* Header */}
       <div className="sidebar-header">
         <div className="logo-section">
-          <div className="logo-icon">
-            🏢
-          </div>
           {!isCollapsed && (
             <div className="logo-text animate-fade-in">
               <h1 className="logo-title">ImmoGest</h1>
@@ -107,8 +50,9 @@ const SidebarModern = () => {
           className="collapse-btn"
           onClick={() => setIsCollapsed(!isCollapsed)}
           aria-label={isCollapsed ? "Développer" : "Réduire"}
+          style={{ fontSize: '0.8rem', fontWeight: '700', textDecoration: 'none' }}
         >
-          {isCollapsed ? '→' : '←'}
+          {isCollapsed ? 'MENU' : 'REDUIRE'}
         </button>
       </div>
 
@@ -133,18 +77,16 @@ const SidebarModern = () => {
                     to={link.path}
                     className={`nav-link ${isActive ? 'active' : ''}`}
                     title={isCollapsed ? `${link.name} - ${link.description}` : ''}
+                    style={{ textDecoration: 'none', outline: 'none', border: 'none' }}
                   >
-                    <span className="nav-icon">
-                      {link.icon}
-                    </span>
                     {!isCollapsed && (
                       <div className="nav-content">
                         <span className="nav-text">{link.name}</span>
                         <span className="nav-description">{link.description}</span>
                       </div>
                     )}
-                    {isActive && !isCollapsed && (
-                      <div className="nav-indicator" />
+                    {isCollapsed && (
+                       <span className="nav-text-collapsed">{link.name[0]}</span>
                     )}
                   </NavLink>
                 </li>
@@ -154,34 +96,7 @@ const SidebarModern = () => {
         </div>
       </nav>
 
-      {/* User Section */}
-      <div className="sidebar-footer">
-        <div className="user-section">
-          <div className="user-avatar">
-            <div className="avatar-circle">
-              {user?.prenoms?.[0] || 'U'}
-            </div>
-          </div>
-          {!isCollapsed && (
-            <div className="user-info animate-fade-in">
-              <div className="user-name">{user?.prenoms} {user?.nom}</div>
-              <div className="user-role">
-                {user?.type || user?.type_utilisateur}
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <button 
-          onClick={logout}
-          className="logout-btn"
-          title={isCollapsed ? "Se déconnecter" : ""}
-        >
-          🚪 {!isCollapsed && <span>Déconnexion</span>}
-        </button>
-      </div>
-
-      <style jsx>{`
+      <style>{`
         .sidebar-modern {
           width: ${isCollapsed ? '80px' : '280px'};
           height: 100vh;
@@ -210,15 +125,6 @@ const SidebarModern = () => {
           display: flex;
           align-items: center;
           gap: 1rem;
-        }
-
-        .logo-icon {
-          flex-shrink: 0;
-          font-size: 2rem;
-        }
-
-        .logo-text {
-          flex: 1;
         }
 
         .logo-title {
@@ -286,35 +192,29 @@ const SidebarModern = () => {
         .nav-link {
           display: flex;
           align-items: center;
-          gap: 1rem;
-          padding: 0.75rem;
+          padding: 0.75rem 1rem;
           border-radius: 0.75rem;
-          text-decoration: none;
+          text-decoration: none !important;
           color: #6b7280;
           transition: all 250ms ease-in-out;
           position: relative;
           min-height: 44px;
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
         }
 
         .nav-link:hover {
           background: #f3f4f6;
           color: #1f2937;
+          text-decoration: none !important;
         }
 
         .nav-link.active {
           background: linear-gradient(135deg, #dbeafe, #bfdbfe);
           color: #1d4ed8;
-          font-weight: 500;
-        }
-
-        .nav-icon {
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 24px;
-          height: 24px;
-          font-size: 1.2rem;
+          font-weight: 600;
+          text-decoration: none !important;
         }
 
         .nav-content {
@@ -324,9 +224,15 @@ const SidebarModern = () => {
 
         .nav-text {
           display: block;
-          font-size: 0.875rem;
+          font-size: 0.95rem;
           font-weight: 500;
           line-height: 1.2;
+        }
+
+        .nav-text-collapsed {
+           font-size: 1.2rem;
+           font-weight: 700;
+           color: #3b82f6;
         }
 
         .nav-description {
@@ -337,86 +243,6 @@ const SidebarModern = () => {
           margin-top: 2px;
         }
 
-        .nav-indicator {
-          position: absolute;
-          right: 0.75rem;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 4px;
-          height: 20px;
-          background: #2563eb;
-          border-radius: 9999px;
-        }
-
-        .sidebar-footer {
-          padding: 1.5rem;
-          border-top: 1px solid var(--gray-200);
-          margin-top: auto;
-        }
-
-        .user-section {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .user-avatar {
-          flex-shrink: 0;
-        }
-
-        .avatar-circle {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: 600;
-          font-size: 0.875rem;
-        }
-
-        .user-info {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .user-name {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #1f2937;
-          line-height: 1.2;
-        }
-
-        .user-role {
-          font-size: 0.75rem;
-          color: #6b7280;
-          line-height: 1.2;
-        }
-
-        .logout-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          width: 100%;
-          padding: 0.75rem;
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          border-radius: 0.75rem;
-          color: #dc2626;
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 250ms ease-in-out;
-          justify-content: center;
-        }
-
-        .logout-btn:hover {
-          background: #fee2e2;
-          border-color: #fca5a5;
-        }
 
         /* Responsive */
         @media (max-width: 768px) {

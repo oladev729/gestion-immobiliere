@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { SearchProvider, useSearch } from './context/SearchContext';
 import SidebarModern from './components/SidebarModern';
 import TopHeader from './components/TopHeader';
 import Login from './pages/Login';
@@ -27,6 +28,9 @@ import TenantRentals from './pages/tenant/TenantRentals';
 import ReportIssue from './pages/tenant/ReportIssue';
 import TenantPayment from './pages/tenant/TenantPayment';
 import HomePage from './pages/HomePage';
+import Messaging from './pages/Messaging';
+import VisitorMessaging from './pages/VisitorMessaging';
+import VisitorDashboard from './pages/VisitorDashboard';
 
 
 const PublicRoute = ({ children }) => {
@@ -38,13 +42,14 @@ const PublicRoute = ({ children }) => {
 };
 const Layout = ({ children }) => {
     const { user } = useContext(AuthContext);
+    const { setSearchTerm } = useSearch();
     if (!user) return <Navigate to="/login" />;
 
     return (
         <div className="main-layout">
             <SidebarModern />
             <div className="main-content">
-                <TopHeader />
+                <TopHeader onSearch={setSearchTerm} />
                 <div className="content-container">
                     {children}
                 </div>
@@ -57,33 +62,43 @@ const Layout = ({ children }) => {
 function App() {
     return (
         <AuthProvider>
-            <Router>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register/role" element={<PublicRoute><RegisterStepRole /></PublicRoute>} />
-                     <Route path="/visitor-request" element={<VisitorRequest />} />
-                     <Route path="/confirm-invitation" element={<RegisterFromInvite />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/" element={<PublicRoute><HomePage /></PublicRoute>} />
+            <SearchProvider>
+                <Router>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register/role" element={<PublicRoute><RegisterStepRole /></PublicRoute>} />
+                         <Route path="/visitor-request" element={<VisitorRequest />} />
+                         <Route path="/visitor/dashboard" element={<VisitorDashboard />} />
+                         <Route path="/visitor/messaging" element={<VisitorMessaging />} />
+                          <Route path="/confirm-invitation" element={<RegisterFromInvite />} />
+                         <Route path="/register" element={<Register />} />
+                         <Route path="/" element={<PublicRoute><HomePage /></PublicRoute>} />
 
-                    {/* Routes Propriétaire */}
-                    <Route path="/owner-dashboard" element={<Layout><OwnerDashboardModern /></Layout>} />
-                    <Route path="/owner/inviter-visiteur" element={<Layout><InviterVisiteur /></Layout>} />
-                    <Route path="/owner/properties" element={<Layout><OwnerProperties /></Layout>} />
-                    <Route path="/owner/contracts" element={<Layout><Contracts /></Layout>} />
-                    <Route path="/owner/maintenance" element={<Layout><MaintenanceRecues /></Layout>} />
-                    <Route path="/owner/visits" element={<Layout><VisitRequests /></Layout>} />
-                    <Route path="/owner/payments" element={<Layout><OwnerPayments /></Layout>} />
+                        {/* Routes Propriétaire */}
+                        <Route path="/owner-dashboard" element={<Layout><OwnerDashboardModern /></Layout>} />
+                        <Route path="/owner/inviter-visiteur" element={<Layout><InviterVisiteur /></Layout>} />
+                        <Route path="/owner/properties" element={<Layout><OwnerProperties /></Layout>} />
+                        <Route path="/owner/contracts" element={<Layout><Contracts /></Layout>} />
+                        <Route path="/owner/maintenance" element={<Layout><MaintenanceRecues /></Layout>} />
+                        <Route path="/owner/visits" element={<Layout><VisitRequests /></Layout>} />
+                        <Route path="/owner/payments" element={<Layout><OwnerPayments /></Layout>} />
+                        <Route path="/messaging" element={
+                            <AuthContext.Consumer>
+                                {({ user }) => user ? <Layout><Messaging /></Layout> : <Messaging />}
+                            </AuthContext.Consumer>
+                        } />
+                        <Route path="/messaging/:userId?" element={<Layout><Messaging /></Layout>} />
 
-                    {/* Routes Locataire */}
-                    <Route path="/tenant/properties" element={<Layout><AvailableProperties /></Layout>} />
-                    <Route path="/tenant/rentals" element={<Layout><TenantRentals /></Layout>} />
-                    <Route path="/tenant/report" element={<Layout><ReportIssue /></Layout>} />
-                    <Route path="/tenant/payment" element={<Layout><TenantPayment /></Layout>} />
+                        {/* Routes Locataire */}
+                        <Route path="/tenant/properties" element={<Layout><AvailableProperties /></Layout>} />
+                        <Route path="/tenant/rentals" element={<Layout><TenantRentals /></Layout>} />
+                        <Route path="/tenant/report" element={<Layout><ReportIssue /></Layout>} />
+                        <Route path="/tenant/payment" element={<Layout><TenantPayment /></Layout>} />
 
-                    <Route path="*" element={<Navigate to="/login" />} />
-                </Routes>
-            </Router>
+                        <Route path="*" element={<Navigate to="/login" />} />
+                    </Routes>
+                </Router>
+            </SearchProvider>
         </AuthProvider>
     );
 }

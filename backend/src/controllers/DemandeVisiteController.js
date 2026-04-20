@@ -133,7 +133,18 @@ const demandeVisiteController = {
                 return res.status(404).json({ message: 'Demande non trouvée' });
             }
 
-            // Vérifier que l'utilisateur est le propriétaire
+            // Pour les visiteurs, pas de vérification de propriétaire (pas de table proprietaire associée)
+            if (demande.type_demandeur === 'visiteur') {
+                // Mettre à jour le statut pour les visiteurs
+                await db.query(
+                    'UPDATE demande_inscription_visiteur SET statut = $1 WHERE id_demande = $2',
+                    ['acceptee', id]
+                );
+                
+                return res.json({ message: 'Demande de visiteur acceptée avec succès' });
+            }
+
+            // Pour les locataires, vérifier que l'utilisateur est le propriétaire
             const proprietaire = await db.query(
                 'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
                 [req.user.id]
@@ -156,7 +167,7 @@ const demandeVisiteController = {
             const demandeAcceptee = await DemandeVisite.accepter(id);
 
             res.json({
-                message: 'Demande acceptée avec succès',
+                message: 'Demande acceptée',
                 demande: demandeAcceptee
             });
 
@@ -177,6 +188,17 @@ const demandeVisiteController = {
             
             if (!demande) {
                 return res.status(404).json({ message: 'Demande non trouvée' });
+            }
+
+            // Pour les visiteurs, pas de vérification de propriétaire (pas de table proprietaire associée)
+            if (demande.type_demandeur === 'visiteur') {
+                // Mettre à jour le statut pour les visiteurs
+                await db.query(
+                    'UPDATE demande_inscription_visiteur SET statut = $1 WHERE id_demande = $2',
+                    ['refusee', id]
+                );
+                
+                return res.json({ message: 'Demande de visiteur refusée avec succès' });
             }
 
             const proprietaire = await db.query(

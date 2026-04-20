@@ -342,7 +342,7 @@ p { margin-bottom: var(--space-md); }
 }
 
 .card-body-modern {
-  padding: var(--spacing-lg);
+  padding: var(--space-lg);
 }
 
 /* Formulaires modernes et standards */

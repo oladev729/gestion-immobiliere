@@ -56,26 +56,26 @@ export default function TenantPayment() {
   };
 
   const cardStyle = {
-    background: 'rgba(255,255,255,0.12)',
-    backdropFilter: 'blur(12px)',
+    background: '#ffffff',
     borderRadius: 16,
-    border: '1px solid rgba(255,255,255,0.2)',
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
     padding: 24,
     marginBottom: 24
   };
 
   const inputStyle = {
-    background: 'rgba(255,255,255,0.15)',
-    border: '1px solid rgba(255,255,255,0.3)',
+    background: '#f9fafb',
+    border: '1px solid #d1d5db',
     borderRadius: 8,
-    color: '#fff',
+    color: '#111827',
     padding: '10px 14px',
     width: '100%',
     marginBottom: 12
   };
 
   return (
-    <div style={{ padding: 24, color: '#fff' }}>
+    <div style={{ padding: 24, color: '#111827' }}>
       <h2 style={{ marginBottom: 24 }}>Effectuer un paiement</h2>
 
       {/* Formulaire paiement */}
@@ -130,10 +130,12 @@ export default function TenantPayment() {
 
           {message && (
             <div style={{
-              background: 'rgba(255,255,255,0.15)',
+              background: message.includes('Erreur') ? '#fef2f2' : '#f0fdf4',
+              color: message.includes('Erreur') ? '#991b1b' : '#166534',
               borderRadius: 8,
               padding: 10,
-              marginBottom: 12
+              marginBottom: 12,
+              border: `1px solid ${message.includes('Erreur') ? '#fecaca' : '#bbf7d0'}`
             }}>
               {message}
             </div>

@@ -12,6 +12,7 @@ router.post('/confirmer-invitation', authController.confirmerInvitation);
 
 // Routes protégées
 router.get('/profile', authenticateToken, authController.getProfile);
+router.put('/profile', authenticateToken, authController.updateProfile);
 router.post('/switch-type', authenticateToken, authController.switchType);
 router.post('/inviter-locataire', authenticateToken, authController.inviterLocataire);
 router.get('/connexions-stats', authenticateToken, authController.getConnexionsStats);

@@ -312,6 +312,41 @@ const authController = {
     },
 
     // ============================================================
+    // METTRE À JOUR LE PROFIL
+    // ============================================================
+    async updateProfile(req, res) {
+        try {
+            const { nom, prenoms, email, telephone } = req.body;
+            const userId = req.user.id;
+
+            // Vérifier si l'email est déjà pris par un autre utilisateur
+            if (email) {
+                const userWithEmail = await Utilisateur.findByEmail(email);
+                if (userWithEmail && userWithEmail.id_utilisateur !== userId) {
+                    return res.status(400).json({ message: 'Cet email est déjà utilisé par un autre compte.' });
+                }
+            }
+
+            const updatedUser = await Utilisateur.update(userId, { nom, prenoms, email, telephone });
+            
+            res.json({ 
+                message: 'Profil mis à jour avec succès', 
+                user: {
+                    id: updatedUser.id_utilisateur,
+                    nom: updatedUser.nom,
+                    prenoms: updatedUser.prenoms,
+                    email: updatedUser.email,
+                    telephone: updatedUser.telephone,
+                    type: updatedUser.type_utilisateur
+                }
+            });
+        } catch (error) {
+            console.error('Erreur updateProfile:', error);
+            res.status(500).json({ message: 'Erreur serveur lors de la mise à jour du profil' });
+        }
+    },
+
+    // ============================================================
     // CHANGER DE TYPE
     // ============================================================
     async switchType(req, res) {

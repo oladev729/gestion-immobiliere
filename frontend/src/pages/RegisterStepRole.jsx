@@ -30,11 +30,11 @@ const RegisterStepRole = () => {
         textAlign: "center",
       }}
     >
-      <p>
-      <h4 className="logo-immogest">ImmoGest</h4>
-      Ouvrir un compte gratuit 
-    <p>Créer de meilleures relations entre propriétaires et locataires !</p>  
-      </p>
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <h4 className="logo-immogest">ImmoGest</h4>
+        <p style={{ margin: 0 }}>Ouvrir un compte gratuit</p>
+        <p className="text-muted small" style={{ margin: 0 }}>Créer de meilleures relations entre propriétaires et locataires !</p>
+      </div>
 
       <div className="d-flex justify-content-center">
         <div

@@ -131,7 +131,7 @@ const VisitorInvitations = () => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 .container {
                     max-width: 1200px;
                 }

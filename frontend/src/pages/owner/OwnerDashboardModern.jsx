@@ -37,27 +37,25 @@ const OwnerDashboardModern = () => {
     }
   };
 
-  const StatCard = ({ title, value, change, icon, color = 'blue', isCurrency = false }) => {
+const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) => {
     const isPositive = change > 0;
     const changeColor = isPositive ? 'green' : 'red';
 
     const colorClasses = {
-      blue: 'from-blue-500 to-blue-600',
-      green: 'from-green-500 to-green-600',
-      purple: 'from-purple-500 to-purple-600',
-      orange: 'from-orange-500 to-orange-600'
+      blue: '#3b82f6',
+      green: '#10b981',
+      purple: '#8b5cf6',
+      orange: '#f59e0b'
     };
 
     return (
       <div className="stat-card animate-fade-in">
         <div className="stat-header">
-          <div className="stat-icon" style={{
-            background: `linear-gradient(135deg, ${colorClasses[color].replace('from-', '#').replace(' to-', ', #')})`
-          }}>
-            <span className="icon-text">{icon}</span>
+          <div className="stat-label-box" style={{ backgroundColor: colorClasses[color], color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '700' }}>
+            {title.toUpperCase()}
           </div>
           <div className="stat-change" style={{ color: `var(--${changeColor}-500)` }}>
-            {isPositive ? '↑' : '↓'} {Math.abs(change)}% vs semaine dernière
+            {isPositive ? '+' : '-'} {Math.abs(change)}%
           </div>
         </div>
         <div className="stat-value">
@@ -230,22 +228,20 @@ const OwnerDashboardModern = () => {
   const RelationIllustration = () => (
     <div className="relation-illustration">
       <div className="relation-entity">
-        <div className="entity-icon owner">👔</div>
+        <div className="entity-icon owner">P</div>
         <div className="entity-label">Propriétaire</div>
       </div>
       <div className="relation-link">
         <div className="link-item up">
-          <span className="link-text">🔑 Accès au Bien</span>
-          <div className="link-arrow">→</div>
+          <span className="link-text">Gestion</span>
         </div>
-        <div className="link-icon">🤝</div>
+        <div className="link-icon">Bail</div>
         <div className="link-item down">
-          <div className="link-arrow">←</div>
-          <span className="link-text">💶 Loyer & Contrat</span>
+          <span className="link-text">Paiement</span>
         </div>
       </div>
       <div className="relation-entity">
-        <div className="entity-icon tenant">👤</div>
+        <div className="entity-icon tenant">L</div>
         <div className="entity-label">Locataire</div>
       </div>
     </div>
@@ -259,7 +255,6 @@ const OwnerDashboardModern = () => {
           title="Revenus"
           value={stats.revenue}
           change={stats.revenueChange}
-          icon="💰"
           color="green"
           isCurrency={true}
         />
@@ -267,14 +262,12 @@ const OwnerDashboardModern = () => {
           title="Contrats"
           value={stats.orders}
           change={stats.ordersChange}
-          icon="📄"
           color="blue"
         />
         <StatCard
           title="Biens"
           value={stats.properties}
           change={0}
-          icon="🏢"
           color="purple"
         />
 
@@ -306,7 +299,7 @@ const OwnerDashboardModern = () => {
         </ChartCard>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .dashboard-modern {
           padding: 2rem;
           max-width: 1400px;

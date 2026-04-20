@@ -9,9 +9,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logger Global pour débugger la connexion
+// Logger Global pour débugger la connexion et les données
 app.use((req, res, next) => {
     console.log(`🌐 [${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+    if (req.method === 'POST') {
+        console.log('📦 Body reçu:', JSON.stringify(req.body, null, 2));
+    }
     next();
 });
 
@@ -72,5 +75,9 @@ app.use('/api/notifications', notificationRoutes);
 //  ROUTES DES VISITEURS
 const visiteurRoutes = require('./routes/visiteurRoutes');
 app.use('/api/visiteurs', visiteurRoutes);
+
+// ROUTES DES MESSAGES
+const messageRoutes = require('./routes/messageRoutes');
+app.use('/api/messages', messageRoutes);
 
 module.exports = app;
