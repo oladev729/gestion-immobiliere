@@ -39,7 +39,7 @@ const Sidebar = () => {
             </ul>
             <hr />
             <div className="dropdown">
-                <p className="mb-0">{user?.prenoms} ({user?.type || user?.type_utilisateur})</p>
+                <p className="mb-0">{user?.prenoms} (MENU)</p>
                 <button onClick={logout} className="btn btn-danger btn-sm mt-2 w-100">Déconnexion</button>
             </div>
         </div>

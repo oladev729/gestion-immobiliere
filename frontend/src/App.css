@@ -107,6 +107,28 @@ body {
 .input-blue::placeholder {
   color: #6c7abf;
 }
+
+/* Remplacement des icônes par des cloches de notification */
+.notification-error::before,
+.notification-success::before {
+  content: "??";
+  margin-right: 8px;
+  font-size: 1.2rem;
+}
+
+/* Styles pour les notifications */
+.notification-error {
+  background-color: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #991b1b !important;
+}
+
+.notification-success {
+  background-color: #ecfdf5 !important;
+  border: 1px solid #bbf7d0 !important;
+  color: #065f46 !important;
+}
+
 /* couleur principale déjà définie */
 :root {
   --primary-color: #0d6efd;

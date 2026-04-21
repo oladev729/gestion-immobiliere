@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
-import { useSearch } from '../../context/SearchContext';
+import { useSearch } from '../../context/SearchContext.jsx';
 
 const Contracts = () => {
     const { searchTerm } = useSearch();
@@ -176,8 +176,8 @@ const Contracts = () => {
     );
 
     return (
-        <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '2rem' }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '0.75rem' }}>
+            <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
 
             {successMsg && (
                 <div style={{ backgroundColor: '#ecfdf5', color: '#065f46', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', border: '1px solid #a7f3d0' }}>
@@ -190,15 +190,15 @@ const Contracts = () => {
                 </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: '#111827', margin: 0 }}>Gestion des Contrats</h1>
-                    <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>Créez et gérez les baux de location en toute sécurité.</p>
+                    <h1 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#111827', margin: 0 }}>Gestion des Contrats</h1>
+                    <p style={{ color: '#6b7280', marginTop: '0.25rem', fontSize: '0.75rem' }}>Créez et gérez les baux de location en toute sécurité.</p>
                 </div>
                 {formStep === 0 && (
                     <button
                         onClick={() => setFormStep(1)}
-                        style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '0.75rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(37,99,235,0.2)', textDecoration: 'none' }}
+                        style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '0.4rem 1rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 2px 4px rgba(37,99,235,0.2)', textDecoration: 'none' }}
                     >
                         Nouveau contrat
                     </button>
@@ -206,7 +206,7 @@ const Contracts = () => {
                 {formStep > 0 && (
                     <button
                         onClick={() => setFormStep(0)}
-                        style={{ backgroundColor: '#fff', color: '#374151', border: '1px solid #d1d5db', padding: '0.75rem 1.5rem', borderRadius: '0.75rem', fontWeight: '600', cursor: 'pointer' }}
+                        style={{ backgroundColor: '#fff', color: '#374151', border: '1px solid #d1d5db', padding: '0.4rem 1rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: '600', cursor: 'pointer' }}
                     >
                         Annuler
                     </button>
@@ -374,33 +374,33 @@ const Contracts = () => {
                         <table className="table table-hover mb-0">
                             <thead style={{ backgroundColor: '#f9fafb' }}>
                                 <tr>
-                                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Réf. Contrat</th>
-                                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Bien</th>
-                                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Locataire</th>
-                                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Loyer</th>
-                                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Période</th>
-                                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Statut</th>
-                                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Actions</th>
+                                    <th style={{ padding: '0.6rem 0.75rem', fontSize: '0.65rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Réf. Contrat</th>
+                                    <th style={{ padding: '0.6rem 0.75rem', fontSize: '0.65rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Bien</th>
+                                    <th style={{ padding: '0.6rem 0.75rem', fontSize: '0.65rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Locataire</th>
+                                    <th style={{ padding: '0.6rem 0.75rem', fontSize: '0.65rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Loyer</th>
+                                    <th style={{ padding: '0.6rem 0.75rem', fontSize: '0.65rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Période</th>
+                                    <th style={{ padding: '0.6rem 0.75rem', fontSize: '0.65rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Statut</th>
+                                    <th style={{ padding: '0.6rem 0.75rem', fontSize: '0.65rem', fontWeight: '600', color: '#374151', textTransform: 'uppercase' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody style={{ borderTop: '1px solid #e5e7eb' }}>
                                 {contratsFiltres.map(c => (
                                     <tr key={c.id_contact}>
-                                        <td style={{ padding: '1rem 1.5rem' }}><strong>{c.numero_contrat}</strong></td>
-                                        <td style={{ padding: '1rem 1.5rem' }}>{c.bien_titre}</td>
-                                        <td style={{ padding: '1rem 1.5rem' }}>
+                                        <td style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem' }}><strong>{c.numero_contrat}</strong></td>
+                                        <td style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem' }}>{c.bien_titre}</td>
+                                        <td style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem' }}>
                                             <div style={{ fontWeight: '500' }}>{c.locataire_prenoms} {c.locataire_nom}</div>
                                         </td>
-                                        <td style={{ padding: '1rem 1.5rem', fontWeight: '600', color: '#059669' }}>{Number(c.loyer_mensuel).toLocaleString()} FCFA</td>
-                                        <td style={{ padding: '1rem 1.5rem', fontSize: '0.875rem' }}>
+                                        <td style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem', fontWeight: '600', color: '#059669' }}>{Number(c.loyer_mensuel).toLocaleString()} FCFA</td>
+                                        <td style={{ padding: '0.5rem 0.75rem', fontSize: '0.7rem' }}>
                                             {new Date(c.date_debut).toLocaleDateString('fr-FR')} - {new Date(c.date_fin).toLocaleDateString('fr-FR')}
                                         </td>
-                                        <td style={{ padding: '1rem 1.5rem' }}>
+                                        <td style={{ padding: '0.5rem 0.75rem' }}>
                                             <span style={{ 
                                                 display: 'inline-block',
-                                                padding: '0.25rem 0.75rem', 
+                                                padding: '0.15rem 0.5rem', 
                                                 borderRadius: '9999px', 
-                                                fontSize: '0.75rem', 
+                                                fontSize: '0.65rem', 
                                                 fontWeight: '600',
                                                 backgroundColor: c.statut_contrat === 'actif' ? '#d1fae5' : '#f3f4f6', 
                                                 color: c.statut_contrat === 'actif' ? '#065f46' : '#374151',
@@ -409,15 +409,15 @@ const Contracts = () => {
                                                 {c.statut_contrat}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '1rem 1.5rem' }}>
-                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <td style={{ padding: '0.5rem 0.75rem' }}>
+                                            <div style={{ display: 'flex', gap: '0.4rem' }}>
                                                 <button onClick={() => handlePrint(c)}
-                                                    className="btn btn-sm btn-outline-primary" style={{ borderRadius: '0.5rem', fontWeight: '600', textDecoration: 'none' }}>
+                                                    className="btn btn-sm btn-outline-primary" style={{ borderRadius: '0.4rem', fontSize: '0.65rem', padding: '0.2rem 0.5rem', fontWeight: '600', textDecoration: 'none' }}>
                                                     Imprimer
                                                 </button>
                                                 {c.statut_contrat === 'actif' && (
                                                     <button onClick={() => handleTerminer(c.id_contact)}
-                                                        className="btn btn-sm btn-outline-danger" style={{ borderRadius: '0.5rem', fontWeight: '600' }}>
+                                                        className="btn btn-sm btn-outline-danger" style={{ borderRadius: '0.4rem', fontSize: '0.65rem', padding: '0.2rem 0.5rem', fontWeight: '600' }}>
                                                         Clôturer
                                                     </button>
                                                 )}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
-import { useSearch } from '../../context/SearchContext';
+import { useSearch } from '../../context/SearchContext.jsx';
 
 const OwnerProperties = () => {
     const { searchTerm } = useSearch();
@@ -144,8 +144,8 @@ const OwnerProperties = () => {
     );
 
     return (
-        <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '2rem' }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '0.75rem' }}>
+            <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
 
                 {successMsg && (
                     <div style={{ backgroundColor: '#ecfdf5', color: '#065f46', padding: '1rem', borderRadius: '0.75rem', marginBottom: '1.5rem', border: '1px solid #a7f3d0' }}>
@@ -158,17 +158,17 @@ const OwnerProperties = () => {
                     </div>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <div>
-                        <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: '#111827', margin: 0 }}>
+                        <h1 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#111827', margin: 0 }}>
                             {formStep === 0 ? 'Mes Biens' : isEditing ? 'Modifier le bien' : 'Ajouter un nouveau bien'}
                         </h1>
-                        <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>Gérez vos biens immobilier en toute simplicité.</p>
+                        <p style={{ color: '#6b7280', marginTop: '0.25rem', fontSize: '0.75rem' }}>Gérez vos biens immobilier en toute simplicité.</p>
                     </div>
                     {formStep === 0 && (
                         <button
                             onClick={openCreateForm}
-                            style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '0.75rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(37,99,235,0.2)', textDecoration: 'none' }}
+                            style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '0.4rem 1rem', borderRadius: '0.4rem', fontSize: '0.75rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 2px 4px rgba(37,99,235,0.2)', textDecoration: 'none' }}
                         >
                             Ajouter un bien
                         </button>
@@ -289,49 +289,49 @@ const OwnerProperties = () => {
                 )}
 
                 {formStep === 0 && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
                         {biensFiltres.map(bien => (
-                            <div key={bien.id_bien} style={{ backgroundColor: '#ffffff', borderRadius: '1rem', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', transition: 'transform 0.2s' }}>
-                                <div style={{ position: 'relative', height: '200px' }}>
+                            <div key={bien.id_bien} style={{ backgroundColor: '#ffffff', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'transform 0.2s' }}>
+                                <div style={{ position: 'relative', height: '140px' }}>
                                     {bien.photos?.[0] ? (
                                         <img src={`http://127.0.0.1:5055${bien.photos[0].url_photobien}`} alt={bien.titre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
-                                        <div style={{ width: '100%', height: '100%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>Pas de photo</div>
+                                        <div style={{ width: '100%', height: '100%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.7rem' }}>Pas de photo</div>
                                     )}
-                                    <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+                                    <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}>
                                         <span style={{
                                             backgroundColor: bien.statut === 'disponible' ? '#ecfdf5' : '#fff7ed',
                                             color: bien.statut === 'disponible' ? '#065f46' : '#9a3412',
-                                            padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase'
+                                            padding: '0.15rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: '700', textTransform: 'uppercase'
                                         }}>
                                             {bien.statut}
                                         </span>
                                     </div>
                                 </div>
-                                <div style={{ padding: '1.5rem' }}>
-                                    <h3 style={{ fontSize: '1.125rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>{bien.titre}</h3>
-                                    <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '1rem' }}>
-                                        <i className="bi bi-geo-alt" style={{ marginRight: '0.4rem' }}></i>
+                                <div style={{ padding: '0.75rem' }}>
+                                    <h3 style={{ fontSize: '0.9rem', fontWeight: '700', color: '#111827', marginBottom: '0.25rem' }}>{bien.titre}</h3>
+                                    <p style={{ color: '#6b7280', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+                                        <i className="bi bi-geo-alt" style={{ marginRight: '0.25rem' }}></i>
                                         {bien.adresse}, {bien.ville}
                                     </p>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                        <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#2563eb' }}>{Number(bien.loyer_mensuel).toLocaleString()} FCFA <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6b7280' }}>/mois</span></span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                        <span style={{ fontSize: '1rem', fontWeight: '800', color: '#2563eb' }}>{Number(bien.loyer_mensuel).toLocaleString()} FCFA <span style={{ fontSize: '0.7rem', fontWeight: '500', color: '#6b7280' }}>/mois</span></span>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#4b5563', padding: '1rem 0', borderTop: '1px solid #f1f5f9' }}>
+                                    <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: '#4b5563', padding: '0.5rem 0', borderTop: '1px solid #f1f5f9' }}>
                                         <span><i className="bi bi-arrows-fullscreen"></i> {bien.superficie} m²</span>
-                                        <span><i className="bi bi-door-open"></i> {bien.nombre_pieces} pièces</span>
+                                        <span><i className="bi bi-door-open"></i> {bien.nombre_pieces} p.</span>
                                     </div>
                                 </div>
-                                <div style={{ padding: '1.25rem 1.5rem', backgroundColor: '#f8fafc', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '0.5rem' }}>
+                                <div style={{ padding: '0.5rem 0.75rem', backgroundColor: '#f8fafc', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '0.4rem' }}>
                                     <button 
                                         onClick={() => handleEdit(bien)}
-                                        style={{ flex: 1, padding: '0.6rem', borderRadius: '0.5rem', border: '1px solid #dbeafe', backgroundColor: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', textDecoration: 'none' }}
+                                        style={{ flex: 1, padding: '0.35rem', borderRadius: '0.4rem', border: '1px solid #dbeafe', backgroundColor: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', textDecoration: 'none' }}
                                     >
                                         Modifier
                                     </button>
                                     <button 
                                         onClick={() => handleDelete(bien.id_bien)} 
-                                        style={{ padding: '0.6rem 1rem', borderRadius: '0.5rem', border: '1px solid #fee2e2', backgroundColor: '#fff', color: '#ef4444', cursor: 'pointer', fontWeight: '600', textDecoration: 'none' }}
+                                        style={{ padding: '0.35rem 0.6rem', borderRadius: '0.4rem', border: '1px solid #fee2e2', backgroundColor: '#fff', color: '#ef4444', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '600', textDecoration: 'none' }}
                                         title="Supprimer"
                                     >
                                         Supprimer

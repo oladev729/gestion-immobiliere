@@ -26,6 +26,11 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'API fonctionnelle' });
 });
 
+// Route pour gérer les requêtes /review
+app.get('/review', (req, res) => {
+    res.json({ message: 'Endpoint de review', status: 'OK' });
+});
+
 // Importe la base de données
 const db = require('./config/database');
 
@@ -51,6 +56,14 @@ app.use('/api/biens', bienRoutes);
 // ROUTES DES CONTRATS
 const contratRoutes = require('./routes/contratRoutes');
 app.use('/api/contrats', contratRoutes);
+
+// ROUTES DES DOCUMENTS
+const documentRoutes = require('./routes/documentRoutes');
+app.use('/api/documents', documentRoutes);
+
+// ROUTES DES ALERTES
+const alertesRoutes = require('./routes/alertesRoutes');
+app.use('/api/alertes', alertesRoutes);
 
 // ROUTES DES PAIEMENTS
 const paiementRoutes = require('./routes/paiementRoutes');

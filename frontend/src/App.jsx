@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
-import { SearchProvider, useSearch } from './context/SearchContext';
+import { SearchProvider, useSearch } from './context/SearchContext.jsx';
 import SidebarModern from './components/SidebarModern';
 import TopHeader from './components/TopHeader';
 import Login from './pages/Login';
@@ -20,6 +20,8 @@ import Contracts from './pages/owner/Contracts';
 import MaintenanceRecues from './pages/owner/MaintenanceRecues';
 import VisitRequests from './pages/owner/VisitRequests';
 import OwnerPayments from './pages/owner/OwnerPayments';
+import DocumentGeneratorPage from './pages/owner/DocumentGeneratorPage';
+import AlertesAvanceesPage from './pages/owner/AlertesAvanceesPage';
 
 
 // Pages Locataire
@@ -82,6 +84,8 @@ function App() {
                         <Route path="/owner/maintenance" element={<Layout><MaintenanceRecues /></Layout>} />
                         <Route path="/owner/visits" element={<Layout><VisitRequests /></Layout>} />
                         <Route path="/owner/payments" element={<Layout><OwnerPayments /></Layout>} />
+                        <Route path="/owner/documents" element={<Layout><DocumentGeneratorPage /></Layout>} />
+                        <Route path="/owner/alertes" element={<Layout><AlertesAvanceesPage /></Layout>} />
                         <Route path="/messaging" element={
                             <AuthContext.Consumer>
                                 {({ user }) => user ? <Layout><Messaging /></Layout> : <Messaging />}

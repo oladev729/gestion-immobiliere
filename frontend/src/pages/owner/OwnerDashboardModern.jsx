@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import '../../styles/design-system.css';
+import RevenueChart from '../../components/RevenueChart';
+import MonthlyPerformanceChart from '../../components/MonthlyPerformanceChart';
+import OwnerTenantRelationChart from '../../components/OwnerTenantRelationChart';
 
 const OwnerDashboardModern = () => {
   const [stats, setStats] = useState({
@@ -275,7 +278,15 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
 
       {/* Content Row */}
       <div className="bottom-row">
-        <ChartCard title=" Les Biens les plus Loués">
+        <ChartCard title="Répartition des Revenus">
+          <RevenueChart />
+        </ChartCard>
+
+        <ChartCard title="Performance Mensuelle">
+          <MonthlyPerformanceChart />
+        </ChartCard>
+
+        <ChartCard title="Les Biens les plus Loués">
           <div className="ordered-list">
             {mostOrdered.map((item, index) => (
               <div key={index} className="ordered-item">
@@ -294,30 +305,30 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
           </div>
         </ChartCard>
 
-        <ChartCard title="Lien Propriétaire - Locataire">
-          <RelationIllustration />
+        <ChartCard title="Relation Propriétaire-Locataire">
+          <OwnerTenantRelationChart />
         </ChartCard>
       </div>
 
       <style>{`
         .dashboard-modern {
-          padding: 2rem;
-          max-width: 1400px;
+          padding: 0.75rem;
+          max-width: 1600px;
           margin: 0 auto;
         }
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 0.75rem;
+          margin-bottom: 0.75rem;
         }
 
         .stat-card {
           background: white;
-          border-radius: 1rem;
-          padding: 1.5rem;
-          box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+          border-radius: 0.5rem;
+          padding: 0.75rem;
+          box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
           border: 1px solid #e5e7eb;
           transition: all 250ms ease-in-out;
         }
@@ -331,33 +342,24 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 1rem;
-        }
-
-        .stat-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: 0.75rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.5rem;
-        }
-
-        .stat-change {
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-
-        .stat-value {
-          font-size: 1.875rem;
-          font-weight: 700;
-          color: #1f2937;
           margin-bottom: 0.5rem;
         }
 
+        .stat-change {
+          font-size: 0.65rem;
+          font-weight: 600;
+        }
+
+        .stat-value {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: #1f2937;
+          margin-bottom: 0.25rem;
+          line-height: 1.1;
+        }
+
         .stat-title {
-          font-size: 0.875rem;
+          font-size: 0.7rem;
           color: #6b7280;
           font-weight: 500;
         }
@@ -377,17 +379,17 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
 
         .chart-card {
           background: white;
-          border-radius: 1rem;
-          padding: 1.5rem;
-          box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+          border-radius: 0.5rem;
+          padding: 0.75rem;
+          box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
           border: 1px solid #e5e7eb;
         }
 
         .chart-title {
-          font-size: 1.125rem;
+          font-size: 0.85rem;
           font-weight: 600;
           color: #1f2937;
-          margin-bottom: 1.5rem;
+          margin-bottom: 0.75rem;
         }
 
         .bar-chart {
@@ -645,10 +647,10 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 2rem 1rem;
+          padding: 0.75rem;
           background: #f8fafc;
-          border-radius: 1rem;
-          margin-top: 1rem;
+          border-radius: 0.5rem;
+          margin-top: 0.5rem;
         }
 
         .relation-entity {
@@ -659,15 +661,15 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
         }
 
         .entity-icon {
-          width: 60px;
-          height: 60px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 2rem;
+          font-size: 1.1rem;
           color: white;
-          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .entity-icon.owner { background: linear-gradient(135deg, #3b82f6, #2563eb); }
@@ -676,7 +678,7 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
         .entity-label {
           font-weight: 600;
           color: #1e293b;
-          font-size: 1rem;
+          font-size: 0.7rem;
         }
 
         .relation-link {

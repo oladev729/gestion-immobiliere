@@ -21,8 +21,20 @@ const VisitorRequest = () => {
   const [info, setInfo] = useState("");
   const [error, setError] = useState("");
 
-  const handleChange = (field) => (e) =>
-    setFormData({ ...formData, [field]: e.target.value });
+  const handleChange = (field) => (e) => {
+    let value = e.target.value;
+    
+    // Validation spécifique pour chaque champ
+    if (field === 'nom' || field === 'prenoms') {
+      // N'accepter que les lettres, espaces et tirets
+      value = value.replace(/[^a-zA-ZÀ-ÿ\s-]/g, '');
+    } else if (field === 'telephone') {
+      // N'accepter que les chiffres, espaces et les caractères de téléphone valides
+      value = value.replace(/[^0-9\s\+\-\(\)]/g, '');
+    }
+    
+    setFormData({ ...formData, [field]: value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,7 +89,7 @@ const VisitorRequest = () => {
         border: "1px solid #f1f5f9"
       }}>
         <h3 style={{ color: "#1e293b", marginBottom: 8, fontWeight: '800' }}>
-          Demande de visite
+          Inscription visiteur
         </h3>
         {titreBien && (
           <div style={{ 
@@ -87,7 +99,7 @@ const VisitorRequest = () => {
             marginBottom: '20px',
             borderLeft: '4px solid #3b82f6'
           }}>
-            <p className="small mb-0" style={{ color: '#475569' }}>Bien concerné :</p>
+            <p className="small mb-0" style={{ color: '#475569' }}>bien concerné :</p>
             <p className="fw-bold mb-0" style={{ color: '#1e293b' }}>{titreBien}</p>
           </div>
         )}
@@ -96,66 +108,64 @@ const VisitorRequest = () => {
         </p>
 
         {error && (
-          <div className="alert alert-danger d-flex align-items-center" style={{ borderRadius: '12px', fontSize: '0.9rem' }}>
-            <span className="me-2">⚠️</span> {error}
+          <div className="notification-error d-flex align-items-center" style={{ 
+            borderRadius: '12px', 
+            fontSize: '0.9rem',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#991b1b',
+            padding: '12px 16px',
+            marginBottom: '16px'
+          }}>
+            <span className="me-2" style={{ fontSize: '1.2rem' }}>**</span> {error}
           </div>
         )}
         {info && (
-          <div className="alert alert-success d-flex align-items-center" style={{ borderRadius: '12px', fontSize: '0.9rem' }}>
-            <span className="me-2">✅</span> {info}
+          <div className="notification-success d-flex align-items-center" style={{ 
+            borderRadius: '12px', 
+            fontSize: '0.9rem',
+            backgroundColor: '#ecfdf5',
+            border: '1px solid #bbf7d0',
+            color: '#065f46',
+            padding: '12px 16px',
+            marginBottom: '16px'
+          }}>
+            <span className="me-2" style={{ fontSize: '1.2rem' }}>**</span> {info}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           <div className="row g-2">
             <div className="col-md-6 mb-3">
-              <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>Nom</label>
+              <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>nom</label>
               <input type="text" className="form-control" style={{ borderRadius: '10px', padding: '12px' }}
                 value={formData.nom} onChange={handleChange("nom")} required placeholder="Ex: DUPONT" />
             </div>
             <div className="col-md-6 mb-3">
-              <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>Prénoms</label>
+              <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>prénoms</label>
               <input type="text" className="form-control" style={{ borderRadius: '10px', padding: '12px' }}
                 value={formData.prenoms} onChange={handleChange("prenoms")} required placeholder="Ex: Jean" />
             </div>
           </div>
 
           <div className="mb-3">
-            <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>Email</label>
+            <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>email</label>
             <input type="email" className="form-control" style={{ borderRadius: '10px', padding: '12px' }}
               value={formData.email} onChange={handleChange("email")} required placeholder="jean.dupont@email.com" />
           </div>
 
           <div className="mb-3">
-            <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>Téléphone</label>
+            <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>téléphone</label>
             <input type="tel" className="form-control" style={{ borderRadius: '10px', padding: '12px' }}
               value={formData.telephone} onChange={handleChange("telephone")} placeholder="Ex: 0102030405" />
           </div>
-
-          <div className="mb-3">
-            <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>Date de visite souhaitée</label>
-            <input type="datetime-local" className="form-control" style={{ borderRadius: '10px', padding: '12px' }}
-              value={formData.date_visite_souhaitee} onChange={handleChange("date_visite_souhaitee")} required
-              min={new Date().toISOString().slice(0, 16)} />
-          </div>
-
-          <div className="mb-4">
-            <label className="small mb-1 fw-bold" style={{ color: "#334155" }}>Message pour le propriétaire</label>
-            <textarea className="form-control" rows={3} style={{ borderRadius: '10px', padding: '12px' }}
-                value={formData.message} onChange={handleChange("message")}
-                placeholder="Précisez vos disponibilités ou posez une question..." />
-          </div>
+          
 
           <button type="submit" className="btn btn-primary w-100 py-3 mb-3 fw-bold"
             style={{ borderRadius: "12px", boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)' }} disabled={loading}>
             {loading ? (
-              <><span className="spinner-border spinner-border-sm me-2" />Envoi en cours...</>
-            ) : "Envoyer ma demande de visite"}
-          </button>
-
-          <button type="button" className="btn btn-link w-100 text-decoration-none"
-            style={{ color: "#64748b" }} onClick={() => navigate("/")}>
-            ← Retour à l'accueil
+              <><span className="spinner-border spinner-border-sm me-2" />envoi en cours...</>
+            ) : "envoyer"}
           </button>
         </form>
       </div>

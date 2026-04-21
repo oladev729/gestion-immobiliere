@@ -174,11 +174,11 @@ const TopHeader = ({ onSearch }) => {
         .top-header {
           background: white;
           border-bottom: 1px solid #e5e7eb;
-          padding: 0.75rem 2rem;
+          padding: 0.25rem 1rem;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
           position: sticky;
           top: 0;
           z-index: 1000;
@@ -189,9 +189,9 @@ const TopHeader = ({ onSearch }) => {
           align-items: center;
           background: #f8fafc;
           border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 0.5rem 1rem;
-          width: 350px;
+          border-radius: 6px;
+          padding: 0.2rem 0.5rem;
+          width: 250px;
           transition: all 0.2s ease;
         }
 
@@ -206,7 +206,7 @@ const TopHeader = ({ onSearch }) => {
           background: none;
           outline: none;
           flex: 1;
-          font-size: 0.9rem;
+          font-size: 0.75rem;
           color: #1e293b;
           text-decoration: none !important;
         }
@@ -217,13 +217,13 @@ const TopHeader = ({ onSearch }) => {
           position: relative;
           background: #f8fafc;
           border: 1px solid #e2e8f0;
-          padding: 0.6rem 1rem;
-          border-radius: 10px;
+          padding: 0.3rem 0.6rem;
+          border-radius: 6px;
           cursor: pointer;
           transition: all 0.2s;
           font-weight: 600;
           color: #475569;
-          font-size: 0.85rem;
+          font-size: 0.7rem;
           text-decoration: none !important;
         }
 
@@ -249,9 +249,9 @@ const TopHeader = ({ onSearch }) => {
         .user-avatar {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          padding: 0.4rem 0.75rem;
-          border-radius: 12px;
+          gap: 0.35rem;
+          padding: 0.2rem 0.4rem;
+          border-radius: 8px;
           cursor: pointer;
           transition: all 0.2s;
           border: 1px solid transparent;
@@ -264,33 +264,33 @@ const TopHeader = ({ onSearch }) => {
         }
 
         .avatar-circle {
-          width: 38px;
-          height: 38px;
-          border-radius: 10px;
+          width: 30px;
+          height: 30px;
+          border-radius: 6px;
           background: linear-gradient(135deg, #3b82f6, #2563eb);
           display: flex;
           align-items: center;
           justify-content: center;
           color: white;
           font-weight: 700;
-          font-size: 0.9rem;
-          box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+          font-size: 0.75rem;
+          box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
         }
 
         .user-info { display: flex; flex-direction: column; }
-        .user-name { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
-        .user-role { font-size: 0.7rem; color: #64748b; text-transform: capitalize; }
+        .user-name { font-size: 0.75rem; font-weight: 600; color: #1e293b; }
+        .user-role { font-size: 0.6rem; color: #64748b; text-transform: capitalize; }
 
         .profile-dropdown {
             position: absolute;
             top: calc(100% + 10px);
             right: 0;
-            width: 320px;
+            width: 280px;
             background: white;
-            border-radius: 16px;
+            border-radius: 12px;
             box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
             border: 1px solid #e2e8f0;
-            padding: 1.5rem;
+            padding: 1.25rem;
             z-index: 2000;
         }
 
@@ -319,8 +319,8 @@ const TopHeader = ({ onSearch }) => {
         .badge-new {
             background: #dbeafe;
             color: #1e40af;
-            font-size: 0.7rem;
-            padding: 2px 8px;
+            font-size: 0.65rem;
+            padding: 1px 6px;
             border-radius: 9999px;
             font-weight: 700;
         }

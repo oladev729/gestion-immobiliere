@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import '../styles/design-system.css';
@@ -6,15 +6,14 @@ import '../styles/design-system.css';
 const SidebarModern = () => {
   const { user } = React.useContext(AuthContext);
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const ownerLinks = [
     { name: 'Tableau de bord', path: '/owner-dashboard', description: 'Vue d\'ensemble' },
     { name: 'Mes Biens', path: '/owner/properties', description: 'Gérer vos propriétés' },
-    { name: 'Contrats', path: '/owner/contracts', description: 'Baux locatifs' },
-    { name: 'Maintenance', path: '/owner/maintenance', description: 'Demandes de maintenance' },
     { name: 'Visites', path: '/owner/visits', description: 'Demandes de visite' },
     { name: 'Paiements', path: '/owner/payments', description: 'Suivi des loyers' },
+    { name: 'Documents', path: '/owner/documents', description: 'Génération de documents' },
+    { name: 'Alertes', path: '/owner/alertes', description: 'Alertes fiscales et maintenance' },
     { name: 'Messagerie', path: '/messaging', description: 'Discuter avec les visiteurs' },
     { name: 'Inviter Visiteur', path: '/owner/inviter-visiteur', description: 'Gérer les nouvelles demandes' },
   ];
@@ -35,38 +34,26 @@ const SidebarModern = () => {
   };
 
   return (
-    <div className={`sidebar-modern ${isCollapsed ? 'collapsed' : ''}`}>
+    <div className="sidebar-modern">
       {/* Header */}
       <div className="sidebar-header">
         <div className="logo-section">
-          {!isCollapsed && (
-            <div className="logo-text animate-fade-in">
-              <h1 className="logo-title">ImmoGest</h1>
-              <p className="logo-subtitle">Gestion Immobilière</p>
-            </div>
-          )}
+          <div className="logo-text animate-fade-in">
+            <h1 className="logo-title">ImmoGest</h1>
+            <p className="logo-subtitle">Gestion Immobilière</p>
+          </div>
         </div>
-        <button 
-          className="collapse-btn"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          aria-label={isCollapsed ? "Développer" : "Réduire"}
-          style={{ fontSize: '0.8rem', fontWeight: '700', textDecoration: 'none' }}
-        >
-          {isCollapsed ? 'MENU' : 'REDUIRE'}
-        </button>
       </div>
 
       {/* Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-section">
-          {!isCollapsed && (
-            <div className="nav-section-title">
-              {user?.type === 'proprietaire' || user?.type_utilisateur === 'proprietaire' 
-                ? 'Propriétaire' 
-                : 'Locataire'
-              }
-            </div>
-          )}
+          <div className="nav-section-title">
+            {user?.type === 'proprietaire' || user?.type_utilisateur === 'proprietaire' 
+              ? 'Propriétaire' 
+              : 'Locataire'
+            }
+          </div>
           <ul className="nav-list">
             {links.map((link, index) => {
               const isActive = isActiveLink(link.path);
@@ -76,18 +63,12 @@ const SidebarModern = () => {
                   <NavLink
                     to={link.path}
                     className={`nav-link ${isActive ? 'active' : ''}`}
-                    title={isCollapsed ? `${link.name} - ${link.description}` : ''}
                     style={{ textDecoration: 'none', outline: 'none', border: 'none' }}
                   >
-                    {!isCollapsed && (
-                      <div className="nav-content">
-                        <span className="nav-text">{link.name}</span>
-                        <span className="nav-description">{link.description}</span>
-                      </div>
-                    )}
-                    {isCollapsed && (
-                       <span className="nav-text-collapsed">{link.name[0]}</span>
-                    )}
+                    <div className="nav-content">
+                      <span className="nav-text">{link.name}</span>
+                      <span className="nav-description">{link.description}</span>
+                    </div>
                   </NavLink>
                 </li>
               );
@@ -98,7 +79,7 @@ const SidebarModern = () => {
 
       <style>{`
         .sidebar-modern {
-          width: ${isCollapsed ? '80px' : '280px'};
+          width: 200px;
           height: 100vh;
           background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
           border-right: 1px solid var(--gray-200);
@@ -113,12 +94,12 @@ const SidebarModern = () => {
         }
 
         .sidebar-header {
-          padding: 1.5rem;
+          padding: 0.5rem 0.75rem;
           border-bottom: 1px solid var(--gray-200);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          min-height: 80px;
+          min-height: 50px;
         }
 
         .logo-section {
@@ -128,18 +109,18 @@ const SidebarModern = () => {
         }
 
         .logo-title {
-          font-size: 1.5rem;
+          font-size: 1.1rem;
           font-weight: 700;
           color: #3b82f6;
           margin: 0;
-          line-height: 1.2;
+          line-height: 1.1;
         }
 
         .logo-subtitle {
-          font-size: 0.75rem;
+          font-size: 0.6rem;
           color: #6b7280;
           margin: 0;
-          margin-top: 2px;
+          margin-top: 0px;
         }
 
         .collapse-btn {
@@ -154,15 +135,10 @@ const SidebarModern = () => {
           font-size: 1.2rem;
         }
 
-        .collapse-btn:hover {
-          background: #f3f4f6;
-          color: #4b5563;
-        }
-
         .sidebar-nav {
           flex: 1;
           overflow-y: auto;
-          padding: 1rem;
+          padding: 0.4rem;
         }
 
         .nav-section {
@@ -192,13 +168,13 @@ const SidebarModern = () => {
         .nav-link {
           display: flex;
           align-items: center;
-          padding: 0.75rem 1rem;
-          border-radius: 0.75rem;
+          padding: 0.35rem 0.6rem;
+          border-radius: 0.4rem;
           text-decoration: none !important;
           color: #6b7280;
           transition: all 250ms ease-in-out;
           position: relative;
-          min-height: 44px;
+          min-height: 30px;
           border: none !important;
           outline: none !important;
           box-shadow: none !important;
@@ -222,19 +198,6 @@ const SidebarModern = () => {
           min-width: 0;
         }
 
-        .nav-text {
-          display: block;
-          font-size: 0.95rem;
-          font-weight: 500;
-          line-height: 1.2;
-        }
-
-        .nav-text-collapsed {
-           font-size: 1.2rem;
-           font-weight: 700;
-           color: #3b82f6;
-        }
-
         .nav-description {
           display: block;
           font-size: 0.75rem;
@@ -242,7 +205,6 @@ const SidebarModern = () => {
           line-height: 1.2;
           margin-top: 2px;
         }
-
 
         /* Responsive */
         @media (max-width: 768px) {
