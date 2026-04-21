@@ -3,8 +3,9 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../api/axios';
 import '../styles/design-system.css';
 
-const TopHeader = ({ onSearch }) => {
-  const { user, logout, setUser } = useContext(AuthContext);
+const TopHeader = ({ user: propUser, onSearch }) => {
+  const { user: contextUser, logout: contextLogout, setUser } = useContext(AuthContext);
+  const user = propUser || contextUser;
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -34,10 +35,13 @@ const TopHeader = ({ onSearch }) => {
   };
 
   useEffect(() => {
-    fetchNotifsCount();
-    const interval = setInterval(fetchNotifsCount, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    // Ne pas charger les notifs si c'est un visiteur simulé (pas de token)
+    if (user && user.type_utilisateur !== 'visiteur') {
+        fetchNotifsCount();
+        const interval = setInterval(fetchNotifsCount, 60000);
+        return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const toggleNotifications = () => {
       if (!showNotifications) fetchNotifications();
@@ -162,9 +166,16 @@ const TopHeader = ({ onSearch }) => {
 
                 <div className="dropdown-divider"></div>
                 
-                <button onClick={logout} className="logout-dropdown-btn">
-                    Se déconnecter
-                </button>
+                 <button onClick={() => {
+                     if (user?.type_utilisateur === 'visiteur') {
+                         localStorage.removeItem('visitor_email');
+                         window.location.href = '/login';
+                     } else {
+                         contextLogout();
+                     }
+                 }} className="logout-dropdown-btn">
+                     Se déconnecter
+                 </button>
             </div>
           )}
         </div>

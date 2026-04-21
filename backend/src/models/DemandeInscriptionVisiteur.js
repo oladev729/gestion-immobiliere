@@ -5,15 +5,15 @@ class DemandeInscriptionVisiteur {
     // CRÉER UNE DEMANDE D'INSCRIPTION (visiteur)
     // ============================================================
     static async create(demandeData) {
-        const { nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee } = demandeData;
+        const { nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee, code_suivi } = demandeData;
 
         const query = `
-            INSERT INTO demande_inscription_visiteur (nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee, statut)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente')
+            INSERT INTO demande_inscription_visiteur (nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee, statut, code_suivi)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente', $8)
             RETURNING *
         `;
 
-        const values = [nom, prenoms, email, telephone || null, message || null, id_bien || null, date_visite_souhaitee || null];
+        const values = [nom, prenoms, email, telephone || null, message || null, id_bien || null, date_visite_souhaitee || null, code_suivi || null];
         const result = await db.query(query, values);
         return result.rows[0];
     }
@@ -105,6 +105,15 @@ class DemandeInscriptionVisiteur {
     static async findByEmail(email) {
         const query = 'SELECT * FROM demande_inscription_visiteur WHERE email = $1';
         const result = await db.query(query, [email]);
+        return result.rows[0];
+    }
+
+    // ============================================================
+    // RÉCUPÉRER UNE DEMANDE PAR EMAIL ET CODE DE SUIVI
+    // ============================================================
+    static async findByCredentials(email, code_suivi) {
+        const query = 'SELECT * FROM demande_inscription_visiteur WHERE email = $1 AND code_suivi = $2';
+        const result = await db.query(query, [email, code_suivi]);
         return result.rows[0];
     }
 

@@ -6,7 +6,7 @@ import { AuthContext } from "../context/AuthContext";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("locataire");
+  const [role, setRole] = useState("locataire"); // locataire ou proprietaire
 
   const [confirmationRequired, setConfirmationRequired] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,7 +38,7 @@ const Login = () => {
       } else {
         login(response.data.user, response.data.token);
 
-        if (response.data.user.type === "proprietaire") {
+        if (response.data.user.type === "proprietaire" || response.data.user.type_utilisateur === "proprietaire") {
           navigate("/owner-dashboard");
         } else {
           navigate("/tenant/properties");
@@ -54,138 +54,311 @@ const Login = () => {
     }
   };
 
-  const inputClassName = "form-control input-blue";
-
   return (
-    <div
-      style={{
-        paddingTop: "40px",
-        paddingBottom: "40px",
-        textAlign: "center",
-      }}
-    >
-      <span className="navbar-brand logo-immogest">ImmoGest</span>
+    <div className="login-page-modern">
+      <div className="login-container">
+        {/* Logo ImmoGest */}
+        <h1 className="main-logo-text">ImmoGest</h1>
 
-      <div className="d-flex justify-content-center">
-        <div
-          style={{
-            width: "420px",
-            borderRadius: "16px",
-            backgroundColor: "#ffffff",
-            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.15)",
-            padding: "24px 28px",
-            textAlign: "left",
-          }}
-        >
-
-          <p
-            className="small"
-            style={{ color: "#000000", marginBottom: 16 }}
-          >
-            Accédez à votre compte Propriétaire/Locataire
-          </p>
-          <hr style={{ marginTop: 0, marginBottom: 16 }} />
-
-          {error && <div className="alert alert-danger">{error}</div>}
-
-          {confirmationRequired ? (
-            <div className="alert alert-warning text-center">
-              <p>{message}</p>
-              <div className="d-flex justify-content-around mt-3">
-                <button
-                  className="btn btn-success"
-                  onClick={() => handleSubmit(null, true)}
-                  disabled={loading}
-                >
-                  {loading ? "Chargement..." : "OUI, je confirme"}
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setConfirmationRequired(false)}
-                >
-                  Annuler
-                </button>
-              </div>
+        {/* Login Card */}
+        <div className="login-card">
+          
+          {/* Role Switch INSIDE the card */}
+          <div className="role-switch-container">
+            <div className="role-switch">
+              <button 
+                className={`role-btn ${role === 'locataire' ? 'active' : ''}`}
+                onClick={() => setRole('locataire')}
+              >
+                Locataire
+              </button>
+              <button 
+                className={`role-btn ${role === 'proprietaire' ? 'active' : ''}`}
+                onClick={() => setRole('proprietaire')}
+              >
+                Propriétaire
+              </button>
+              <div className={`switch-bg ${role === 'proprietaire' ? 'right' : 'left'}`}></div>
             </div>
+          </div>
+
+          <div className="card-divider"></div>
+
+          {error && <div className="alert-custom error">{error}</div>}
+          
+          {confirmationRequired ? (
+             <div className="alert-custom warning">
+                <p>{message}</p>
+                <div className="d-flex gap-2 justify-content-center mt-3">
+                  <button className="confirm-btn" onClick={() => handleSubmit(null, true)} disabled={loading}>OUI, JE CONFIRME</button>
+                  <button className="cancel-btn" onClick={() => setConfirmationRequired(false)}>ANNULER</button>
+                </div>
+             </div>
           ) : (
-            <form onSubmit={(e) => handleSubmit(e, false)}>
-              <div className="mb-3">
-                <label className="form-label" style={{ color: "#000000" }}>
-                  Adresse Email
-                </label>
+            <form onSubmit={(e) => handleSubmit(e, false)} className="login-form">
+              <div className="form-group">
+                <label>Adresse Email</label>
                 <input
                   type="email"
-                  className={inputClassName}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="exemple@gmail.com"
+                  placeholder="exemple@email.com"
                   required
                 />
               </div>
 
-              <div className="mb-3">
-                <label className="form-label" style={{ color: "#000000" }}>
-                  Mot de passe
-                </label>
+              <div className="form-group">
+                <label>Mot de passe</label>
                 <input
                   type="password"
-                  className={inputClassName}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="••••"
                   required
                 />
               </div>
 
-              <div className="mb-3">
-                <label className="form-label" style={{ color: "#000000" }}>
-                  Se connecter en tant que :
-                </label>
-                <select
-                  className={inputClassName}
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                >
-                  <option value="locataire">Locataire</option>
-                  <option value="proprietaire">Propriétaire</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary w-100 py-2 fw-bold"
-                style={{ borderRadius: "999px" }}
-                disabled={loading}
-              >
+              <button type="submit" className="signin-btn" disabled={loading}>
                 {loading ? "Connexion..." : "Se connecter"}
               </button>
             </form>
           )}
 
-          <div className="text-center mt-4">
-            <p
-              className="small mb-1"
-              style={{ color: "#121213" }}
-            >
-              Pas encore de compte ?{" "}
-              <Link
-                to="/register/role"
-                className="text-decoration-none"
-                style={{ color: "#0d6efd" }}
-              >
-                Inscrivez-vous
-              </Link>
-            </p>
-            <Link
-              to="/forgot-password"
-              className="text-decoration-none small"
-              style={{ color: "#0d6efd" }}
-            >
-              Mot de passe oublié ?
-            </Link>
+          <div className="login-footer">
+            <div className="signup-link-container">
+              <span>Pas encore de compte ? </span>
+              <Link to="/register/role" className="signup-link">Inscrivez-vous</Link>
+            </div>
+            
+            <div className="forgot-link-container">
+              <Link to="/forgot-password" title="Réinitialiser" className="forgot-link">Mot de passe oublié ?</Link>
+            </div>
+
+            <div className="visitor-shortcut">
+              <Link to="/visitor/login" className="visitor-link">Accès Visiteur simple (email/code)</Link>
+            </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        .login-page-modern {
+          min-height: 100vh;
+          background-color: #f1f4f9;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 15px;
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        .login-container {
+          width: 100%;
+          max-width: 360px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .main-logo-text {
+          font-size: 32px;
+          font-weight: 900;
+          color: #1a73e8;
+          margin-bottom: 0px;
+          text-shadow: 0 1px 2px rgba(26, 115, 232, 0.1);
+          letter-spacing: -1px;
+        }
+
+        /* Card UI */
+        .login-card {
+          background: #ffffff;
+          padding: 24px;
+          border-radius: 16px;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+          width: 100%;
+        }
+
+        /* Switch UI INSIDE Card */
+        .role-switch-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 4px;
+        }
+
+        .role-switch {
+          position: relative;
+          background: #1a73e8;
+          padding: 3px;
+          border-radius: 999px;
+          display: flex;
+          width: 230px;
+          box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .role-btn {
+          position: relative;
+          z-index: 2;
+          flex: 1;
+          background: none;
+          border: none;
+          padding: 6px;
+          font-size: 12px;
+          font-weight: 500;
+          color: white;
+          cursor: pointer;
+          transition: color 0.3s ease;
+        }
+
+        .role-btn.active {
+          color: #1a73e8;
+        }
+
+        .switch-bg {
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          height: calc(100% - 6px);
+          width: calc(50% - 3px);
+          background: white;
+          border-radius: 999px;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 1;
+        }
+
+        .switch-bg.right {
+          transform: translateX(100%);
+        }
+
+        .card-divider {
+          height: 1px;
+          background: #f1f5f9;
+          margin: 16px 0;
+        }
+
+        /* Form UI */
+        .login-form {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .form-group label {
+          font-size: 13px;
+          color: #1e293b;
+          font-weight: 500;
+        }
+
+        .form-group input {
+          width: 100%;
+          padding: 10px 14px;
+          border: 1px solid #c2d7ff;
+          border-radius: 10px;
+          font-size: 14px;
+          color: #1e293b;
+          outline: none;
+          transition: all 0.2s;
+          background: #f8fbff;
+        }
+
+        .form-group input:focus {
+          border-color: #1a73e8;
+          background: white;
+          box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        .signin-btn {
+          margin-top: 6px;
+          background: #1a73e8;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 999px;
+          font-weight: 700;
+          font-size: 15px;
+          cursor: pointer;
+          transition: transform 0.2s, background 0.2s;
+        }
+
+        .signin-btn:hover {
+          background: #1557b0;
+          transform: translateY(-1px);
+        }
+
+        .signin-btn:active {
+          transform: translateY(0);
+        }
+
+        .signin-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
+        /* Footer links */
+        .login-footer {
+          margin-top: 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .signup-link-container {
+          font-size: 13px;
+          color: #475569;
+        }
+
+        .signup-link, .forgot-link {
+          color: #1a73e8;
+          text-decoration: none;
+          font-weight: 500;
+        }
+
+        .signup-link:hover, .forgot-link:hover {
+          text-decoration: underline;
+        }
+
+        .forgot-link-container {
+          margin-bottom: 2px;
+        }
+
+        .visitor-shortcut {
+          margin-top: 8px;
+          padding-top: 12px;
+          border-top: 1px dashed #e2e8f0;
+          width: 100%;
+          text-align: center;
+        }
+
+        .visitor-link {
+          font-size: 11px;
+          color: #94a3b8;
+          text-decoration: none;
+        }
+
+        .visitor-link:hover {
+          color: #1a73e8;
+        }
+
+        /* Alerts */
+        .alert-custom {
+          padding: 10px;
+          border-radius: 8px;
+          font-size: 13px;
+          margin-bottom: 16px;
+          text-align: center;
+        }
+        .alert-custom.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fee2e2; }
+        .alert-custom.warning { background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; }
+        .confirm-btn { background: #059669; color: white; border: none; padding: 5px 14px; border-radius: 6px; font-weight: 600; }
+        .cancel-btn { background: #64748b; color: white; border: none; padding: 5px 14px; border-radius: 6px; font-weight: 600; }
+      `}</style>
     </div>
   );
 };

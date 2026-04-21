@@ -3,8 +3,9 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import '../styles/design-system.css';
 
-const SidebarModern = () => {
-  const { user } = React.useContext(AuthContext);
+const SidebarModern = ({ user: propUser }) => {
+  const { user: contextUser } = React.useContext(AuthContext);
+  const user = propUser || contextUser;
   const location = useLocation();
 
   const ownerLinks = [
@@ -25,9 +26,14 @@ const SidebarModern = () => {
     { name: 'Paiements', path: '/tenant/payment', description: 'Payer mon loyer' },
   ];
 
-  const links = user?.type === 'proprietaire' || user?.type_utilisateur === 'proprietaire' 
-    ? ownerLinks 
-    : tenantLinks;
+  const visitorLinks = [
+    { name: 'biens disponible', path: '/visitor/properties', description: 'Trouver votre foyer' },
+    { name: 'mes demandes visite', path: '/visitor/dashboard', description: 'Suivre vos demandes' },
+    { name: 'alertes', path: '/visitor/alerts', description: 'Statut de vos visites' },
+  ];
+
+  const role = user?.type || user?.type_utilisateur;
+  const links = role === 'proprietaire' ? ownerLinks : (role === 'visiteur' ? visitorLinks : tenantLinks);
 
   const isActiveLink = (path) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');

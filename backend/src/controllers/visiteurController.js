@@ -27,14 +27,18 @@ const visiteurController = {
                 });
             }
 
-            console.log('?? Création de la demande...');
+            // Générer un code de suivi (Ex: VG-8273)
+            const code_suivi = `VG-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            console.log('?? Création de la demande avec code:', code_suivi);
             const demande = await DemandeInscriptionVisiteur.create({
-                nom, prenoms, email, telephone, message
+                nom, prenoms, email, telephone, message, code_suivi
             });
 
             console.log('?? Demande créée avec succès');
             res.status(201).json({
                 message: 'Demande d\'inscription envoyée avec succès',
+                code_suivi,
                 demande
             });
 
@@ -79,17 +83,21 @@ const visiteurController = {
                 });
             }
 
+            // Générer un code de suivi (Ex: VG-8273)
+            const code_suivi = `VG-${Math.floor(1000 + Math.random() * 9000)}`;
+
             // Créer la demande de visite liée au bien avec la date souhaitée
             const demande = await db.query(`
                 INSERT INTO demande_inscription_visiteur 
-                (nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee, statut, date_demande)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente', CURRENT_TIMESTAMP)
+                (nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee, statut, date_demande, code_suivi)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente', CURRENT_TIMESTAMP, $8)
                 RETURNING *
-            `, [nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee || null]);
+            `, [nom, prenoms, email, telephone, message, id_bien, date_visite_souhaitee || null, code_suivi]);
 
             console.log('?? Demande de visite créée avec succès:', demande.rows[0]);
             res.status(201).json({
                 message: 'Demande de visite envoyée avec succès',
+                code_suivi,
                 demande: demande.rows[0]
             });
 
@@ -614,10 +622,11 @@ const visiteurController = {
     // ============================================================
     async getVisitorDashboardData(req, res) {
         try {
-            const { email } = req.query;
+            const { email, code } = req.query;
             if (!email) return res.status(400).json({ message: "L'email est requis" });
 
-            const requests = await db.query(`
+            // On vérifie le code si fourni (sécurité supplémentaire)
+            let query = `
                 SELECT di.*, b.titre as bien_titre, b.ville as bien_ville, b.adresse as bien_adresse,
                        p.nom as proprietaire_nom, p.prenoms as proprietaire_prenoms, u.email as proprietaire_email
                 FROM demande_inscription_visiteur di
@@ -625,12 +634,52 @@ const visiteurController = {
                 LEFT JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
                 LEFT JOIN utilisateur u ON p.id_utilisateur = u.id_utilisateur
                 WHERE di.email = $1
-                ORDER BY di.date_demande DESC
-            `, [email]);
+            `;
+            const params = [email];
 
+            if (code) {
+                query += ` AND di.code_suivi = $2`;
+                params.push(code);
+            }
+
+            query += ` ORDER BY di.date_demande DESC`;
+
+            const requests = await db.query(query, params);
             res.json(requests.rows);
         } catch (error) {
             console.error('Erreur dashboard visiteur:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // LOGIN VISITEUR (vérification email + code)
+    // ============================================================
+    async loginVisiteur(req, res) {
+        try {
+            const { email, code_suivi } = req.body;
+            
+            if (!email || !code_suivi) {
+                return res.status(400).json({ message: 'L\'email et le code de suivi sont requis' });
+            }
+
+            const demande = await DemandeInscriptionVisiteur.findByCredentials(email, code_suivi);
+            
+            if (!demande) {
+                return res.status(401).json({ message: 'Email ou code de suivi incorrect' });
+            }
+
+            res.json({
+                message: 'Connexion réussie',
+                visitor: {
+                    email: demande.email,
+                    nom: demande.nom,
+                    prenoms: demande.prenoms,
+                    code_suivi: demande.code_suivi
+                }
+            });
+        } catch (error) {
+            console.error('Erreur login visiteur:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },

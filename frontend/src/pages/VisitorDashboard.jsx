@@ -11,19 +11,20 @@ const VisitorDashboard = () => {
     const [error, setError] = useState("");
     
     const email = searchParams.get("email") || localStorage.getItem("visitor_email");
+    const code = localStorage.getItem("visitor_code");
 
     useEffect(() => {
-        if (!email) {
-            navigate("/visitor-request");
+        if (!email || !code) {
+            navigate("/visitor/login");
             return;
         }
         fetchDashboardData();
-    }, [email]);
+    }, [email, code]);
 
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const res = await api.get(`/visiteurs/dashboard-data?email=${encodeURIComponent(email)}`);
+            const res = await api.get(`/visiteurs/dashboard-data?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`);
             setRequests(res.data);
         } catch (err) {
             setError("Impossible de charger vos données. Veuillez réessayer.");
@@ -34,84 +35,81 @@ const VisitorDashboard = () => {
     };
 
     if (loading) return (
-        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-            <div className="spinner-border text-primary" role="status" />
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+            <div className="spinner-border text-primary spinner-border-sm" role="status" />
         </div>
     );
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-            {/* Header */}
-            <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '20px 40px' }}>
-                <div className="container d-flex justify-content-between align-items-center">
-                    <h1 className="logo-immogest" style={{ margin: 0, fontSize: '1.8rem', cursor: 'pointer' }} onClick={() => navigate("/")}>ImmoGest</h1>
-                    <div className="d-flex align-items-center gap-3">
-                        <span className="small text-muted d-none d-md-inline">{email}</span>
-                        <button className="btn btn-outline-danger btn-sm" onClick={() => { localStorage.removeItem("visitor_email"); navigate("/"); }}>Déconnexion</button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="container py-5">
-                <div className="row">
-                    <div className="col-12 mb-4">
-                        <h2 className="fw-bold" style={{ color: '#1e293b' }}>Tableau de bord Visiteur</h2>
-                        <p className="text-muted">Suivez vos demandes de visite et communiquez avec les propriétaires.</p>
+        <div className="visitor-dashboard-modern">
+            <div className="container-fluid p-0">
+                <div className="row g-3">
+                    <div className="col-12">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <h2 className="h5 fw-bold mb-0" style={{ color: '#1e293b' }}>Suivi de mes demandes</h2>
+                                <p className="text-muted small mb-0">Retrouvez ici l'état de vos demandes de visite.</p>
+                            </div>
+                        </div>
                     </div>
 
-                    {error && <div className="col-12 alert alert-danger mb-4">{error}</div>}
+                    {error && <div className="col-12 alert alert-danger py-1 small">{error}</div>}
 
-                    <div className="col-md-8">
-                        <h4 className="mb-4 fw-bold" style={{ fontSize: '1.2rem', color: '#334155' }}>Mes demandes de visite</h4>
+                    <div className="col-md-9">
                         {requests.length === 0 ? (
-                            <div className="text-center p-5 bg-white rounded-4 border">
-                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏠</div>
-                                <p className="text-muted">Vous n'avez pas encore de demande de visite.</p>
-                                <button className="btn btn-primary" onClick={() => navigate("/")}>Voir les biens disponibles</button>
+                            <div className="text-center p-4 bg-white rounded shadow-sm border">
+                                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏠</div>
+                                <p className="text-muted small">Vous n'avez pas encore de demande de visite.</p>
+                                <button className="btn btn-primary btn-sm" onClick={() => navigate("/visitor/properties")}>Voir les biens disponibles</button>
                             </div>
                         ) : (
-                            <div className="d-flex flex-column gap-3">
+                            <div className="row g-3">
                                 {requests.map(req => (
-                                    <div key={req.id_demande} className="card border-0 shadow-sm rounded-4 overflow-hidden" 
-                                        style={{ transition: 'transform 0.2s', border: '1px solid #f1f5f9' }}>
-                                        <div className="card-body p-4">
-                                            <div className="d-flex justify-content-between align-items-start mb-3">
-                                                <div>
-                                                    <h5 className="fw-bold mb-1">{req.bien_titre}</h5>
-                                                    <p className="small text-muted mb-0">📍 {req.bien_adresse}, {req.bien_ville}</p>
+                                    <div key={req.id_demande} className="col-12">
+                                        <div className="card border-0 shadow-sm rounded overflow-hidden" 
+                                            style={{ border: '1px solid #f1f5f9' }}>
+                                            <div className="card-body p-2 px-3">
+                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                    <div>
+                                                        <h6 className="fw-bold mb-0" style={{ fontSize: '0.85rem' }}>{req.bien_titre}</h6>
+                                                        <p className="text-muted mb-0" style={{ fontSize: '0.7rem' }}>📍 {req.bien_adresse}, {req.bien_ville}</p>
+                                                    </div>
+                                                    <span className={`badge rounded-pill px-2 py-1 ${
+                                                        req.statut === 'en_attente' ? 'bg-warning text-dark' : 
+                                                        req.statut === 'acceptee' ? 'bg-success' : 
+                                                        req.statut === 'refusee' ? 'bg-danger' : 'bg-primary'
+                                                    }`} style={{ fontSize: '0.65rem' }}>
+                                                        {req.statut === 'en_attente' ? 'En attente' : 
+                                                         req.statut === 'acceptee' ? 'Acceptée' : 
+                                                         req.statut === 'refusee' ? 'Refusée' : req.statut}
+                                                    </span>
                                                 </div>
-                                                <span className={`badge rounded-pill px-3 py-2 ${
-                                                    req.statut === 'en_attente' ? 'bg-warning text-dark' : 
-                                                    req.statut === 'acceptee' ? 'bg-success' : 
-                                                    req.statut === 'refusee' ? 'bg-danger' : 'bg-primary'
-                                                }`}>
-                                                    {req.statut === 'en_attente' ? 'En attente' : 
-                                                     req.statut === 'acceptee' ? 'Acceptée' : 
-                                                     req.statut === 'refusee' ? 'Refusée' : req.statut}
-                                                </span>
-                                            </div>
-                                            
-                                            <div className="row mb-4">
-                                                <div className="col-sm-6">
-                                                    <p className="small text-muted mb-1">Date de visite souhaitée</p>
-                                                    <p className="fw-bold small mb-0">
-                                                        {req.date_visite_souhaitee ? new Date(req.date_visite_souhaitee).toLocaleString('fr-FR') : "Non précisée"}
-                                                    </p>
+                                                
+                                                <div className="d-flex gap-4 mb-2">
+                                                    <div>
+                                                        <p className="text-muted mb-0" style={{ fontSize: '0.65rem' }}>Visite souhaitée</p>
+                                                        <p className="fw-bold mb-0" style={{ fontSize: '0.75rem' }}>
+                                                            {req.date_visite_souhaitee ? new Date(req.date_visite_souhaitee).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Non précisée"}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-muted mb-0" style={{ fontSize: '0.65rem' }}>Propriétaire</p>
+                                                        <p className="fw-bold mb-0" style={{ fontSize: '0.75rem' }}>{req.proprietaire_prenoms} {req.proprietaire_nom}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="col-sm-6">
-                                                    <p className="small text-muted mb-1">Propriétaire</p>
-                                                    <p className="fw-bold small mb-0">{req.proprietaire_prenoms} {req.proprietaire_nom}</p>
-                                                </div>
-                                            </div>
 
-                                            <div className="d-flex gap-2">
-                                                <button className="btn btn-primary flex-grow-1" 
-                                                    onClick={() => navigate(`/visitor/messaging?demandeId=${req.id_demande}`)}>
-                                                    💬 Ouvrir la messagerie
-                                                </button>
-                                                <button className="btn btn-outline-secondary" onClick={() => {/* TODO: Annuler */}}>
-                                                    Annuler
-                                                </button>
+                                                <div className="d-flex gap-2">
+                                                    <button className="btn btn-primary btn-sm py-1 px-3" 
+                                                        style={{ fontSize: '0.75rem' }}
+                                                        onClick={() => navigate(`/messaging?demandeId=${req.id_demande}`)}>
+                                                        💬 Messagerie
+                                                    </button>
+                                                    <button className="btn btn-outline-secondary btn-sm py-1 px-3" 
+                                                        style={{ fontSize: '0.75rem' }}
+                                                        onClick={() => {/* TODO: Annuler */}}>
+                                                        Annuler
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -120,24 +118,34 @@ const VisitorDashboard = () => {
                         )}
                     </div>
 
-                    <div className="col-md-4 mt-4 mt-md-0">
-                        <div className="card border-0 shadow-sm rounded-4 p-4" style={{ backgroundColor: '#0f172a', color: 'white' }}>
-                            <h4 className="fw-bold mb-3" style={{ fontSize: '1.1rem' }}>Besoin d'aide ?</h4>
-                            <p className="small text-light text-opacity-75 mb-4">
-                                Si vous avez des questions sur le fonctionnement d'ImmoGest ou sur une visite, n'hésitez pas à nous contacter.
+                    <div className="col-md-3">
+                        <div className="card border-0 shadow-sm rounded p-3 mb-3" style={{ backgroundColor: '#0f172a', color: 'white' }}>
+                            <h6 className="fw-bold mb-2" style={{ fontSize: '0.85rem' }}>Besoin d'aide ?</h6>
+                            <p className="text-light text-opacity-75 mb-3" style={{ fontSize: '0.7rem' }}>
+                                Nos agents sont là pour vous accompagner dans votre recherche.
                             </p>
-                            <button className="btn btn-light w-100 fw-bold">Support client</button>
+                            <button className="btn btn-light btn-sm w-100 fw-bold" style={{ fontSize: '0.75rem' }}>Support</button>
                         </div>
                         
-                        <div className="mt-4 p-4 rounded-4 bg-white border border-info border-start-4">
-                            <h5 className="fw-bold small mb-2 text-info">💡 Info pratique</h5>
-                            <p className="small text-muted mb-0">
-                                Une fois votre visite effectuée, le propriétaire pourra vous envoyer une invitation officielle pour finaliser votre dossier de location.
+                        <div className="p-3 rounded bg-white border border-info border-start-4 shadow-sm">
+                            <h6 className="fw-bold mb-1 text-info" style={{ fontSize: '0.8rem' }}>💡 Prochaine étape</h6>
+                            <p className="text-muted mb-0" style={{ fontSize: '0.7rem' }}>
+                                Une fois la visite validée, demandez votre invitation pour devenir locataire officiel.
                             </p>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                .visitor-dashboard-modern {
+                    animation: fadeIn 0.4s ease-out;
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(5px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
         </div>
     );
 };

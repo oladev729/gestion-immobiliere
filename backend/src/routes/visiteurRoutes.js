@@ -17,8 +17,10 @@ const { authenticateToken } = require('../middleware/auth');
 
 
 // Demande d'inscription (visiteur)
-
 router.post('/demande', visiteurController.demandeInscription);
+
+// Connexion visiteur (Email + Code)
+router.post('/login', visiteurController.loginVisiteur);
 
 
 

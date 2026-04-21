@@ -10,6 +10,8 @@ import VisitorRequest from "./pages/VisitorRequest";
 import InviterVisiteur from "./pages/owner/InviterVisiteur";
 import RegisterFromInvite from "./pages/RegisterFromInvite";
 import Register from './pages/Register';
+import VisitorAlerts from "./pages/VisitorAlerts";
+import VisitorLogin from "./pages/VisitorLogin";
 
 
 
@@ -45,13 +47,20 @@ const PublicRoute = ({ children }) => {
 const Layout = ({ children }) => {
     const { user } = useContext(AuthContext);
     const { setSearchTerm } = useSearch();
-    if (!user) return <Navigate to="/login" />;
+    
+    // Support pour les visiteurs (email stocké dans localStorage)
+    const visitorEmail = localStorage.getItem('visitor_email');
+    
+    // Si c'est un visiteur, on simule un objet utilisateur pour la sidebar
+    const currentUser = user || (visitorEmail ? { email: visitorEmail, type_utilisateur: 'visiteur' } : null);
+
+    if (!currentUser) return <Navigate to="/login" />;
 
     return (
         <div className="main-layout">
-            <SidebarModern />
+            <SidebarModern user={currentUser} />
             <div className="main-content">
-                <TopHeader onSearch={setSearchTerm} />
+                <TopHeader user={currentUser} onSearch={setSearchTerm} />
                 <div className="content-container">
                     {children}
                 </div>
@@ -98,6 +107,12 @@ function App() {
                         <Route path="/tenant/rentals" element={<Layout><TenantRentals /></Layout>} />
                         <Route path="/tenant/report" element={<Layout><ReportIssue /></Layout>} />
                         <Route path="/tenant/payment" element={<Layout><TenantPayment /></Layout>} />
+
+                        {/* Routes Visiteur (réutilisation de certaines pages existantes) */}
+                        <Route path="/visitor/properties" element={<Layout><AvailableProperties /></Layout>} />
+                         <Route path="/visitor/dashboard" element={<Layout><VisitorDashboard /></Layout>} />
+                         <Route path="/visitor/messaging" element={<Layout><VisitorDashboard /></Layout>} />
+                         <Route path="/visitor/login" element={<VisitorLogin />} />
 
                         <Route path="*" element={<Navigate to="/login" />} />
                     </Routes>

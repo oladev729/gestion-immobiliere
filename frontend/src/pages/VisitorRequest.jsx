@@ -45,16 +45,18 @@ const VisitorRequest = () => {
     try {
       const endpoint = id_bien ? `/visiteurs/demande-visite/${id_bien}` : "/visiteurs/demande";
       const res = await api.post(endpoint, formData);
+      const generatedCode = res.data.code_suivi;
 
-      setInfo("Votre demande de visite a été envoyée avec succès ! Redirection vers votre tableau de bord...");
+      setInfo(`Votre demande a été envoyée ! Votre code de suivi est : ${generatedCode}. NOTEZ-LE PRÉCIEUSEMENT.`);
       
-      // Stocker l'email dans le localStorage pour faciliter l'accès au dashboard visiteur
+      // Stocker l'email et le code dans le localStorage
       localStorage.setItem("visitor_email", formData.email);
+      localStorage.setItem("visitor_code", generatedCode);
 
-      // Redirection vers la messagerie pour commencer la conversation
+      // On laisse plus de temps au visiteur pour voir son code
       setTimeout(() => {
-        navigate(`/messaging?demandeId=${res.data.demande.id_demande}`);
-      }, 2000);
+        navigate('/visitor/dashboard');
+      }, 5000);
     } catch (err) {
       setError(
         err.response?.data?.message ||
