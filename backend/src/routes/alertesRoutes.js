@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
+const db = require('../config/database');
 
 // Middleware pour vérifier l'authentification
 const authMiddleware = (req, res, next) => {

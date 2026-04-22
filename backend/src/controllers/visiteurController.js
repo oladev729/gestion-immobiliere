@@ -628,7 +628,7 @@ const visiteurController = {
             // On vérifie le code si fourni (sécurité supplémentaire)
             let query = `
                 SELECT di.*, b.titre as bien_titre, b.ville as bien_ville, b.adresse as bien_adresse,
-                       p.nom as proprietaire_nom, p.prenoms as proprietaire_prenoms, u.email as proprietaire_email
+                       u.nom as proprietaire_nom, u.prenoms as proprietaire_prenoms, u.email as proprietaire_email
                 FROM demande_inscription_visiteur di
                 LEFT JOIN bien b ON di.id_bien = b.id_bien
                 LEFT JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire

@@ -80,7 +80,6 @@ function App() {
                         <Route path="/register/role" element={<PublicRoute><RegisterStepRole /></PublicRoute>} />
                          <Route path="/visitor-request" element={<VisitorRequest />} />
                          <Route path="/visitor/dashboard" element={<VisitorDashboard />} />
-                         <Route path="/visitor/messaging" element={<VisitorMessaging />} />
                           <Route path="/confirm-invitation" element={<RegisterFromInvite />} />
                          <Route path="/register" element={<Register />} />
                          <Route path="/" element={<PublicRoute><HomePage /></PublicRoute>} />
@@ -111,7 +110,7 @@ function App() {
                         {/* Routes Visiteur (réutilisation de certaines pages existantes) */}
                         <Route path="/visitor/properties" element={<Layout><AvailableProperties /></Layout>} />
                          <Route path="/visitor/dashboard" element={<Layout><VisitorDashboard /></Layout>} />
-                         <Route path="/visitor/messaging" element={<Layout><VisitorDashboard /></Layout>} />
+                         <Route path="/visitor/messaging" element={<VisitorMessaging />} />
                          <Route path="/visitor/login" element={<VisitorLogin />} />
 
                         <Route path="*" element={<Navigate to="/login" />} />
