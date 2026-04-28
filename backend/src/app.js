@@ -18,8 +18,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// Servir les fichiers uploadés (photos)
-app.use('/uploads', express.static('C:\\Users\\PC\\Desktop\\gestion-immobiliere\\backend\\uploads'));
+// Servir les fichiers statiques (uploads)
+app.use('/api/uploads', express.static('uploads'));
 
 // Routes de test
 app.get('/api/health', (req, res) => {

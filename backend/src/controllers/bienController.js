@@ -2,6 +2,12 @@ const Bien = require('../models/Bien');
 const Proprietaire = require('../models/Proprietaire');
 const Notification = require('../models/Notification');
 const PhotosBien = require('../models/PhotosBien');
+const path = require('path');
+
+// Fonction pour obtenir l'URL de l'image placeholder
+const getPlaceholderUrl = (type = 'default') => {
+    return `/api/uploads/placeholders/${type}.svg`;
+};
 
 const bienController = {
     // ============================================================
@@ -56,6 +62,13 @@ const bienController = {
             // Ajouter les photos pour chaque bien (en mettant la principale en premier)
             for (let bien of biens) {
                 bien.photos = await Bien.getPhotos(bien.id_bien);
+                // Utiliser un placeholder si aucune photo
+                if (bien.photos.length === 0) {
+                    bien.photos = [{
+                        url_photobien: getPlaceholderUrl('default'),
+                        legende: 'Image placeholder'
+                    }];
+                }
             }
 
             res.json(biens);
@@ -83,6 +96,10 @@ const bienController = {
             // Ajouter la photo principale pour chaque bien
             for (let bien of biens) {
                 bien.photo_principale = await Bien.getPhotoPrincipale(bien.id_bien);
+                // Utiliser un placeholder si aucune photo
+                if (!bien.photo_principale) {
+                    bien.photo_principale = getPlaceholderUrl('appartement');
+                }
             }
 
             res.json(biens);
