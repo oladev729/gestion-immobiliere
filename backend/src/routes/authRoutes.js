@@ -18,4 +18,11 @@ router.post('/inviter-locataire', authenticateToken, authController.inviterLocat
 router.get('/connexions-stats', authenticateToken, authController.getConnexionsStats);
 router.get('/locataires', authenticateToken, authController.getLocataires);
 
+router.get('/debug-me', authenticateToken, (req, res) => {
+    res.json({
+        token_user: req.user,
+        server_time: new Date().toISOString()
+    });
+});
+
 module.exports = router;

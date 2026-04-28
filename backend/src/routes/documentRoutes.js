@@ -22,113 +22,54 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-// Route pour générer un contrat de location
-router.post('/generate-contract/:contractId', authMiddleware, async (req, res) => {
+// Route pour générer un contrat de location (nouveau modèle complet)
+router.post('/generate-contrat', authMiddleware, async (req, res) => {
   try {
-    const { contractId } = req.params;
+    console.log('Début de la génération de contrat PDF...');
+    const ContratPDFService = require('../services/ContratPDFServiceHTML');
     
-    // Récupérer les informations du contrat depuis la base de données
-    const db = require('../config/db');
-    const query = `
-      SELECT c.*, l.nom as locataire_nom, l.prenoms as locataire_prenoms, 
-             l.email as locataire_email, l.telephone as locataire_telephone,
-             b.titre, b.adresse, b.ville, b.pays, b.surface, b.type_bien,
-             u.nom as proprietaire_nom, u.prenoms as proprietaire_prenoms,
-             u.email as proprietaire_email
-      FROM contrats c
-      JOIN locataires l ON c.id_locataire = l.id_locataire
-      JOIN biens b ON c.id_bien = b.id_bien
-      JOIN utilisateurs u ON b.id_proprietaire = u.id
-      WHERE c.id_contrat = $1 AND u.id = $2
-    `;
+    // Préparer les données du contrat
+    const contratData = req.body;
+    console.log('Données reçues:', JSON.stringify(contratData, null, 2));
     
-    const result = await db.query(query, [contractId, req.user.id]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Contrat non trouvé' });
+    // Validation minimale
+    if (!contratData) {
+      return res.status(400).json({ 
+        message: 'Aucune donnée de contrat fournie',
+        error: 'Données manquantes'
+      });
     }
     
-    const contract = result.rows[0];
+    // Préparer les données complètes pour la génération
+    const contratComplet = {
+      contrat: contratData,
+      bien: contratData.bien || {},
+      proprietaire: contratData.proprietaire || {},
+      locataire: contratData.locataire || {}
+    };
     
-    // Créer le PDF
-    const doc = new pdf();
-    const chunks = [];
+    console.log('Données préparées pour la génération PDF...');
     
-    doc.on('data', chunk => chunks.push(chunk));
-    doc.on('end', () => {
-      const pdfData = Buffer.concat(chunks);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="contrat_${contractId}.pdf"`);
-      res.send(pdfData);
-    });
+    // Générer le PDF
+    const pdfBuffer = await ContratPDFService.generateContratPDF(contratComplet);
     
-    // Contenu du contrat
-    doc.fontSize(20).text('CONTRAT DE LOCATION', { align: 'center' });
-    doc.moveDown();
+    console.log('PDF généré avec succès, taille:', pdfBuffer.length);
     
-    doc.fontSize(12).text(`Numéro de contrat: ${contractId}`);
-    doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`);
-    doc.moveDown();
-    
-    doc.fontSize(14).text('PARTIES CONCERNÉES', { underline: true });
-    doc.moveDown();
-    
-    doc.fontSize(12).text('PROPRIÉTAIRE:');
-    doc.text(`Nom: ${contract.proprietaire_nom} ${contract.proprietaire_prenoms}`);
-    doc.text(`Email: ${contract.proprietaire_email}`);
-    doc.moveDown();
-    
-    doc.text('LOCATAIRE:');
-    doc.text(`Nom: ${contract.locataire_nom} ${contract.locataire_prenoms}`);
-    doc.text(`Email: ${contract.locataire_email}`);
-    doc.text(`Téléphone: ${contract.locataire_telephone}`);
-    doc.moveDown();
-    
-    doc.fontSize(14).text('BIEN LOUÉ', { underline: true });
-    doc.moveDown();
-    
-    doc.fontSize(12).text(`Type: ${contract.type_bien}`);
-    doc.text(`Titre: ${contract.titre}`);
-    doc.text(`Adresse: ${contract.adresse}`);
-    doc.text(`Ville: ${contract.ville}`);
-    doc.text(`Pays: ${contract.pays}`);
-    doc.text(`Surface: ${contract.surface} m²`);
-    doc.moveDown();
-    
-    doc.fontSize(14).text('CONDITIONS DE LOCATION', { underline: true });
-    doc.moveDown();
-    
-    doc.fontSize(12);
-    doc.text(`Durée du bail: Du ${new Date(contract.date_debut).toLocaleDateString('fr-FR')} au ${new Date(contract.date_fin).toLocaleDateString('fr-FR')}`);
-    doc.text(`Loyer mensuel: ${contract.loyer?.toLocaleString('fr-FR')} XOF`);
-    doc.text(`Caution: ${contract.caution?.toLocaleString('fr-FR')} XOF`);
-    doc.moveDown();
-    
-    doc.text('CLAUSES:');
-    doc.text('1. Le locataire s\'engage à payer le loyer à la date convenue chaque mois.');
-    doc.text('2. Le propriétaire s\'engage à maintenir le bien en bon état de location.');
-    doc.text('3. Toute résiliation doit respecter un préavis de 3 mois.');
-    doc.text('4. Le locataire doit souscrire une assurance habitation.');
-    doc.text('5. Le dépôt de garantie sera restitué dans un délai de 2 mois après la fin du bail.');
-    doc.moveDown();
-    
-    doc.fontSize(14).text('SIGNATURES', { underline: true });
-    doc.moveDown();
-    
-    doc.text('Le propriétaire:');
-    doc.text('_________________________');
-    doc.text(`${contract.proprietaire_nom} ${contract.proprietaire_prenoms}`);
-    doc.moveDown();
-    
-    doc.text('Le locataire:');
-    doc.text('_________________________');
-    doc.text(`${contract.locataire_nom} ${contract.locataire_prenoms}`);
-    
-    doc.end();
+    // Envoyer le contrat (HTML pour l'instant)
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="contrat_location_${contratData.id_contact || contratData.id_contrat || 'contrat'}.html"`);
+    res.send(pdfBuffer);
     
   } catch (error) {
-    console.error('Erreur lors de la génération du contrat:', error);
-    res.status(500).json({ message: 'Erreur lors de la génération du contrat' });
+    console.error('Erreur détaillée lors de la génération du contrat:', error);
+    console.error('Stack trace:', error.stack);
+    
+    // Envoyer une réponse d'erreur détaillée
+    res.status(500).json({ 
+      message: 'Erreur lors de la génération du contrat',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

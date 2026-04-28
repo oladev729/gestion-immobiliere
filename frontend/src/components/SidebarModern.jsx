@@ -9,31 +9,27 @@ const SidebarModern = ({ user: propUser }) => {
   const location = useLocation();
 
   const ownerLinks = [
-    { name: 'Tableau de bord', path: '/owner-dashboard', description: 'Vue d\'ensemble' },
-    { name: 'Mes Biens', path: '/owner/properties', description: 'Gérer vos propriétés' },
-    { name: 'Visites', path: '/owner/visits', description: 'Demandes de visite' },
-    { name: 'Paiements', path: '/owner/payments', description: 'Suivi des loyers' },
-    { name: 'Documents', path: '/owner/documents', description: 'Génération de documents' },
-    { name: 'Alertes', path: '/owner/alertes', description: 'Alertes fiscales et maintenance' },
-    { name: 'Messagerie', path: '/messaging', description: 'Discuter avec les visiteurs' },
-    { name: 'Inviter Visiteur', path: '/owner/inviter-visiteur', description: 'Gérer les nouvelles demandes' },
+    { name: 'Tableau de bord', path: '/owner-dashboard' },
+    { name: 'Mes Biens', path: '/owner/properties' },
+    { name: 'Visites', path: '/owner/visits' },
+    { name: 'Paiements', path: '/owner/payments' },
+    { name: 'Documents', path: '/owner/documents' },
+    { name: 'Alertes', path: '/owner/alertes' },
+    { name: 'Messagerie', path: '/messaging' },
+    { name: 'Inviter Locataire', path: '/owner/inviter-locataire' },
   ];
 
   const tenantLinks = [
-    { name: 'Recherche', path: '/tenant/properties', description: 'Trouver un bien' },
-    { name: 'Mes Locations', path: '/tenant/rentals', description: 'Mes contrats' },
-    { name: 'Signaler', path: '/tenant/report', description: 'Problèmes et maintenance' },
-    { name: 'Paiements', path: '/tenant/payment', description: 'Payer mon loyer' },
-  ];
-
-  const visitorLinks = [
-    { name: 'biens disponible', path: '/visitor/properties', description: 'Trouver votre foyer' },
-    { name: 'mes demandes visite', path: '/visitor/dashboard', description: 'Suivre vos demandes' },
-    { name: 'alertes', path: '/visitor/alerts', description: 'Statut de vos visites' },
+    { name: 'Recherche', path: '/tenant/properties' },
+    { name: 'Mes Locations', path: '/tenant/rentals' },
+    { name: 'Entretien', path: '/tenant/entretien' },
+    { name: 'Messagerie', path: '/tenant/messaging' },
+    { name: 'Signaler', path: '/tenant/report' },
+    { name: 'Paiements', path: '/tenant/payment' },
   ];
 
   const role = user?.type || user?.type_utilisateur;
-  const links = role === 'proprietaire' ? ownerLinks : (role === 'visiteur' ? visitorLinks : tenantLinks);
+  const links = role === 'proprietaire' ? ownerLinks : tenantLinks;
 
   const isActiveLink = (path) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
@@ -45,8 +41,7 @@ const SidebarModern = ({ user: propUser }) => {
       <div className="sidebar-header">
         <div className="logo-section">
           <div className="logo-text animate-fade-in">
-            <h1 className="logo-title">ImmoGest</h1>
-            <p className="logo-subtitle">Gestion Immobilière</p>
+            <h1 className="logo-immogest">ImmoGest</h1>
           </div>
         </div>
       </div>
@@ -72,8 +67,11 @@ const SidebarModern = ({ user: propUser }) => {
                     style={{ textDecoration: 'none', outline: 'none', border: 'none' }}
                   >
                     <div className="nav-content">
-                      <span className="nav-text">{link.name}</span>
-                      <span className="nav-description">{link.description}</span>
+                      {link.icon ? (
+                        <i className="bi bi-bell nav-icon"></i>
+                      ) : (
+                        <span className="nav-text">{link.name}</span>
+                      )}
                     </div>
                   </NavLink>
                 </li>
@@ -87,8 +85,8 @@ const SidebarModern = ({ user: propUser }) => {
         .sidebar-modern {
           width: 200px;
           height: 100vh;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-          border-right: 1px solid var(--gray-200);
+          background: #1a202c;
+          border-right: 1px solid #2d3748;
           display: flex;
           flex-direction: column;
           position: fixed;
@@ -101,7 +99,7 @@ const SidebarModern = ({ user: propUser }) => {
 
         .sidebar-header {
           padding: 0.5rem 0.75rem;
-          border-bottom: 1px solid var(--gray-200);
+          border-bottom: 1px solid #2d3748;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -111,20 +109,26 @@ const SidebarModern = ({ user: propUser }) => {
         .logo-section {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 0.5rem;
+          flex: 1;
+        }
+
+        .logo-text {
+          display: flex;
+          flex-direction: column;
         }
 
         .logo-title {
-          font-size: 1.1rem;
+          font-size: 0.9rem;
           font-weight: 700;
-          color: #3b82f6;
+          color: #ffffff;
           margin: 0;
           line-height: 1.1;
         }
 
         .logo-subtitle {
           font-size: 0.6rem;
-          color: #6b7280;
+          color: #a0aec0;
           margin: 0;
           margin-top: 0px;
         }
@@ -154,7 +158,7 @@ const SidebarModern = ({ user: propUser }) => {
         .nav-section-title {
           font-size: 0.75rem;
           font-weight: 600;
-          color: #9ca3af;
+          color: #718096;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           margin-bottom: 0.5rem;
@@ -177,7 +181,7 @@ const SidebarModern = ({ user: propUser }) => {
           padding: 0.35rem 0.6rem;
           border-radius: 0.4rem;
           text-decoration: none !important;
-          color: #6b7280;
+          color: #a0aec0;
           transition: all 250ms ease-in-out;
           position: relative;
           min-height: 30px;
@@ -187,14 +191,14 @@ const SidebarModern = ({ user: propUser }) => {
         }
 
         .nav-link:hover {
-          background: #f3f4f6;
-          color: #1f2937;
+          background: #2d3748;
+          color: #ffffff;
           text-decoration: none !important;
         }
 
         .nav-link.active {
-          background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-          color: #1d4ed8;
+          background: #4a5568;
+          color: #ffffff;
           font-weight: 600;
           text-decoration: none !important;
         }
@@ -210,6 +214,18 @@ const SidebarModern = ({ user: propUser }) => {
           color: #9ca3af;
           line-height: 1.2;
           margin-top: 2px;
+        }
+
+        .nav-icon {
+          font-size: 1.2rem;
+          color: #a0aec0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .nav-link.active .nav-icon {
+          color: #ffffff;
         }
 
         /* Responsive */

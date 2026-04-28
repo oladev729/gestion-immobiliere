@@ -62,6 +62,7 @@ class DemandeVisite {
             SELECT d.id_demande, d.id_bien, d.date_visite, d.date_demande, d.message, d.statut_demande,
                    b.titre as bien_titre, b.adresse as bien_adresse, b.ville as bien_ville,
                    u.nom as locataire_nom, u.prenoms as locataire_prenoms, u.email as locataire_email, u.telephone as locataire_telephone,
+                   u.id_utilisateur as id_utilisateur,
                    'locataire' as type_demandeur
             FROM demander_visite d
             JOIN bien b ON d.id_bien = b.id_bien
@@ -74,6 +75,7 @@ class DemandeVisite {
             SELECT dv.id_demande, dv.id_bien, dv.date_visite_souhaitee as date_visite, dv.date_demande, dv.message, dv.statut as statut_demande,
                    b.titre as bien_titre, b.adresse as bien_adresse, b.ville as bien_ville,
                    dv.nom as locataire_nom, dv.prenoms as locataire_prenoms, dv.email as locataire_email, dv.telephone as locataire_telephone,
+                   NULL::integer as id_utilisateur,
                    'visiteur' as type_demandeur
             FROM demande_inscription_visiteur dv
             JOIN bien b ON dv.id_bien = b.id_bien

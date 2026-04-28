@@ -57,6 +57,10 @@ app.use('/api/biens', bienRoutes);
 const contratRoutes = require('./routes/contratRoutes');
 app.use('/api/contrats', contratRoutes);
 
+// ROUTES DES INVITATIONS DE CONTRAT
+const contractInvitationRoutes = require('./routes/contractInvitationRoutes');
+app.use('/api/contract-invitations', contractInvitationRoutes);
+
 // ROUTES DES DOCUMENTS
 const documentRoutes = require('./routes/documentRoutes');
 app.use('/api/documents', documentRoutes);
@@ -92,5 +96,9 @@ app.use('/api/visiteurs', visiteurRoutes);
 // ROUTES DES MESSAGES
 const messageRoutes = require('./routes/messageRoutes');
 app.use('/api/messages', messageRoutes);
+
+// ROUTES PROPRIÉTAIRES
+const proprietaireRoutes = require('./routes/proprietaireRoutes');
+app.use('/api/proprietaires', proprietaireRoutes);
 
 module.exports = app;

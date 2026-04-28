@@ -38,7 +38,7 @@ export default function OwnerPayments() {
     );
   };
 
-  const filtres = ['tous', 'loyer', 'charge', 'depot_garantie'];
+  const filtres = ['tous', 'loyer', 'depot_garantie'];
   const paiementsFiltres = filtre === 'tous'
     ? paiements
     : paiements.filter(p => p.type_paiement === filtre);

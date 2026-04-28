@@ -66,7 +66,10 @@ const contratController = {
                 req.body.numero_contrat = `CT-${annee}-${numero}`;
             }
 
-            const newContrat = await Contrat.create(req.body);
+            const newContrat = await Contrat.create({
+                ...req.body,
+                statut_contrat: 'en_attente'
+            });
 
             // Créer une notification pour le locataire
             await db.query(
@@ -295,6 +298,59 @@ const contratController = {
 
         } catch (error) {
             console.error('Erreur résiliation contrat:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // ACCEPTER UN CONTRAT (locataire)
+    // ============================================================
+    async accepter(req, res) {
+        try {
+            const contrat = await Contrat.findById(req.params.id);
+            
+            if (!contrat) {
+                return res.status(404).json({ message: 'Contrat non trouvé' });
+            }
+
+            // Vérifier que l'utilisateur est bien le locataire du contrat
+            const locataire = await db.query(
+                'SELECT id_locataire FROM locataire WHERE id_utilisateur = $1',
+                [req.user.id]
+            );
+
+            if (locataire.rows.length === 0 || 
+                contrat.id_locataire !== locataire.rows[0].id_locataire) {
+                return res.status(403).json({ 
+                    message: 'Vous n\'êtes pas autorisé à accepter ce contrat' 
+                });
+            }
+
+            const updatedContrat = await Contrat.update(req.params.id, { 
+                statut_contrat: 'actif',
+                date_signature: new Date()
+            });
+
+            // Notifier le propriétaire
+            await db.query(
+                `INSERT INTO notification (id_utilisateur, titre, message, type)
+                 SELECT u.id_utilisateur, 'Contrat accepté', 
+                 'Le locataire a accepté le contrat pour le bien ' || b.titre, 
+                 'contrat'
+                 FROM proprietaire p
+                 JOIN utilisateur u ON p.id_utilisateur = u.id_utilisateur
+                 JOIN bien b ON b.id_proprietaire = p.id_proprietaire
+                 WHERE p.id_proprietaire = $1 AND b.id_bien = $2`,
+                [contrat.id_proprietaire, contrat.id_bien]
+            );
+
+            res.json({
+                message: 'Contrat accepté avec succès',
+                contrat: updatedContrat
+            });
+
+        } catch (error) {
+            console.error('Erreur acceptation contrat:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },

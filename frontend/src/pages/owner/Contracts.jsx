@@ -1,37 +1,183 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
+import { AuthContext } from '../../context/AuthContext';
+import ContratGenerator from '../../components/ContratGenerator';
+import ContractInvitation from '../../components/ContractInvitation';
 import { useSearch } from '../../context/SearchContext.jsx';
 
+// Composant Error Boundary simple
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error('Erreur capturée dans Contracts:', error, errorInfo);
+        console.error('Stack trace:', error.stack);
+        console.error('Component stack:', errorInfo.componentStack);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    minHeight: '100vh', 
+                    backgroundColor: '#f8fafc',
+                    flexDirection: 'column',
+                    padding: '2rem'
+                }}>
+                    <div style={{ 
+                        color: '#dc2626', 
+                        fontSize: '1.125rem', 
+                        marginBottom: '1rem',
+                        textAlign: 'center'
+                    }}>
+                        Une erreur est survenue lors du chargement de la page.
+                    </div>
+                    
+                    {process.env.NODE_ENV === 'development' && this.state.error && (
+                        <div style={{
+                            backgroundColor: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            borderRadius: '0.375rem',
+                            padding: '1rem',
+                            marginBottom: '1rem',
+                            maxWidth: '600px',
+                            fontSize: '0.875rem',
+                            color: '#991b1b'
+                        }}>
+                            <strong>Erreur détaillée :</strong>
+                            <pre style={{ 
+                                marginTop: '0.5rem', 
+                                whiteSpace: 'pre-wrap',
+                                fontSize: '0.75rem'
+                            }}>
+                                {this.state.error.toString()}
+                            </pre>
+                        </div>
+                    )}
+                    
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button 
+                            onClick={() => window.location.reload()}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                backgroundColor: '#2563eb',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Actualiser la page
+                        </button>
+                        <button 
+                            onClick={() => this.setState({ hasError: false, error: null })}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                backgroundColor: '#6b7280',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Réessayer
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
 const Contracts = () => {
-    const { searchTerm } = useSearch();
-    const [contrats, setContrats] = useState([]);
-    const [biens, setBiens] = useState([]);
-    const [locataires, setLocataires] = useState([]);
-    const [formStep, setFormStep] = useState(0); // 0: Liste, 1: Étape 1, 2: Étape 2
-    const [searchLocataire, setSearchLocataire] = useState('');
-    const [selectedLocataire, setSelectedLocataire] = useState(null);
-    const [successMsg, setSuccessMsg] = useState('');
-    const [errorMsg, setErrorMsg] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [form, setForm] = useState({
-        id_locataire: '', id_bien: '', date_debut: '', date_fin: '',
-        loyer_mensuel: '', charge: 0, nb_mois_depot_guarantie: 1,
-        montant_depot_guarantie_attendu: '', date_signature: new Date().toISOString().split('T')[0]
-    });
+    const { user } = React.useContext(AuthContext);
+    try {
+        const { searchTerm = '' } = useSearch() || {};
+        const [contrats, setContrats] = useState([]);
+        const [biens, setBiens] = useState([]);
+        const [locataires, setLocataires] = useState([]);
+        const [formStep, setFormStep] = useState(0); // 0: Liste, 1: Étape 1, 2: Étape 2
+        const [searchLocataire, setSearchLocataire] = useState('');
+        const [selectedLocataire, setSelectedLocataire] = useState(null);
+        const [successMsg, setSuccessMsg] = useState('');
+        const [errorMsg, setErrorMsg] = useState('');
+        const [loading, setLoading] = useState(false);
+        const [initialLoading, setInitialLoading] = useState(true);
+        const [form, setForm] = useState({
+            id_locataire: '', id_bien: '', date_debut: '', date_fin: '',
+            loyer_mensuel: '', nb_mois_depot_guarantie: 1,
+            montant_depot_guarantie_attendu: '', date_signature: new Date().toISOString().split('T')[0]
+        });
 
-    const fetchContrats = () => api.get('/contrats/mes-contrats').then(res => setContrats(res.data));
-    const fetchBiens = () => api.get('/biens/mes-biens').then(res => setBiens(res.data));
-    const fetchLocataires = () => api.get('/auth/locataires').then(res => setLocataires(res.data)).catch(() => {});
+    const fetchContrats = async () => {
+        try {
+            const res = await api.get('/contrats/mes-contrats');
+            setContrats(res.data || []);
+        } catch (error) {
+            console.error('Erreur lors du chargement des contrats:', error);
+            setContrats([]);
+        }
+    };
+    
+    const fetchBiens = async () => {
+        try {
+            const res = await api.get('/biens/mes-biens');
+            setBiens(res.data || []);
+        } catch (error) {
+            console.error('Erreur lors du chargement des biens:', error);
+            setBiens([]);
+        }
+    };
+    
+    const fetchLocataires = async () => {
+        try {
+            const res = await api.get('/auth/locataires');
+            setLocataires(res.data || []);
+        } catch (error) {
+            console.error('Erreur lors du chargement des locataires:', error);
+            setLocataires([]);
+        }
+    };
 
-    useEffect(() => { fetchContrats(); fetchBiens(); fetchLocataires(); }, []);
+    useEffect(() => { 
+        const loadAllData = async () => {
+            setInitialLoading(true);
+            await Promise.all([
+                fetchContrats(), 
+                fetchBiens(), 
+                fetchLocataires()
+            ]);
+            setInitialLoading(false);
+        };
+        loadAllData();
+    }, []);
 
     // Filtrage dynamique selon la recherche globale
-    const contratsFiltres = contrats.filter(c => 
-        c.numero_contrat.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.bien_titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.locataire_nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.locataire_prenoms.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const contratsFiltres = contrats.filter(c => {
+        if (!c) return false;
+        const numero = c.numero_contrat || '';
+        const titre = c.bien_titre || '';
+        const nom = c.locataire_nom || '';
+        const prenoms = c.locataire_prenoms || '';
+        const searchLower = searchTerm.toLowerCase();
+        
+        return numero.toLowerCase().includes(searchLower) ||
+               titre.toLowerCase().includes(searchLower) ||
+               nom.toLowerCase().includes(searchLower) ||
+               prenoms.toLowerCase().includes(searchLower);
+    });
 
     const handleSelectLocataire = (locataire) => {
         setSelectedLocataire(locataire);
@@ -51,7 +197,7 @@ const Contracts = () => {
             setSelectedLocataire(null);
             setForm({
                 id_locataire: '', id_bien: '', date_debut: '', date_fin: '',
-                loyer_mensuel: '', charge: 0, nb_mois_depot_guarantie: 1,
+                loyer_mensuel: '', nb_mois_depot_guarantie: 1,
                 montant_depot_guarantie_attendu: '', date_signature: new Date().toISOString().split('T')[0]
             });
             fetchContrats();
@@ -60,6 +206,21 @@ const Contracts = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleEditContrat = (c) => {
+        setForm({
+            id_locataire: c.id_locataire,
+            id_bien: c.id_bien,
+            date_debut: c.date_debut?.split('T')[0],
+            date_fin: c.date_fin?.split('T')[0],
+            loyer_mensuel: c.loyer_mensuel,
+            nb_mois_depot_guarantie: c.nb_mois_depot_guarantie,
+            montant_depot_guarantie_attendu: c.montant_depot_guarantie_attendu,
+            date_signature: c.date_signature?.split('T')[0]
+        });
+        setSelectedLocataire(locataires.find(l => l.id_locataire === c.id_locataire));
+        setFormStep(1);
     };
 
     const handlePrint = (c) => {
@@ -92,7 +253,7 @@ const Contracts = () => {
 
                     <div class="section">
                         <div class="section-title">1. LES PARTIES</div>
-                        <p><strong>LE BAILLEUR :</strong> Propriétaire du bien concerné.</p>
+                        <p><strong>LE BAILLEUR :</strong> M./Mme ${c.proprietaire_prenoms || ''} ${c.proprietaire_nom || 'Propriétaire'}, demeurant à l'adresse indiquée au dossier.</p>
                         <p><strong>LE PRENEUR :</strong> M./Mme ${c.locataire_prenoms} ${c.locataire_nom}, demeurant à l'adresse indiquée au dossier.</p>
                     </div>
 
@@ -113,9 +274,8 @@ const Contracts = () => {
                     <div class="section">
                         <div class="section-title">4. CONDITIONS FINANCIÈRES</div>
                         <p>Le loyer mensuel est fixé à : <strong>${Number(c.loyer_mensuel).toLocaleString()} FCFA</strong><br/>
-                        Charges mensuelles : <strong>${Number(c.charge).toLocaleString()} FCFA</strong><br/>
-                        Montant total mensuel : <strong>${(Number(c.loyer_mensuel) + Number(c.charge)).toLocaleString()} FCFA</strong></p>
-                        <p>Dépôt de garantie : <strong>${Number(c.montant_depot_guarantie_attendu).toLocaleString()} FCFA</strong> (${c.nb_mois_depot_guarantie} mois de loyer hors charges).</p>
+                        Les charges sont gérées directement par le locataire.</p>
+                        <p>Dépôt de garantie : <strong>${Number(c.montant_depot_guarantie_attendu).toLocaleString()} FCFA</strong> (${c.nb_mois_depot_guarantie} mois de loyer).</p>
                     </div>
 
                     <div class="section">
@@ -174,6 +334,30 @@ const Contracts = () => {
             </div>
         </div>
     );
+
+    if (initialLoading) {
+        return (
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                minHeight: '100vh', 
+                backgroundColor: '#f8fafc',
+                flexDirection: 'column'
+            }}>
+                <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    border: '4px solid #e5e7eb', 
+                    borderTop: '4px solid #2563eb', 
+                    borderRadius: '50%', 
+                    animation: 'spin 1s linear infinite',
+                    marginBottom: '1rem'
+                }}></div>
+                <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>Chargement des contrats...</div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '0.75rem' }}>
@@ -320,14 +504,8 @@ const Contracts = () => {
                                             style={{ borderRadius: '0.5rem' }} min="0"
                                             value={form.loyer_mensuel} onChange={e => setForm({ ...form, loyer_mensuel: e.target.value })} />
                                     </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Charges mensuelles (FCFA)</label>
-                                        <input className="form-control" type="number"
-                                            style={{ borderRadius: '0.5rem' }} min="0"
-                                            value={form.charge} onChange={e => setForm({ ...form, charge: e.target.value })} />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Nb mois caution</label>
+                                                                        <div>
+                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Nb mois depot guarantie</label>
                                         <input className="form-control" type="number"
                                             style={{ borderRadius: '0.5rem' }} min="0"
                                             value={form.nb_mois_depot_guarantie} onChange={e => {
@@ -337,7 +515,7 @@ const Contracts = () => {
                                             }} />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Montant caution (FCFA)</label>
+                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Montant depot guarantie (FCFA)</label>
                                         <input className="form-control" type="number"
                                             style={{ borderRadius: '0.5rem' }} min="0"
                                             value={form.montant_depot_guarantie_attendu} onChange={e => setForm({ ...form, montant_depot_guarantie_attendu: e.target.value })} />
@@ -410,17 +588,15 @@ const Contracts = () => {
                                             </span>
                                         </td>
                                         <td style={{ padding: '0.5rem 0.75rem' }}>
-                                            <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                                <button onClick={() => handlePrint(c)}
-                                                    className="btn btn-sm btn-outline-primary" style={{ borderRadius: '0.4rem', fontSize: '0.65rem', padding: '0.2rem 0.5rem', fontWeight: '600', textDecoration: 'none' }}>
-                                                    Imprimer
-                                                </button>
-                                                {c.statut_contrat === 'actif' && (
-                                                    <button onClick={() => handleTerminer(c.id_contact)}
-                                                        className="btn btn-sm btn-outline-danger" style={{ borderRadius: '0.4rem', fontSize: '0.65rem', padding: '0.2rem 0.5rem', fontWeight: '600' }}>
-                                                        Clôturer
-                                                    </button>
-                                                )}
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                <button className="btn btn-sm btn-outline-primary" onClick={() => handlePrint(c)}>Voir</button>
+                                                <button className="btn btn-sm btn-outline-warning" onClick={() => handleEditContrat(c)}>Modifier</button>
+                                                <ContratGenerator 
+                                                    contrat={c}
+                                                    bien={biens.find(b => b.id_bien === c.id_bien)}
+                                                    proprietaire={user}
+                                                    locataire={locataires.find(l => l.id_locataire === c.id_locataire)}
+                                                />
                                             </div>
                                         </td>
                                     </tr>
@@ -440,9 +616,55 @@ const Contracts = () => {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
             `}</style>
         </div>
     );
+    } catch (error) {
+        console.error('Erreur générale dans le composant Contracts:', error);
+        return (
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                minHeight: '100vh', 
+                backgroundColor: '#f8fafc',
+                flexDirection: 'column',
+                padding: '2rem'
+            }}>
+                <div style={{ 
+                    color: '#dc2626', 
+                    fontSize: '1.125rem', 
+                    marginBottom: '1rem',
+                    textAlign: 'center'
+                }}>
+                    Une erreur inattendue est survenue.
+                </div>
+                <button 
+                    onClick={() => window.location.reload()}
+                    style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#2563eb',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Actualiser la page
+                </button>
+            </div>
+        );
+    }
 };
 
-export default Contracts;
+const ContractsWithErrorBoundary = () => (
+    <ErrorBoundary>
+        <Contracts />
+    </ErrorBoundary>
+);
+
+export default ContractsWithErrorBoundary;

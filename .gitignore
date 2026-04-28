@@ -1,7 +1,58 @@
-# D‚pendances 
-node_modules/ 
-.env 
-dist/ 
-build/ 
-.DS_Store 
-*.log 
+# Node
+node_modules/
+npm-debug.log
+
+# Env
+.env
+
+# Build
+dist/
+build/
+
+# Uploads (TRÃˆS IMPORTANT)
+backend/uploads/
+
+# Logs
+*.log
+
+# Tests & debug
+test_*.js
+debug_*.js
+*test*
+*debug*
+scratch/
+
+# PDF & fichiers temporaires
+*.pdf
+
+# Backup
+*backup*
+*.old
+*.bak
+*_backup
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.sqlite
+*.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Coverage
+/coverage
+
+# Temporary files
+tmp/
+temp/
+
+# Misc
+/.pnp
+.pnp.js

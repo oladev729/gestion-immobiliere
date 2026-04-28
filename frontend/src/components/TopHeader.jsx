@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api/axios';
 import '../styles/design-system.css';
@@ -6,6 +7,7 @@ import '../styles/design-system.css';
 const TopHeader = ({ user: propUser, onSearch }) => {
   const { user: contextUser, logout: contextLogout, setUser } = useContext(AuthContext);
   const user = propUser || contextUser;
+  const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -57,6 +59,21 @@ const TopHeader = ({ user: propUser, onSearch }) => {
       } catch (err) { console.error(err); }
   };
 
+    const handleNotificationClick = async (n) => {
+        if (!n.lue) await markAsRead(n.id_notification);
+        
+        const isContrat = n.type === 'contrat' || n.titre?.toLowerCase().includes('contrat');
+        
+        if (isContrat) {
+            if (user?.type_utilisateur === 'locataire' || user?.type === 'locataire') {
+                navigate('/tenant/rentals');
+            } else if (user?.type_utilisateur === 'proprietaire' || user?.type === 'proprietaire') {
+                navigate('/owner/contracts');
+            }
+        }
+        setShowNotifications(false);
+    };
+
   const handleUpdateProfile = async (e) => {
       e.preventDefault();
       setSaving(true);
@@ -90,7 +107,7 @@ const TopHeader = ({ user: propUser, onSearch }) => {
         {/* Notifications */}
         <div style={{ position: 'relative' }}>
             <button className="notification-bell" title="Notifications" onClick={toggleNotifications}>
-                <span className="bell-text">Alertes</span>
+                <i className="bi bi-bell"></i>
                 {notifCount > 0 && <span className="notification-badge">{notifCount}</span>}
             </button>
 
@@ -104,11 +121,21 @@ const TopHeader = ({ user: propUser, onSearch }) => {
                     <div className="notifications-list">
                         {notifications.length > 0 ? (
                             notifications.map(n => (
-                                <div key={n.id_notification} className={`notif-item ${!n.lue ? 'unread' : ''}`} onClick={() => !n.lue && markAsRead(n.id_notification)}>
+                                <div 
+                                    key={n.id_notification} 
+                                    className={`notif-item ${!n.lue ? 'unread' : ''}`} 
+                                    onClick={() => handleNotificationClick(n)}
+                                >
                                     <div className="notif-content">
-                                        <div className="notif-title">{n.titre}</div>
+                                        <div className="notif-title">
+                                            {n.titre}
+                                            {n.type === 'contrat' && <i className="bi bi-file-earmark-text ms-2 text-primary"></i>}
+                                        </div>
                                         <div className="notif-message">{n.message}</div>
-                                        <div className="notif-time">{new Date(n.created_at).toLocaleDateString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                                        <div className="notif-time">
+                                            {new Date(n.date_envoi || n.created_at).toLocaleDateString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                            {n.type === 'contrat' && <span className="ms-2 text-primary fw-bold" style={{fontSize: '0.65rem'}}>• Cliquez pour voir</span>}
+                                        </div>
                                     </div>
                                     {!n.lue && <div className="unread-dot"></div>}
                                 </div>
@@ -166,14 +193,7 @@ const TopHeader = ({ user: propUser, onSearch }) => {
 
                 <div className="dropdown-divider"></div>
                 
-                 <button onClick={() => {
-                     if (user?.type_utilisateur === 'visiteur') {
-                         localStorage.removeItem('visitor_email');
-                         window.location.href = '/login';
-                     } else {
-                         contextLogout();
-                     }
-                 }} className="logout-dropdown-btn">
+                 <button onClick={contextLogout} className="logout-dropdown-btn">
                      Se déconnecter
                  </button>
             </div>
@@ -202,7 +222,7 @@ const TopHeader = ({ user: propUser, onSearch }) => {
           border: 1px solid #e2e8f0;
           border-radius: 6px;
           padding: 0.2rem 0.5rem;
-          width: 250px;
+          width: 450px;
           transition: all 0.2s ease;
         }
 
@@ -228,13 +248,13 @@ const TopHeader = ({ user: propUser, onSearch }) => {
           position: relative;
           background: #f8fafc;
           border: 1px solid #e2e8f0;
-          padding: 0.3rem 0.6rem;
+          padding: 0.4rem 0.6rem;
           border-radius: 6px;
           cursor: pointer;
           transition: all 0.2s;
           font-weight: 600;
-          color: #475569;
-          font-size: 0.7rem;
+          color: #6b7280;
+          font-size: 1.1rem;
           text-decoration: none !important;
         }
 
@@ -441,7 +461,7 @@ const TopHeader = ({ user: propUser, onSearch }) => {
         }
 
         @media (max-width: 768px) {
-          .search-bar { width: 150px; }
+          .search-bar { width: 200px; }
           .user-name, .user-role { display: none; }
         }
       `}</style>

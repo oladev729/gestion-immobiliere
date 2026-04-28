@@ -58,7 +58,7 @@ const Login = () => {
     <div className="login-page-modern">
       <div className="login-container">
         {/* Logo ImmoGest */}
-        <h1 className="main-logo-text">ImmoGest</h1>
+        <h1 className="logo-immogest">ImmoGest</h1>
 
         {/* Login Card */}
         <div className="login-card">
@@ -97,7 +97,7 @@ const Login = () => {
           ) : (
             <form onSubmit={(e) => handleSubmit(e, false)} className="login-form">
               <div className="form-group">
-                <label>Adresse Email</label>
+                <label> Email</label>
                 <input
                   type="email"
                   value={email}
@@ -134,9 +134,6 @@ const Login = () => {
               <Link to="/forgot-password" title="Réinitialiser" className="forgot-link">Mot de passe oublié ?</Link>
             </div>
 
-            <div className="visitor-shortcut">
-              <Link to="/visitor/login" className="visitor-link">Accès Visiteur simple (email/code)</Link>
-            </div>
           </div>
         </div>
       </div>

@@ -9,15 +9,41 @@ const demandeVisiteController = {
         try {
             const { id_bien, date_visite, message } = req.body;
 
+            // Récupérer les infos de l'utilisateur en DB pour être sûr du type (le token peut être obsolète)
+            const userDB = await db.query(
+                'SELECT type_utilisateur, email FROM utilisateur WHERE id_utilisateur = $1',
+                [req.user.id]
+            );
+
+            if (userDB.rows.length === 0) {
+                return res.status(404).json({ message: 'Utilisateur non trouvé' });
+            }
+
+            const currentUserType = userDB.rows[0].type_utilisateur;
+
             // Vérifier que l'utilisateur est un locataire
-            const locataire = await db.query(
+            let locataire = await db.query(
                 'SELECT id_locataire FROM locataire WHERE id_utilisateur = $1',
                 [req.user.id]
             );
 
+            // Si le profil locataire est manquant mais que l'utilisateur est bien de type locataire en DB
+            if (locataire.rows.length === 0 && currentUserType === 'locataire') {
+                console.log(`🔧 Création automatique du profil locataire manquant pour l'utilisateur ${req.user.id}`);
+                await db.query(
+                    'INSERT INTO locataire (id_utilisateur, compte_confirme, email_invite) VALUES ($1, $2, $3)',
+                    [req.user.id, true, userDB.rows[0].email]
+                );
+                locataire = await db.query(
+                    'SELECT id_locataire FROM locataire WHERE id_utilisateur = $1',
+                    [req.user.id]
+                );
+            }
+
             if (locataire.rows.length === 0) {
+                console.log(`❌ ACCÈS REFUSÉ : Utilisateur ${req.user.id} (${currentUserType}) n'a pas de profil locataire.`);
                 return res.status(403).json({ 
-                    message: 'Seul un locataire peut faire une demande de visite' 
+                    message: `DEBUG: Seul un locataire peut faire une demande. Votre profil est : ${currentUserType || 'INCONNU'}.` 
                 });
             }
 

@@ -6,6 +6,9 @@ const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const typeFromStep = location.state?.type_utilisateur || "locataire";
+  const [loading, setLoading] = useState(false);
+  
+  console.log('Type utilisateur reçu:', typeFromStep, 'Location state:', location.state);
 
   const [formData, setFormData] = useState({
     nom: "",
@@ -13,6 +16,7 @@ const Register = () => {
     email: "",
     telephone: "",
     mot_de_passe: "",
+    confirmer_mot_de_passe: "",
     adresse_fiscale: "",
   });
 
@@ -21,26 +25,82 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation de correspondance des mots de passe
+    if (formData.mot_de_passe !== formData.confirmer_mot_de_passe) {
+      alert("Les mots de passe ne correspondent pas !");
+      return;
+    }
+    
+    setLoading(true);
     try {
       const payload = { ...formData, type_utilisateur: typeFromStep };
       await api.post("/auth/register", payload);
-      alert("Inscription réussie ! Connectez-vous.");
-      navigate("/login");
+      alert("Inscription réussie !");
+      
+      // Récupérer les données de redirection
+      const { redirectTo, bienSelectionne } = location.state || {};
+      
+      // Rediriger vers la page appropriée
+      if (typeFromStep === "proprietaire") {
+        navigate(redirectTo || "/owner-dashboard");
+      } else if (typeFromStep === "locataire") {
+        // Si un bien était sélectionné, rediriger vers les propriétés avec le bien
+        if (bienSelectionne) {
+          navigate("/tenant/properties", { 
+            state: { 
+              bienSelectionne: bienSelectionne,
+              showVisiteForm: true 
+            } 
+          });
+        } else {
+          navigate(redirectTo || "/tenant/properties");
+        }
+      }
     } catch (err) {
       alert(err.response?.data?.message || "Erreur d'inscription");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const inputClassName = "form-control input-blue";
-
   return (
-    <div
-      style={{
-        paddingTop: "40px",
-        paddingBottom: "40px",
-        textAlign: "center",
-      }}
-    >
+    <>
+      <style>{`
+        .signin-btn {
+          background: #1a73e8 !important;
+          color: white !important;
+          border: none !important;
+          padding: 12px !important;
+          border-radius: 999px !important;
+          font-weight: 700 !important;
+          font-size: 15px !important;
+          cursor: pointer !important;
+          transition: transform 0.2s, background 0.2s !important;
+        }
+        
+        .signin-btn:hover {
+          background: #1557b0 !important;
+          transform: translateY(-1px) !important;
+        }
+        
+        .signin-btn:active {
+          transform: translateY(0) !important;
+        }
+        
+        .signin-btn:disabled {
+          opacity: 0.7 !important;
+          cursor: not-allowed !important;
+        }
+      `}</style>
+      
+      <div
+        style={{
+          paddingTop: "40px",
+          paddingBottom: "40px",
+          textAlign: "center",
+        }}
+      >
       <div className="mb-4">
         <h4 className="logo-immogest">ImmoGest</h4>
         <p className="mb-1">Ouvrir un compte gratuit</p>
@@ -62,23 +122,32 @@ const Register = () => {
             style={{
               fontWeight: 700,
               color: "#000000",
-              marginBottom: "20px",   // espace ajouté
+              marginBottom: "8px",
             }}
           >
-            "Vous étant propriétaire devriez inviter vos locataire"
+            {typeFromStep === "proprietaire" 
+              ? "Inscription propriétaire" 
+              : "Inscription locataire"
+            }
           </p>
-
+          
+          <p 
+            className="text-muted small"
+            style={{ marginBottom: "20px" }}
+          >
+            {typeFromStep === "proprietaire" 
+              ? "Gérez vos biens et locataires facilement" 
+              : "Trouvez votre logement idéal"
+            }
+          </p>
 
           <hr style={{ marginTop: 0, marginBottom: 16 }} />
 
           <form onSubmit={handleSubmit}>
             <div className="mb-2">
-              <label className="small mb-1" style={{ color: "#000000" }}>
-                Nom
-              </label>
               <input
                 type="text"
-                className={inputClassName}
+                className="form-control"
                 placeholder="Nom"
                 value={formData.nom}
                 onChange={handleChange("nom")}
@@ -87,12 +156,9 @@ const Register = () => {
             </div>
 
             <div className="mb-2">
-              <label className="small mb-1" style={{ color: "#000000" }}>
-                Prénoms
-              </label>
               <input
                 type="text"
-                className={inputClassName}
+                className="form-control"
                 placeholder="Prénoms"
                 value={formData.prenoms}
                 onChange={handleChange("prenoms")}
@@ -101,13 +167,10 @@ const Register = () => {
             </div>
 
             <div className="mb-2">
-              <label className="small mb-1" style={{ color: "#000000" }}>
-                Email
-              </label>
               <input
                 type="email"
-                className={inputClassName}
-                placeholder="exemple@gmail.com"
+                className="form-control"
+                placeholder="Email"
                 value={formData.email}
                 onChange={handleChange("email")}
                 required
@@ -115,13 +178,10 @@ const Register = () => {
             </div>
 
             <div className="mb-2">
-              <label className="small mb-1" style={{ color: "#000000" }}>
-                Téléphone
-              </label>
               <input
                 type="tel"
-                className={inputClassName}
-                placeholder="Ex: 0123456789"
+                className="form-control"
+                placeholder="Téléphone"
                 value={formData.telephone}
                 onChange={handleChange("telephone")}
                 required
@@ -129,27 +189,32 @@ const Register = () => {
             </div>
 
             <div className="mb-3">
-              <label className="small mb-1" style={{ color: "#000000" }}>
-                Mot de passe
-              </label>
               <input
                 type="password"
-                className={inputClassName}
-                placeholder="••••••••"
+                className="form-control"
+                placeholder="Mot de passe"
                 value={formData.mot_de_passe}
                 onChange={handleChange("mot_de_passe")}
                 required
               />
             </div>
 
+            <div className="mb-3">
+              <input
+                type="password"
+                className="form-control"
+                placeholder="Confirmer mot de passe"
+                value={formData.confirmer_mot_de_passe}
+                onChange={handleChange("confirmer_mot_de_passe")}
+                required
+              />
+            </div>
+
             {typeFromStep === "proprietaire" && (
               <div className="mb-3">
-                <label className="small mb-1" style={{ color: "#000000" }}>
-                  Adresse fiscale (Ex: XX BP Numéro)
-                </label>
                 <input
                   type="text"
-                  className={inputClassName}
+                  className="form-control"
                   placeholder="Adresse fiscale"
                   value={formData.adresse_fiscale}
                   onChange={handleChange("adresse_fiscale")}
@@ -160,10 +225,10 @@ const Register = () => {
 
             <button
               type="submit"
-              className="btn btn-primary w-100 mb-3"
-              style={{ borderRadius: "999px" }}
+              className="signin-btn w-100 mb-3"
+              disabled={loading}
             >
-              S’inscrire
+              {loading ? "Inscription..." : "S'inscrire"}
             </button>
           </form>
 
@@ -182,7 +247,8 @@ const Register = () => {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -95,17 +95,34 @@ export default function MaintenanceRecues() {
       const res = await api.patch(`/problemes/${problemeSelectionne.id_probleme}/gerer`, payload);
       setGestionSuccess(res.data.message);
 
-      setProblemes((prev) =>
-        prev.map((p) =>
-          p.id_probleme === problemeSelectionne.id_probleme
-            ? { ...p, statut_probleme: formStatut }
-            : p
-        )
-      );
+      // Mettre à jour avec les données retournées par le backend
+      if (res.data.probleme) {
+        setProblemes((prev) =>
+          prev.map((p) =>
+            p.id_probleme === problemeSelectionne.id_probleme
+              ? { ...p, ...res.data.probleme }
+              : p
+          )
+        );
+      } else {
+        // Fallback si le backend ne retourne pas le problème mis à jour
+        setProblemes((prev) =>
+          prev.map((p) =>
+            p.id_probleme === problemeSelectionne.id_probleme
+              ? { ...p, statut_probleme: formStatut }
+              : p
+          )
+        );
+      }
 
       setTimeout(() => { fermerModal(); }, 1500);
     } catch (err) {
-      setGestionError(err.response?.data?.message || 'Erreur lors de la gestion du problème.');
+      console.error('Erreur gestion problème:', err);
+      const errorMessage = err.response?.data?.message || 
+                           err.response?.data?.error || 
+                           err.message || 
+                           'Erreur lors de la gestion du problème.';
+      setGestionError(errorMessage);
     } finally {
       setGestionLoading(false);
     }

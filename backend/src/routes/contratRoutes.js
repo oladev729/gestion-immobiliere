@@ -46,4 +46,7 @@ router.patch('/:id/terminer', authenticateToken, contratController.terminer);
 // Résilier un contrat
 router.patch('/:id/resilier', authenticateToken, contratController.resilier);
 
+// Accepter un contrat (locataire)
+router.patch('/:id/accepter', authenticateToken, contratController.accepter);
+
 module.exports = router;

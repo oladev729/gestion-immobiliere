@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useContext } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import { AuthContext } from '../../context/AuthContext';
 
 const AvailableProperties = () => {
     const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
+    const location = useLocation();
     const [biens, setBiens] = useState([]);
     const [ville, setVille] = useState('');
     const [selectedBien, setSelectedBien] = useState(null);
@@ -18,7 +21,20 @@ const AvailableProperties = () => {
         setBiens(res.data);
     };
 
-    useEffect(() => { fetchBiens(); }, [ville]);
+    useEffect(() => { 
+        fetchBiens(); 
+        
+        // Vérifier si un bien a été sélectionné après inscription
+        const stateData = location.state || {};
+        const { bienSelectionne, showVisiteForm } = stateData;
+        
+        if (showVisiteForm && bienSelectionne) {
+            setSelectedBien(bienSelectionne);
+            setSuccessMsg('');
+            setErrorMsg('');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [ville, location.state]);
 
     const handleDemandeVisite = async (e) => {
         e.preventDefault();
@@ -124,12 +140,7 @@ const AvailableProperties = () => {
                                 <p className="text-success fw-bold mb-1">
                                     {Number(bien.loyer_mensuel).toLocaleString()} FCFA / mois
                                 </p>
-                                {bien.charge > 0 && (
-                                    <p className="text-muted small mb-1">
-                                        + {Number(bien.charge).toLocaleString()} FCFA charges
-                                    </p>
-                                )}
-                                <p className="small text-muted mb-2">
+                                                                <p className="small text-muted mb-2">
                                     {bien.superficie && `${bien.superficie} m²`}
                                     {bien.nombre_pieces && ` · ${bien.nombre_pieces} pièces`}
                                     {bien.meuble ? ' · Meublé' : ''}
@@ -137,16 +148,38 @@ const AvailableProperties = () => {
                                 <p className="small">{bien.description}</p>
                             </div>
                             <div className="card-footer bg-white border-0 pb-3">
-                                <button
-                                    className="btn btn-primary btn-sm w-100"
-                                    onClick={() => {
-                                        setSelectedBien(bien);
-                                        setSuccessMsg('');
-                                        setErrorMsg('');
-                                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                                    }}>
-                                    Demander une visite
-                                </button>
+                                <div className="d-grid gap-2">
+                                    <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() => {
+                                            // Vérifier si l'utilisateur est connecté
+                                            if (!user) {
+                                                // Rediriger vers l'inscription locataire
+                                                navigate('/register-step-role', { 
+                                                    state: { 
+                                                        redirectTo: '/tenant/properties',
+                                                        bienSelectionne: bien 
+                                                    } 
+                                                });
+                                            } else {
+                                                // Ouvrir le formulaire de demande de visite
+                                                setSelectedBien(bien);
+                                                setSuccessMsg('');
+                                                setErrorMsg('');
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }
+                                        }}>
+                                        Demander une visite
+                                    </button>
+                                    <button
+                                        className="btn btn-outline-primary btn-sm"
+                                        onClick={() => {
+                                            // Rediriger vers la messagerie avec le propriétaire
+                                            navigate(`/tenant/messaging?proprietaireId=${bien.id_proprietaire}&bienId=${bien.id_bien}`);
+                                        }}>
+                                        Contacter le propriétaire
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

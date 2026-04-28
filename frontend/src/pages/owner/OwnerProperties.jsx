@@ -19,7 +19,6 @@ const OwnerProperties = () => {
         description: '',
         type_bien: 'appartement',
         loyer_mensuel: '',
-        charge: '',
         adresse: '',
         ville: '',
         code_postal: '',

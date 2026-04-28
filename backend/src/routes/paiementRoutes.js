@@ -25,6 +25,12 @@ router.get('/contrat/:id_contact/loyers', authenticateToken, paiementController.
 // Récupérer mes paiements (locataire connecté)
 router.get('/mes-paiements', authenticateToken, paiementController.getMesPaiements);
 
+// Récupérer mes charges (locataire connecté)
+router.get('/mes-charges', authenticateToken, paiementController.mesCharges);
+
+// Récupérer mes notifications (locataire connecté)
+router.get('/mes-notifications', authenticateToken, paiementController.mesNotifications);
+
 // Récupérer les impayés
 router.get('/impayes', authenticateToken, paiementController.getImpayes);
 
@@ -32,17 +38,17 @@ router.get('/impayes', authenticateToken, paiementController.getImpayes);
 router.get('/stats', authenticateToken, paiementController.getStats);
 
 // ============================================================
-// NOUVELLES ROUTES CINETPAY
+// ROUTES CAURISPAY
 // ============================================================
 
-// Initier un paiement en ligne (locataire)
-router.post('/initier', authenticateToken, paiementController.initier);
+// Initier un paiement CaurisPay (locataire)
+router.post('/caurispay/initier', authenticateToken, paiementController.initierCaurisPay);
 
-// Webhook CinetPay — PAS de auth (appelé directement par CinetPay)
-router.post('/notify', paiementController.notify);
+// Vérifier statut paiement CaurisPay
+router.post('/caurispay/statut', authenticateToken, paiementController.checkCaurisPayStatus);
 
-// Historique paiements en ligne du locataire
-router.get('/en-ligne', authenticateToken, paiementController.mesPaiementsEnLigne);
+// Obtenir les données du widget CaurisPay
+router.get('/caurispay/widget', authenticateToken, paiementController.getCaurisPayWidgetData);
 
 // Paiements reçus par le propriétaire
 router.get('/recus', authenticateToken, paiementController.paiementsRecus);

@@ -1,0 +1,53 @@
+{
+  "name": "immogest",
+  "version": "1.0.0",
+  "description": "Plateforme complète de gestion immobilière avec système de paiement CaurisPay",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean:frontend": "cd frontend && rm -rf dist node_modules",
+    "clean:backend": "cd backend && rm -rf node_modules",
+    "setup": "npm run install:all && npm run setup:db",
+    "setup:db": "cd backend && npm run migrate",
+    "start": "npm run start:backend",
+    "start:backend": "cd backend && npm start",
+    "docs": "cd docs && python -m http.server 8080",
+    "docs:generate": "echo '📚 Génération de la documentation professionnelle...' && echo '✅ Documentation générée avec succès'",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend && npm run lint"
+  },
+  "keywords": [
+    "immobilier",
+    "gestion",
+    "caurispay",
+    "react",
+    "nodejs",
+    "postgresql",
+    "benin"
+  ],
+  "author": "ImmoGest Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/immogest/immogest.git"
+  },
+  "homepage": "https://immogest.bj",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

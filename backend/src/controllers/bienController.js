@@ -1,6 +1,7 @@
 const Bien = require('../models/Bien');
-const db = require('../config/database');
-
+const Proprietaire = require('../models/Proprietaire');
+const Notification = require('../models/Notification');
+const PhotosBien = require('../models/PhotosBien');
 
 const bienController = {
     // ============================================================
@@ -8,29 +9,24 @@ const bienController = {
     // ============================================================
     async create(req, res) {
         try {
-            // Récupérer l'id_proprietaire à partir de l'utilisateur connecté
-            const proprietaire = await db.query(
-                'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
-                [req.user.id]
-            );
+            const proprietaire = await Proprietaire.findByIdUtilisateur(req.user.id);
 
-            if (proprietaire.rows.length === 0) {
+            if (!proprietaire) {
                 return res.status(403).json({ 
                     message: 'Vous devez être propriétaire pour créer un bien' 
                 });
             }
 
-            const id_proprietaire = proprietaire.rows[0].id_proprietaire;
+            const id_proprietaire = proprietaire.id_proprietaire;
             const newBien = await Bien.create(req.body, id_proprietaire);
 
             // Créer une notification pour le propriétaire
-            await db.query(
-                `INSERT INTO notification (id_utilisateur, titre, message, type)
-                 VALUES ($1, $2, $3, $4)`,
-                [req.user.id, 'Bien créé', 
-                 `Votre bien "${newBien.titre}" a été créé avec succès`, 
-                 'contrat']
-            );
+            await Notification.create({
+                id_utilisateur: req.user.id,
+                titre: 'Bien créé',
+                message: `Votre bien "${newBien.titre}" a été créé avec succès`,
+                type: 'contrat'
+            });
 
             res.status(201).json({
                 message: 'Bien créé avec succès',
@@ -49,24 +45,17 @@ const bienController = {
     // ============================================================
     async getMyBiens(req, res) {
         try {
-            const proprietaire = await db.query(
-                'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
-                [req.user.id]
-            );
+            const proprietaire = await Proprietaire.findByIdUtilisateur(req.user.id);
 
-            if (proprietaire.rows.length === 0) {
+            if (!proprietaire) {
                 return res.status(200).json([]); // Pas propriétaire = pas de biens
             }
 
-            const biens = await Bien.findByProprietaire(proprietaire.rows[0].id_proprietaire);
+            const biens = await Bien.findByProprietaire(proprietaire.id_proprietaire);
             
             // Ajouter les photos pour chaque bien (en mettant la principale en premier)
             for (let bien of biens) {
-                const photos = await db.query(
-                    'SELECT url_photobien, legende, est_principale FROM photosbien WHERE id_bien = $1 ORDER BY est_principale DESC, date_ajout ASC',
-                    [bien.id_bien]
-                );
-                bien.photos = photos.rows;
+                bien.photos = await Bien.getPhotos(bien.id_bien);
             }
 
             res.json(biens);
@@ -93,11 +82,7 @@ const bienController = {
             
             // Ajouter la photo principale pour chaque bien
             for (let bien of biens) {
-                const photos = await db.query(
-                    'SELECT url_photobien FROM photosbien WHERE id_bien = $1 ORDER BY est_principale DESC, date_ajout ASC LIMIT 1',
-                    [bien.id_bien]
-                );
-                bien.photo_principale = photos.rows[0]?.url_photobien || null;
+                bien.photo_principale = await Bien.getPhotoPrincipale(bien.id_bien);
             }
 
             res.json(biens);
@@ -121,11 +106,7 @@ const bienController = {
             }
 
             // Récupérer toutes les photos du bien
-            const photos = await db.query(
-                'SELECT url_photobien, legende FROM photosbien WHERE id_bien = $1',
-                [bien.id_bien]
-            );
-            bien.photos = photos.rows;
+            bien.photos = await Bien.getPhotos(bien.id_bien);
 
             res.json(bien);
 
@@ -148,12 +129,9 @@ const bienController = {
             }
 
             // Vérifier que le propriétaire connecté est bien le propriétaire du bien
-            const proprietaire = await db.query(
-                'SELECT id_utilisateur FROM proprietaire WHERE id_proprietaire = $1',
-                [bien.id_proprietaire]
-            );
+            const proprietaire = await Proprietaire.findById(bien.id_proprietaire);
 
-            if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
+            if (proprietaire.id_utilisateur !== req.user.id) {
                 return res.status(403).json({ 
                     message: 'Vous n\'êtes pas autorisé à modifier ce bien' 
                 });
@@ -183,12 +161,9 @@ const bienController = {
                 return res.status(404).json({ message: 'Bien non trouvé' });
             }
 
-            const proprietaire = await db.query(
-                'SELECT id_utilisateur FROM proprietaire WHERE id_proprietaire = $1',
-                [bien.id_proprietaire]
-            );
+            const proprietaire = await Proprietaire.findById(bien.id_proprietaire);
 
-            if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
+            if (proprietaire.id_utilisateur !== req.user.id) {
                 return res.status(403).json({ message: 'Non autorisé' });
             }
 
@@ -199,10 +174,7 @@ const bienController = {
             }
 
             // Supprimer les données liées avant le bien
-            await db.query('DELETE FROM demander_visite WHERE id_bien = $1', [req.params.id]);
-            await db.query('DELETE FROM problemes WHERE id_bien = $1', [req.params.id]);
-            await db.query('DELETE FROM photosbien WHERE id_bien = $1', [req.params.id]);
-
+            await Bien.deleteDependencies(req.params.id);
             await Bien.delete(req.params.id);
 
             res.json({ message: 'Bien supprimé avec succès' });
@@ -227,12 +199,9 @@ const bienController = {
             }
 
             // Vérifier les droits
-            const proprietaire = await db.query(
-                'SELECT id_utilisateur FROM proprietaire WHERE id_proprietaire = $1',
-                [bien.id_proprietaire]
-            );
+            const proprietaire = await Proprietaire.findById(bien.id_proprietaire);
 
-            if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
+            if (proprietaire.id_utilisateur !== req.user.id) {
                 return res.status(403).json({ 
                     message: 'Vous n\'êtes pas autorisé à modifier ce bien' 
                 });
@@ -276,11 +245,7 @@ const bienController = {
             
             // Ajouter les photos
             for (let bien of biens) {
-                const photos = await db.query(
-                    'SELECT url_photobien, legende FROM photosbien WHERE id_bien = $1 LIMIT 1',
-                    [bien.id_bien]
-                );
-                bien.photo_principale = photos.rows[0]?.url_photobien || null;
+                bien.photo_principale = await Bien.getPhotoPrincipale(bien.id_bien);
             }
 
             res.json(biens);
@@ -297,14 +262,11 @@ const bienController = {
     // ============================================================
     async getStats(req, res) {
         try {
-            const proprietaire = await db.query(
-                'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
-                [req.user.id]
-            );
+            const proprietaire = await Proprietaire.findByIdUtilisateur(req.user.id);
 
             let stats;
-            if (proprietaire.rows.length > 0) {
-                stats = await Bien.countByStatut(proprietaire.rows[0].id_proprietaire);
+            if (proprietaire) {
+                stats = await Bien.countByStatut(proprietaire.id_proprietaire);
             } else {
                 stats = await Bien.countByStatut();
             }
@@ -338,27 +300,20 @@ const bienController = {
                 return res.status(404).json({ message: 'Bien non trouvé' });
             }
 
-            const proprietaire = await db.query(
-                'SELECT id_utilisateur FROM proprietaire WHERE id_proprietaire = $1',
-                [bien.id_proprietaire]
-            );
+            const proprietaire = await Proprietaire.findById(bien.id_proprietaire);
 
-            if (proprietaire.rows[0].id_utilisateur !== req.user.id) {
+            if (proprietaire.id_utilisateur !== req.user.id) {
                 return res.status(403).json({ 
                     message: 'Vous n\'êtes pas autorisé à ajouter des photos à ce bien' 
                 });
             }
 
             // Insérer la photo
-            const result = await db.query(
-                `INSERT INTO photosbien (id_bien, url_photobien, legende)
-                 VALUES ($1, $2, $3) RETURNING *`,
-                [id, url_photobien, legende || null]
-            );
+            const photo = await PhotosBien.add(id, url_photobien, legende);
 
             res.status(201).json({
                 message: 'Photo ajoutée avec succès',
-                photo: result.rows[0]
+                photo
             });
 
         } catch (error) {
@@ -382,24 +337,17 @@ const bienController = {
             }
 
             // Vérifier les droits d'accès (public pour les biens disponibles, privé pour les autres)
-            const isProprietaire = req.user && await db.query(
-                'SELECT id_utilisateur FROM proprietaire WHERE id_utilisateur = $1',
-                [req.user.id]
-            );
+            const isProprietaire = req.user && await Proprietaire.findByIdUtilisateur(req.user.id);
 
-            if (bien.statut !== 'disponible' && 
-                (!isProprietaire || isProprietaire.rows.length === 0)) {
+            if (bien.statut !== 'disponible' && !isProprietaire) {
                 return res.status(403).json({ 
                     message: 'Vous n\'avez pas accès aux photos de ce bien' 
                 });
             }
 
-            const photos = await db.query(
-                'SELECT id_photosbien, url_photobien, legende, date_ajout FROM photosbien WHERE id_bien = $1 ORDER BY date_ajout DESC',
-                [id]
-            );
+            const photos = await PhotosBien.findByBien(id);
 
-            res.json(photos.rows);
+            res.json(photos);
 
         } catch (error) {
             console.error('Erreur récupération photos:', error);
@@ -407,6 +355,5 @@ const bienController = {
         }
     }
 };
-
 
 module.exports = bienController;

@@ -6,6 +6,8 @@ import MonthlyPerformanceChart from '../../components/MonthlyPerformanceChart';
 import OwnerTenantRelationChart from '../../components/OwnerTenantRelationChart';
 
 const OwnerDashboardModern = () => {
+  console.log('OwnerDashboardModern - Path:', window.location.pathname);
+
   const [stats, setStats] = useState({
     revenue: 0,
     revenueChange: 0,
@@ -232,7 +234,6 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
     <div className="relation-illustration">
       <div className="relation-entity">
         <div className="entity-icon owner">P</div>
-        <div className="entity-label">Propriétaire</div>
       </div>
       <div className="relation-link">
         <div className="link-item up">
@@ -245,7 +246,6 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
       </div>
       <div className="relation-entity">
         <div className="entity-icon tenant">L</div>
-        <div className="entity-label">Locataire</div>
       </div>
     </div>
   );
@@ -312,22 +312,22 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
 
       <style>{`
         .dashboard-modern {
-          padding: 0.75rem;
-          max-width: 1600px;
+          padding: 0.5rem;
+          max-width: 1800px;
           margin: 0 auto;
         }
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 0.75rem;
-          margin-bottom: 0.75rem;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
         }
 
         .stat-card {
           background: white;
           border-radius: 0.5rem;
-          padding: 0.75rem;
+          padding: 0.5rem;
           box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
           border: 1px solid #e5e7eb;
           transition: all 250ms ease-in-out;
@@ -342,24 +342,24 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.25rem;
         }
 
         .stat-change {
-          font-size: 0.65rem;
+          font-size: 0.6rem;
           font-weight: 600;
         }
 
         .stat-value {
-          font-size: 1.25rem;
+          font-size: 1rem;
           font-weight: 700;
           color: #1f2937;
-          margin-bottom: 0.25rem;
+          margin-bottom: 0.15rem;
           line-height: 1.1;
         }
 
         .stat-title {
-          font-size: 0.7rem;
+          font-size: 0.65rem;
           color: #6b7280;
           font-weight: 500;
         }
@@ -367,33 +367,33 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
         .charts-row {
           display: grid;
           grid-template-columns: 2fr 1fr;
-          gap: 1.5rem;
-          margin-bottom: 2rem;
+          gap: 0.75rem;
+          margin-bottom: 1rem;
         }
 
         .bottom-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 1.5rem;
+          gap: 0.75rem;
         }
 
         .chart-card {
           background: white;
           border-radius: 0.5rem;
-          padding: 0.75rem;
+          padding: 0.5rem;
           box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
           border: 1px solid #e5e7eb;
         }
 
         .chart-title {
-          font-size: 0.85rem;
+          font-size: 0.75rem;
           font-weight: 600;
           color: #1f2937;
-          margin-bottom: 0.75rem;
+          margin-bottom: 0.5rem;
         }
 
         .bar-chart {
-          height: 200px;
+          height: 150px;
         }
 
         .chart-bars {

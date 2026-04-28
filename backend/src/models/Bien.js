@@ -62,6 +62,25 @@ class Bien {
     }
 
     // ============================================================
+    // RÉCUPÉRER UN BIEN PAR SON ID
+    // ============================================================
+    static async findById(id_bien) {
+        const query = `
+            SELECT b.*, 
+                   u.nom as proprietaire_nom, 
+                   u.prenoms as proprietaire_prenoms,
+                   u.telephone as proprietaire_telephone,
+                   u.email as proprietaire_email
+            FROM bien b
+            JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
+            JOIN utilisateur u ON p.id_utilisateur = u.id_utilisateur
+            WHERE b.id_bien = $1
+        `;
+        const result = await db.query(query, [id_bien]);
+        return result.rows[0];
+    }
+
+    // ============================================================
     // RÉCUPÉRER TOUS LES BIENS D'UN PROPRIÉTAIRE
     // ============================================================
     static async findByProprietaire(id_proprietaire) {
@@ -228,6 +247,45 @@ class Bien {
 
         const result = await db.query(query, values);
         return result.rows;
+    }
+
+    // ============================================================
+    // RÉCUPÉRER LES PHOTOS D'UN BIEN (avec tri par est_principale)
+    // ============================================================
+    static async getPhotos(id_bien) {
+        const query = `
+            SELECT id_photosbien, url_photobien, legende, est_principale, date_ajout 
+            FROM photosbien 
+            WHERE id_bien = $1 
+            ORDER BY est_principale DESC, date_ajout ASC
+        `;
+        const result = await db.query(query, [id_bien]);
+        return result.rows;
+    }
+
+    // ============================================================
+    // RÉCUPÉRER LA PHOTO PRINCIPALE D'UN BIEN
+    // ============================================================
+    static async getPhotoPrincipale(id_bien) {
+        const query = `
+            SELECT url_photobien 
+            FROM photosbien 
+            WHERE id_bien = $1 
+            ORDER BY est_principale DESC, date_ajout ASC 
+            LIMIT 1
+        `;
+        const result = await db.query(query, [id_bien]);
+        return result.rows[0]?.url_photobien || null;
+    }
+
+    // ============================================================
+    // SUPPRIMER LES DÉPENDANCES D'UN BIEN
+    // ============================================================
+    static async deleteDependencies(id_bien) {
+        await db.query('DELETE FROM demander_visite WHERE id_bien = $1', [id_bien]);
+        await db.query('DELETE FROM problemes WHERE id_bien = $1', [id_bien]);
+        await db.query('DELETE FROM photosbien WHERE id_bien = $1', [id_bien]);
+        return true;
     }
 }
 

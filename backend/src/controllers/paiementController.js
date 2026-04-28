@@ -3,11 +3,11 @@ const LoyerMensuel = require('../models/LoyerMensuel');
 const DepotGarantie = require('../models/DepotGarantie');
 const db = require('../config/database');
 const axios = require('axios');
+const caurispayService = require('../services/caurispayService');
+require('dotenv').config();
 
-const CINETPAY_API_KEY = process.env.CINETPAY_API_KEY;
-const CINETPAY_SITE_ID = process.env.CINETPAY_SITE_ID;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5055';
 
 const paiementController = {
     // ============================================================
@@ -89,14 +89,15 @@ const paiementController = {
         }
     },
 
+    
     // ============================================================
-    // INITIER UN PAIEMENT EN LIGNE VIA CINETPAY
+    // INITIER UN PAIEMENT EN LIGNE VIA CAURISPAY
     // ============================================================
-    async initier(req, res) {
+    async initierCaurisPay(req, res) {
         try {
-            const { id_contact, montant, type_paiement, description } = req.body;
+            const { id_contact, montant, type_paiement, description, phoneNumber, operatorCode } = req.body;
 
-            if (!id_contact || !montant || !type_paiement) {
+            if (!id_contact || !montant || !type_paiement || !phoneNumber) {
                 return res.status(400).json({ message: 'Champs requis manquants' });
             }
 
@@ -119,132 +120,108 @@ const paiementController = {
             const { nom_locataire, prenom_locataire, email_locataire, titre } = contrat.rows[0];
 
             // Générer un numéro de transaction unique
-            const transaction_id = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+            const merchantReference = `GEST-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
             // Pré-enregistrer le paiement en statut 'en_attente'
             await db.query(
                 `INSERT INTO payement (numero_transaction, id_contact, montant, type_paiement,
                   statut_paiement, date_paiement, description)
                  VALUES ($1, $2, $3, $4, 'en_attente', CURRENT_DATE, $5)`,
-                [transaction_id, id_contact, montant, type_paiement,
+                [merchantReference, id_contact, montant, type_paiement,
                  description || `${type_paiement} - ${titre}`]
             );
 
-            // Appel API CinetPay
-            const payload = {
-                apikey: CINETPAY_API_KEY,
-                site_id: CINETPAY_SITE_ID,
-                transaction_id,
-                amount: parseInt(montant),
-                currency: 'XOF',
-                alternative_currency: '',
+            // Préparer les données pour CaurisPay
+            const paymentData = {
+                montant,
+                reference: merchantReference,
                 description: description || `${type_paiement} - ${titre}`,
-                customer_id: String(req.user.id),
-                customer_name: nom_locataire,
-                customer_surname: prenom_locataire,
-                customer_email: email_locataire,
-                customer_phone_number: '',
-                customer_address: '',
-                customer_city: '',
-                customer_country: 'BJ',
-                customer_state: 'BJ',
-                customer_zip_code: '',
-                notify_url: `${BACKEND_URL}/api/paiements/notify`,
-                return_url: `${FRONTEND_URL}/tenant/rentals?payment=success`,
-                channels: 'ALL',
-                metadata: JSON.stringify({ id_contact, type_paiement })
+                phoneNumber,
+                email: email_locataire,
+                firstName: prenom_locataire,
+                lastName: nom_locataire,
+                operatorCode
             };
 
-            const cinetpayRes = await axios.post(
-                'https://api-checkout.cinetpay.com/v2/payment',
-                payload
-            );
+            // Appel API CaurisPay
+            const caurispayResult = await caurispayService.initiatePayment(paymentData);
 
-            if (cinetpayRes.data.code !== '201') {
+            if (!caurispayResult.success) {
                 return res.status(502).json({
-                    message: 'Erreur CinetPay',
-                    details: cinetpayRes.data.message
+                    message: 'Erreur CaurisPay',
+                    details: caurispayResult.error
                 });
             }
 
             res.json({
-                payment_url: cinetpayRes.data.data.payment_url,
-                transaction_id
+                success: true,
+                merchantReference: caurispayResult.merchantReference,
+                processingReference: caurispayResult.data.precessingReference,
+                status: caurispayResult.data.status,
+                message: caurispayResult.data.message
             });
 
         } catch (error) {
-            console.error('Erreur initiation paiement CinetPay:', error);
+            console.error('Erreur initiation paiement CaurisPay:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },
 
     // ============================================================
-    // WEBHOOK CINETPAY (appelé par CinetPay après paiement)
+    // VÉRIFIER STATUT PAIEMENT CAURISPAY
     // ============================================================
-    async notify(req, res) {
+    async checkCaurisPayStatus(req, res) {
         try {
-            const { cpm_trans_id } = req.body;
+            const { merchantReference, processingReference } = req.body;
 
-            if (!cpm_trans_id) {
-                return res.status(400).json({ message: 'transaction_id manquant' });
+            if (!merchantReference || !processingReference) {
+                return res.status(400).json({ message: 'Références manquantes' });
             }
 
-            // Vérifier le statut auprès de CinetPay
-            const verif = await axios.post(
-                'https://api-checkout.cinetpay.com/v2/payment/check',
-                {
-                    apikey: CINETPAY_API_KEY,
-                    site_id: CINETPAY_SITE_ID,
-                    transaction_id: cpm_trans_id
-                }
-            );
+            const result = await caurispayService.checkPaymentStatus(merchantReference, processingReference);
 
-            const statut = verif.data.data.status === 'ACCEPTED' ? 'payé' : 'échoué';
-
-            // Mettre à jour le statut dans la BDD
-            const updated = await db.query(
-                `UPDATE payement SET statut_paiement = $1
-                 WHERE numero_transaction = $2 RETURNING *`,
-                [statut, cpm_trans_id]
-            );
-
-            if (updated.rows.length === 0) {
-                return res.status(404).json({ message: 'Transaction introuvable' });
+            if (!result.success) {
+                return res.status(502).json({
+                    message: 'Erreur vérification statut CaurisPay',
+                    details: result.error
+                });
             }
 
-            // Si paiement accepté → notifier le propriétaire
-            if (statut === 'payé') {
-                const paiement = updated.rows[0];
-
-                const propResult = await db.query(
-                    `SELECT u.id_utilisateur, b.titre
-                     FROM contact c
-                     JOIN bien b ON b.id_bien = c.id_bien
-                     JOIN proprietaire p ON p.id_proprietaire = b.id_proprietaire
-                     JOIN utilisateur u ON u.id_utilisateur = p.id_utilisateur
-                     WHERE c.id_contact = $1`,
-                    [paiement.id_contact]
+            // Mettre à jour le statut dans la BDD si succès
+            if (result.data.status === 'SUCCESS') {
+                const statut = 'valide';
+                await db.query(
+                    `UPDATE payement SET statut_paiement = $1
+                     WHERE numero_transaction = $2 RETURNING *`,
+                    [statut, merchantReference]
                 );
-
-                if (propResult.rows.length > 0) {
-                    const prop = propResult.rows[0];
-                    await db.query(
-                        `INSERT INTO notification (id_utilisateur, titre, message, type)
-                         VALUES ($1, $2, $3, $4)`,
-                        [
-                            prop.id_utilisateur,
-                            'Paiement reçu',
-                            `Un paiement de ${paiement.montant} FCFA (${paiement.type_paiement}) a été effectué pour le bien "${prop.titre}"`,
-                            'paiement'
-                        ]
-                    );
-                }
             }
 
-            res.status(200).json({ message: 'OK' });
+            res.json({
+                success: true,
+                status: result.data.status,
+                message: result.data.message,
+                operatorRefId: result.data.operatorRefId
+            });
 
         } catch (error) {
-            console.error('Erreur webhook CinetPay:', error);
+            console.error('Erreur vérification statut CaurisPay:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // OBTENIR LES DONNÉES DU WIDGET CAURISPAY
+    // ============================================================
+    async getCaurisPayWidgetData(req, res) {
+        try {
+            const widgetData = caurispayService.getWidgetData();
+            res.json({
+                success: true,
+                widgetData
+            });
+        } catch (error) {
+            console.error('Erreur récupération widget CaurisPay:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },
@@ -267,6 +244,56 @@ const paiementController = {
             res.json(result.rows);
         } catch (error) {
             console.error('Erreur historique paiements en ligne:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // CHARGES DU LOCATAIRE
+    // ============================================================
+    async mesCharges(req, res) {
+        try {
+            const result = await db.query(
+                `SELECT p.*, b.titre AS bien_titre, b.id_bien
+                 FROM payement p
+                 JOIN contact c ON c.id_contact = p.id_contact
+                 JOIN bien b ON b.id_bien = c.id_bien
+                 JOIN locataire l ON l.id_locataire = c.id_locataire
+                 WHERE l.id_utilisateur = $1 
+                 AND p.id_loyer IS NULL 
+                 AND p.id_depot IS NULL
+                 AND p.numero_transaction LIKE 'CHG-%'
+                 ORDER BY p.date_paiement DESC`,
+                [req.user.id]
+            );
+            
+            res.json({ charges: result.rows });
+        } catch (error) {
+            console.error('Erreur récupération charges locataire:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // NOTIFICATIONS DU LOCATAIRE
+    // ============================================================
+    async mesNotifications(req, res) {
+        try {
+            const result = await db.query(
+                `SELECT n.*, 
+                        CASE 
+                            WHEN n.lu = false THEN 'unread'
+                            ELSE 'read'
+                        END as statut_lecture
+                 FROM notification n
+                 WHERE n.id_utilisateur = $1
+                 ORDER BY n.date_envoi DESC`,
+                [req.user.id]
+            );
+            
+            res.json({ notifications: result.rows });
+        } catch (error) {
+            console.error('Erreur récupération notifications locataire:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },

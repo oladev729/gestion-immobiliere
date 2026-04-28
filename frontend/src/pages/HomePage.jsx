@@ -13,6 +13,7 @@ const HomePage = () => {
   const [selectedBien, setSelectedBien] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [errorModal, setErrorModal] = useState("");
 
   const fetchBiens = async () => {
     try {
@@ -43,12 +44,14 @@ const HomePage = () => {
 
   const handleVoirPlus = async (bienId) => {
     setLoadingPhotos(true);
+    setErrorModal("");
     setShowModal(true);
     try {
       const res = await api.get(`/biens/${bienId}`);
       setSelectedBien(res.data);
     } catch (error) {
       console.error("Erreur lors de la récupération du bien:", error);
+      setErrorModal("Impossible de charger les détails du logement. Veuillez réessayer.");
     } finally {
       setLoadingPhotos(false);
     }
@@ -90,10 +93,10 @@ const HomePage = () => {
         >
           <span className="navbar-brand logo-immogest">ImmoGest</span>
           <div className="ms-auto d-flex gap-2">
-            <Link to="/login" className="btn btn-outline-light btn-sm">
+            <Link to="/login" className="signin-btn btn-sm px-3 py-2">
               Se connecter
             </Link>
-            <Link to="/register/role" className="btn btn-primary btn-sm">
+            <Link to="/register/role" className="btn btn-outline-light btn-sm px-3 py-2">
               S'inscrire
             </Link>
           </div>
@@ -182,6 +185,7 @@ const HomePage = () => {
                     className="form-control"
                     type="number"
                     placeholder="Ex: 200000"
+                    min="0"
                     value={filtres.prix_max}
                     onChange={(e) =>
                       setFiltres({ ...filtres, prix_max: e.target.value })
@@ -428,18 +432,18 @@ const HomePage = () => {
               className="lead mb-4"
               style={{ color: "rgba(255,255,255,0.85)" }}
             >
-              Rejoignez des milliers de locataires et propriétaires sur
-              ImmoGest.
+              Rejoignez des milliers de locataires et propriétaires sur{" "}
+              <span style={{ color: "#0d6efd", fontWeight: "bold" }}>ImmoGest</span>.
             </p>
             <Link
               to="/register/role"
-              className="btn btn-light btn-lg px-5 me-3 fw-bold text-primary"
+              className="btn btn-outline-light btn-lg px-4 py-3 me-3 fw-bold"
             >
               S'inscrire gratuitement
             </Link>
             <Link
               to="/login"
-              className="btn btn-outline-light btn-lg px-5"
+              className="signin-btn btn-lg px-4 py-3"
             >
               Se connecter
             </Link>
@@ -487,8 +491,16 @@ const HomePage = () => {
             >✕</button>
 
             {loadingPhotos ? (
-              <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div className="spinner-border text-primary" role="status" />
+              <div style={{ height: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="spinner-border text-primary mb-3" role="status" />
+                <p className="text-white">Chargement des détails...</p>
+              </div>
+            ) : errorModal ? (
+              <div style={{ height: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
+                <i className="bi bi-exclamation-triangle text-warning mb-3" style={{ fontSize: '3rem' }}></i>
+                <h4 className="text-white mb-2">Oups !</h4>
+                <p className="text-light opacity-75">{errorModal}</p>
+                <button className="btn btn-outline-light mt-3" onClick={() => handleVoirPlus(selectedBien?.id_bien)}>Réessayer</button>
               </div>
             ) : selectedBien && (
               <div style={{ color: '#fff' }}>
@@ -545,7 +557,10 @@ const HomePage = () => {
                           {selectedBien.meuble && <li><i className="bi bi-check-circle me-2"></i> Meublé</li>}
                         </ul>
                         
-                        <Link to={`/visitor-request?id_bien=${selectedBien.id_bien}&titre=${encodeURIComponent(selectedBien.titre)}`} className="btn btn-primary w-100 mt-4 fw-bold p-3" style={{ borderRadius: '12px' }}>
+                        <Link to="/register-step-role" state={{ 
+                          redirectTo: '/tenant/properties', 
+                          bienSelectionne: selectedBien 
+                        }} className="btn btn-primary w-100 mt-4 fw-bold p-3" style={{ borderRadius: '12px' }}>
                           Demander une visite
                         </Link>
                       </div>
@@ -562,6 +577,32 @@ const HomePage = () => {
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .signin-btn {
+          background: #1a73e8 !important;
+          color: white !important;
+          border: none !important;
+          padding: 12px !important;
+          border-radius: 999px !important;
+          font-weight: 700 !important;
+          font-size: 15px !important;
+          cursor: pointer !important;
+          transition: transform 0.2s, background 0.2s !important;
+        }
+        
+        .signin-btn:hover {
+          background: #1557b0 !important;
+          transform: translateY(-1px) !important;
+        }
+        
+        .signin-btn:active {
+          transform: translateY(0) !important;
+        }
+        
+        .signin-btn:disabled {
+          opacity: 0.7 !important;
+          cursor: not-allowed !important;
         }
       `}</style>
     </div>

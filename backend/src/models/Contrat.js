@@ -81,10 +81,18 @@ class Contrat {
         const query = `
             SELECT c.*, 
                    b.titre as bien_titre,
-                   b.adresse as bien_adresse,
-                   b.ville as bien_ville
+                   b.adresse as adresse,
+                   b.ville as ville,
+                   u_prop.nom as proprietaire_nom,
+                   u_prop.prenoms as proprietaire_prenoms,
+                   u_loc.nom as locataire_nom,
+                   u_loc.prenoms as locataire_prenoms
             FROM contact c
             JOIN bien b ON c.id_bien = b.id_bien
+            JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
+            JOIN utilisateur u_prop ON p.id_utilisateur = u_prop.id_utilisateur
+            JOIN locataire l ON c.id_locataire = l.id_locataire
+            JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
             WHERE c.id_locataire = $1
             ORDER BY c.date_creation DESC
         `;
@@ -99,12 +107,18 @@ class Contrat {
         const query = `
             SELECT c.*, 
                    b.titre as bien_titre,
-                   u.nom as locataire_nom,
-                   u.prenoms as locataire_prenoms
+                   b.adresse as adresse,
+                   b.ville as ville,
+                   u_prop.nom as proprietaire_nom,
+                   u_prop.prenoms as proprietaire_prenoms,
+                   u_loc.nom as locataire_nom,
+                   u_loc.prenoms as locataire_prenoms
             FROM contact c
             JOIN bien b ON c.id_bien = b.id_bien
+            JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
+            JOIN utilisateur u_prop ON p.id_utilisateur = u_prop.id_utilisateur
             JOIN locataire l ON c.id_locataire = l.id_locataire
-            JOIN utilisateur u ON l.id_utilisateur = u.id_utilisateur
+            JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
             WHERE b.id_proprietaire = $1
             ORDER BY c.date_creation DESC
         `;
@@ -120,16 +134,20 @@ class Contrat {
             SELECT c.*, 
                    b.id_proprietaire,
                    b.titre as bien_titre,
-                   b.adresse as bien_adresse,
-                   b.ville as bien_ville,
-                   u.nom as locataire_nom,
-                   u.prenoms as locataire_prenoms,
-                   u.email as locataire_email,
-                   u.telephone as locataire_telephone
+                   b.adresse as adresse,
+                   b.ville as ville,
+                   u_prop.nom as proprietaire_nom,
+                   u_prop.prenoms as proprietaire_prenoms,
+                   u_loc.nom as locataire_nom,
+                   u_loc.prenoms as locataire_prenoms,
+                   u_loc.email as locataire_email,
+                   u_loc.telephone as locataire_telephone
             FROM contact c
             JOIN bien b ON c.id_bien = b.id_bien
+            JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
+            JOIN utilisateur u_prop ON p.id_utilisateur = u_prop.id_utilisateur
             JOIN locataire l ON c.id_locataire = l.id_locataire
-            JOIN utilisateur u ON l.id_utilisateur = u.id_utilisateur
+            JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
             WHERE c.id_contact = $1
         `;
         const result = await db.query(query, [id_contrat]);

@@ -403,6 +403,7 @@ const authController = {
     // INVITER LOCATAIRE
     // ============================================================
     async inviterLocataire(req, res) {
+        console.log('📧 Début invitation locataire pour email:', req.body.email);
         try {
             const { email, nom, prenoms, type_souhaite } = req.body;
             const proprietaireId = req.user.id;
@@ -446,8 +447,11 @@ const authController = {
             });
 
         } catch (error) {
-            console.error('Erreur invitation:', error);
-            res.status(500).json({ message: 'Erreur serveur' });
+            console.error('❌ Erreur CRITIQUE invitation:', error);
+            res.status(500).json({ 
+                message: 'Erreur serveur lors de l\'invitation',
+                details: error.message 
+            });
         }
     },
 

@@ -4,8 +4,7 @@ import api from '../../api/axios';
 
 export default function TenantRentals() {
   const [contrats, setContrats] = useState([]);
-  const [charges, setCharges] = useState({});
-  const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -18,23 +17,6 @@ export default function TenantRentals() {
       const res = await api.get('/contrats/mes-contrats-locataire');
       const data = res.data;
       setContrats(data);
-
-      const chargesMap = {};
-      await Promise.all(
-        data.map(async (contrat) => {
-          try {
-            const chargesRes = await api.get(
-              `/paiements/contrat/${contrat.id_contact || contrat.id_contrat}`
-            );
-            chargesMap[contrat.id_contact || contrat.id_contrat] = chargesRes.data.filter(
-              (p) => p.type_paiement === 'charge'
-            );
-          } catch {
-            chargesMap[contrat.id_contact || contrat.id_contrat] = [];
-          }
-        })
-      );
-      setCharges(chargesMap);
     } catch (err) {
       setError('Impossible de charger vos locations.');
     } finally {
@@ -61,18 +43,94 @@ export default function TenantRentals() {
     return parseFloat(montant).toLocaleString('fr-FR') + ' FCFA';
   };
 
-  const getChargesContrat = (contrat) => {
-    const id = contrat.id_contact || contrat.id_contrat;
-    return charges[id] || [];
+  const handleAccept = async (id) => {
+    if (!window.confirm('Voulez-vous vraiment accepter ce contrat ?')) return;
+    try {
+      await api.patch(`/contrats/${id}/accepter`);
+      alert('Contrat accepté avec succès !');
+      fetchContrats();
+    } catch (err) {
+      alert(err.response?.data?.message || "Erreur lors de l'acceptation");
+    }
   };
 
-  const totalCharges = (contrat) => {
-    return getChargesContrat(contrat).reduce(
-      (sum, c) => sum + parseFloat(c.montant || 0),
-      0
-    );
+  const handleView = (contrat) => {
+    const printWindow = window.open('', '_blank');
+    const dateSignature = contrat.date_signature ? new Date(contrat.date_signature).toLocaleDateString('fr-FR') : 'Non signé';
+    
+    const htmlContent = `
+      <html>
+        <head>
+          <title>CONTRAT DE BAIL - ${contrat.numero_contrat}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; padding: 40px; max-width: 800px; margin: auto; }
+            .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { color: #2563eb; margin: 0; text-transform: uppercase; font-size: 24px; }
+            .section { margin-bottom: 25px; }
+            .section-title { font-weight: bold; text-decoration: underline; text-transform: uppercase; margin-bottom: 10px; color: #1e40af; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .footer { margin-top: 50px; display: flex; justify-content: space-between; }
+            .signature-box { border: 1px solid #ccc; width: 250px; height: 120px; padding: 10px; font-size: 12px; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Contrat de Bail d'Habitation</h1>
+            <p>Référence : <strong>${contrat.numero_contrat}</strong></p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">1. LES PARTIES</div>
+            <p><strong>LE BAILLEUR :</strong> M./Mme ${contrat.proprietaire_prenoms || ''} ${contrat.proprietaire_nom || 'Propriétaire'}, demeurant à l'adresse indiquée au dossier.</p>
+            <p><strong>LE PRENEUR :</strong> M./Mme ${contrat.locataire_prenoms || ''} ${contrat.locataire_nom || 'Locataire'}, demeurant à l'adresse indiquée au dossier.</p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">2. DÉSIGNATION DU BIEN</div>
+            <p>Le bailleur donne en location au preneur le bien désigné ci-après :<br/>
+            <strong>Titre :</strong> ${contrat.bien_titre || contrat.titre}<br/>
+            <strong>Adresse :</strong> ${contrat.adresse || ''}, ${contrat.ville || ''}<br/>
+            <strong>Type :</strong> Habitation principale</p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">3. DURÉE DU CONTRAT</div>
+            <p>Le présent bail est consenti pour une durée déterminée :<br/>
+            <strong>Prise d'effet :</strong> ${new Date(contrat.date_debut).toLocaleDateString('fr-FR')}<br/>
+            <strong>Échéance :</strong> ${contrat.date_fin ? new Date(contrat.date_fin).toLocaleDateString('fr-FR') : 'Indéterminée'}</p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">4. CONDITIONS FINANCIÈRES</div>
+            <p>Le loyer mensuel est fixé à : <strong>${Number(contrat.loyer_mensuel).toLocaleString()} FCFA</strong><br/>
+            Dépôt de garantie : <strong>${Number(contrat.montant_depot_garantie_attendu || 0).toLocaleString()} FCFA</strong>.</p>
+          </div>
+
+          <div class="section">
+            <div class="section-title">5. SIGNATURES</div>
+            <div class="grid">
+              <div class="signature-box">Signature du Bailleur<br/>(Précédée de "Lu et approuvé")</div>
+              <div class="signature-box">
+                Signature du Preneur<br/>(Précédée de "Lu et approuvé")
+                <div style="margin-top: 10px; color: #059669; font-weight: bold;">
+                  ${contrat.statut_contrat === 'actif' ? 'Signé électroniquement le ' + dateSignature : 'EN ATTENTE DE SIGNATURE'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 30px; text-align: center;" class="no-print">
+            <button onclick="window.print()" style="padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer;">Lancer l'impression</button>
+          </div>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
+  
   return (
     <div className="container py-4">
       <h2 className="mb-4">Mes locations</h2>
@@ -91,8 +149,6 @@ export default function TenantRentals() {
         <div className="row g-4">
           {contrats.map((contrat) => {
             const idContrat = contrat.id_contact || contrat.id_contrat;
-            const chargesContrat = getChargesContrat(contrat);
-            const total = totalCharges(contrat);
 
             return (
               <div className="col-12" key={idContrat}>
@@ -159,54 +215,23 @@ export default function TenantRentals() {
                       </div>
                     </div>
 
-                    {/* Section charges */}
-                    <div className="mt-3">
-                      <h6 className="fw-semibold border-bottom pb-2">
-                        Charges ({chargesContrat.length})
-                        {total > 0 && (
-                          <span className="ms-2 text-danger">
-                            — Total : {formatMontant(total)}
-                          </span>
-                        )}
-                      </h6>
-
-                      {chargesContrat.length === 0 ? (
-                        <p className="text-muted small">Aucune charge pour le moment.</p>
-                      ) : (
-                        <div className="table-responsive">
-                          <table className="table table-hover bg-white shadow-sm rounded">
-                            <thead className="table-dark">
-                              <tr>
-                                <th>Description</th>
-                                <th>Montant</th>
-                                <th>Date</th>
-                                <th>Statut</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {chargesContrat.map((charge, idx) => (
-                                <tr key={charge.id_paiement || idx} style={{ backgroundColor: '#fff' }}>
-                                  <td style={{ color: '#000' }}>{charge.description || 'Charge'}</td>
-                                  <td style={{ color: '#dc3545', fontWeight: 600 }}>
-                                    {formatMontant(charge.montant)}
-                                  </td>
-                                  <td style={{ color: '#000' }}>{formatDate(charge.date_paiement)}</td>
-                                  <td>
-                                    <span className={`badge ${
-                                      charge.statut_paiement === 'paye' ? 'bg-success' :
-                                      charge.statut_paiement === 'en_attente' ? 'bg-warning text-dark' :
-                                      'bg-secondary'
-                                    }`}>
-                                      {charge.statut_paiement === 'en_attente' ? 'En attente'
-                                        : charge.statut_paiement === 'paye' ? 'Payé'
-                                        : charge.statut_paiement || 'N/A'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                    <div className="d-flex gap-2 justify-content-end mt-3 border-top pt-3">
+                      <button 
+                        className="btn btn-outline-primary"
+                        onClick={() => handleView(contrat)}
+                      >
+                        <i className="bi bi-eye me-2"></i>
+                        Voir le contrat
+                      </button>
+                      
+                      {contrat.statut_contrat === 'en_attente' && (
+                        <button 
+                          className="btn btn-success"
+                          onClick={() => handleAccept(idContrat)}
+                        >
+                          <i className="bi bi-check-circle me-2"></i>
+                          Accepter et Signer
+                        </button>
                       )}
                     </div>
                   </div>

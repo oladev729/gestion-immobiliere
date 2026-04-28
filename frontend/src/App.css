@@ -160,3 +160,69 @@ a:focus {
     0 2px 3px rgba(0, 0, 0, 0.35),   /* ombre dessous */
     0 -1px 0 rgba(255, 255, 255, 0.7); /* petit reflet au-dessus */
 }
+
+/* === COULEUR IMMOGEST UNIVERSELLE === */
+/* Classes CSS pour garantir la couleur bleue de ImmoGest partout */
+
+/* Classe principale pour le branding ImmoGest */
+.immogest-blue-applied {
+  color: #0d6efd !important;
+  font-weight: 600;
+}
+
+/* Classes spécifiques pour différents contextes */
+.immogest-text,
+.immogest-brand,
+.immogest-title,
+.immogest-name,
+.immogest-blue {
+  color: #0d6efd !important;
+  font-weight: 600;
+}
+
+/* Pour les liens contenant ImmoGest */
+a.immogest-blue-applied,
+a.immogest-text,
+a.immogest-brand {
+  color: #0d6efd !important;
+  text-decoration: none;
+}
+
+a.immogest-blue-applied:hover,
+a.immogest-text:hover,
+a.immogest-brand:hover {
+  color: #0a58ca !important;
+  text-decoration: underline;
+}
+
+/* Assurer que la couleur bleue est prioritaire sur les thèmes sombres */
+[data-theme="dark"] .logo-immogest,
+[data-theme="dark"] .immogest-text,
+[data-theme="dark"] .immogest-brand,
+[data-theme="dark"] .immogest-title,
+[data-theme="dark"] .immogest-name,
+[data-theme="dark"] .immogest-blue,
+[data-theme="dark"] .immogest-blue-applied {
+  color: #4dabf7 !important; /* bleu plus clair pour thème sombre */
+}
+
+/* Priorité maximale pour la couleur ImmoGest */
+.immogest-blue-applied,
+.immogest-text,
+.immogest-brand,
+.immogest-title,
+.immogest-name,
+.immogest-blue {
+  color: #0d6efd !important;
+}
+
+/* Branding actif via classe body - styles simples et sûrs */
+body.immogest-branding-active {
+  /* Permet d'activer des styles spécifiques quand le branding est actif */
+}
+
+/* Classes utilitaires pour le branding manuel si nécessaire */
+.immogest-manual-blue {
+  color: #0d6efd !important;
+  font-weight: 600;
+}

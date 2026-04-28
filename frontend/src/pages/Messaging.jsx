@@ -16,54 +16,76 @@ const Messaging = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [visitorInfo, setVisitorInfo] = useState(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (user) {
       fetchConversations();
-    } else if (demandeIdFromUrl) {
-      // Mode visiteur
-      fetchVisitorContext();
     } else {
       setLoading(false);
     }
-  }, [user, demandeIdFromUrl]);
-
-  const fetchVisitorContext = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/visiteurs/messages/${demandeIdFromUrl}`);
-      setVisitorInfo(response.data.visitorInfo);
-      setMessages(response.data.messages);
-      setSelectedConversation({
-        isVisitorMode: true,
-        autre_nom: response.data.visitorInfo?.proprietaire_nom || 'Propriétaire',
-        autre_prenoms: response.data.visitorInfo?.proprietaire_prenoms || '',
-        autre_email: response.data.visitorInfo?.proprietaire_email,
-        id_bien: response.data.visitorInfo?.id_bien
-      });
-      setLoading(false);
-    } catch (error) {
-      console.error('Erreur récupération contexte visiteur:', error);
-      setLoading(false);
-    }
-  };
+  }, [user]);
 
   const fetchConversations = async () => {
     try {
       setLoading(true);
       const response = await api.get('/messages/conversations');
-      setConversations(response.data);
       
-      // Si un demandeId est spécifié pour un proprio, on sélectionne la conv correspondante
+      console.log('Toutes les conversations reçues:', response.data);
+      console.log('Type utilisateur:', user?.type || user?.type_utilisateur);
+      
+      // Log détaillé de la première conversation pour déboguer
+      if (response.data.length > 0) {
+        console.log('Détails de la première conversation:', response.data[0]);
+        console.log('Champs disponibles:', Object.keys(response.data[0]));
+      }
+      
+      // Filtrage simple et efficace des conversations
+      let filteredConversations = response.data.filter(conv => {
+        const userId = parseInt(user.id);
+        const expediteurId = parseInt(conv.id_expediteur);
+        const destinataireId = parseInt(conv.id_destinataire);
+        const autreId = parseInt(conv.autre_id);
+        
+        // L'utilisateur doit être soit l'expéditeur, soit le destinataire, soit l'interlocuteur identifié
+        return (expediteurId === userId || destinataireId === userId || autreId === userId);
+      });
+      
+      console.log('Conversations après filtrage simple:', filteredConversations);
+      setConversations(filteredConversations);
+      
+      // Si un demandeId est spécifié, on sélectionne la conv correspondante
       if (demandeIdFromUrl) {
-          const conv = response.data.find(c => c.id_demande == demandeIdFromUrl);
+          const typeFromUrl = queryParams.get('type');
+          console.log(`Recherche auto: demandeId=${demandeIdFromUrl}, type=${typeFromUrl}`);
+          
+          // Chercher dans toutes les conversations reçues
+          const conv = response.data.find(c => {
+              const matchId = (c.id_demande == demandeIdFromUrl || c.demandeId == demandeIdFromUrl);
+              if (!typeFromUrl) return matchId;
+              
+              const isVisitor = (c.expediteur_type === 'visiteur' || c.destinataire_type === 'visiteur');
+              if (typeFromUrl === 'visiteur') return matchId && isVisitor;
+              if (typeFromUrl === 'locataire') return matchId && !isVisitor;
+              return matchId;
+          });
+
           if (conv) {
+              console.log('Conversation trouvée et forcée:', conv);
+              setConversations([conv]); // On garde uniquement cette conversation
               selectConversation(conv);
           } else {
-              // Nouveau visiteur sans conversation préalable
-              fetchNewVisitorConversation(demandeIdFromUrl);
+              console.log('Aucune conversation trouvée pour demandeId:', demandeIdFromUrl);
+              const tempConv = {
+                id: `temp_${demandeIdFromUrl}`,
+                id_demande: demandeIdFromUrl,
+                autre_nom: 'Chargement...',
+                autre_prenoms: '',
+                bien_titre: 'Conversation associée',
+                date_envoi: new Date().toISOString()
+              };
+              setConversations([tempConv]);
+              selectConversation(tempConv);
           }
       }
       
@@ -74,47 +96,65 @@ const Messaging = () => {
     }
   };
 
-  const fetchNewVisitorConversation = async (demandeId) => {
+  const fetchConversationByDemandeId = async (demandeId) => {
     try {
-      setLoading(true);
-      const response = await api.get(`/visiteurs/messages/${demandeId}`);
-      const visitor = response.data.visitorInfo;
-      setMessages(response.data.messages || []);
-      setSelectedConversation({
-        id_demande: demandeId,
-        id_bien: visitor.id_bien,
-        autre_nom: visitor.nom,
-        autre_prenoms: visitor.prenoms,
-        autre_email: visitor.email,
-        bien_titre: visitor.bien_titre
-      });
-      setLoading(false);
+      console.log('Récupération directe de la conversation pour demandeId:', demandeId);
+      const response = await api.get(`/messages/conversation/demande/${demandeId}`);
+      const conversation = response.data;
+      
+      if (conversation) {
+        console.log('Conversation récupérée avec succès:', conversation);
+        // Ajouter la conversation à la liste
+        setConversations(prev => [...prev, conversation]);
+        // Sélectionner la conversation
+        selectConversation(conversation);
+      }
     } catch (error) {
-      console.error('Erreur chargement nouveau visiteur:', error);
-      setLoading(false);
+      console.error('Erreur récupération conversation par demandeId:', error);
     }
   };
 
   const selectConversation = async (conversation) => {
+    console.log('Sélection FORCÉE de la conversation:', conversation);
+    console.log('ID demande:', conversation.id_demande || conversation.demandeId);
+    console.log('Email associé:', conversation.autre_email);
+    
     setSelectedConversation(conversation);
-    // Déterminer l'ID de l'autre utilisateur ou l'ID de demande
-    if (conversation.id_demande) {
-        fetchMessages(null, conversation.id_demande);
+    
+    // FORCER le chargement des messages par demandeId si disponible
+    const demandeId = conversation.id_demande || conversation.demandeId;
+    if (demandeId) {
+        console.log('CHARGEMENT FORCÉ des messages par demandeId:', demandeId);
+        fetchMessages(null, demandeId);
     } else {
-        const otherUserId = conversation.autre_email ? conversation.autre_email : conversation.autre_id;
+        // Sinon, charger par utilisateur
+        const otherUserId = conversation.autre_email || conversation.autre_id;
+        console.log('Chargement des messages par utilisateur:', otherUserId);
         fetchMessages(otherUserId);
     }
   };
 
   const fetchMessages = async (userId, idDemande = null) => {
     try {
-      const url = idDemande 
-        ? `/messages/conversation/visitor?id_demande=${idDemande}`
-        : `/messages/conversation/${userId}`;
+      let url;
+      if (idDemande) {
+        // Utiliser l'endpoint correct pour les messages par demande
+        url = `/messages/conversation/visitor?id_demande=${idDemande}`;
+      } else if (userId) {
+        // Récupérer les messages par ID utilisateur
+        url = `/messages/conversation/${userId}`;
+      } else {
+        console.error('Aucun ID fourni pour fetchMessages');
+        return;
+      }
+      
+      console.log('Récupération messages depuis:', url);
       const response = await api.get(url);
+      console.log('Messages reçus:', response.data);
       setMessages(response.data);
     } catch (error) {
       console.error('Erreur récupération messages:', error);
+      console.error('URL demandée:', url);
     }
   };
 
@@ -124,19 +164,21 @@ const Messaging = () => {
 
     setSendingMessage(true);
     try {
+      const typeFromUrl = queryParams.get('type');
+      const isVisitor = typeFromUrl === 'visiteur' || selectedConversation.expediteur_type === 'visiteur' || selectedConversation.destinataire_type === 'visiteur';
+      
       const payload = {
         contenu: newMessage,
         id_bien: selectedConversation.id_bien,
         id_demande: demandeIdFromUrl || selectedConversation.id_demande,
-        destinataire_type: user ? (selectedConversation.id_demande ? 'visiteur' : 'utilisateur') : 'utilisateur'
+        destinataire_type: isVisitor ? 'visiteur' : 'utilisateur'
       };
 
       if (user) {
           payload.id_destinataire = selectedConversation.autre_id || selectedConversation.id_expediteur || selectedConversation.id_destinataire;
-          // Si c'est un visiteur, l'id_destinataire n'est pas utilisé tel quel sur le backend mais on le passe par sécurité
       } else {
           // Visiteur vers Propriétaire
-          payload.id_expediteur = demandeIdFromUrl; // Utilisé comme id_demande sur le backend
+          payload.id_expediteur = demandeIdFromUrl; 
       }
 
       await api.post('/messages/send', payload);
@@ -197,7 +239,7 @@ const Messaging = () => {
           <div className="alert alert-info shadow-sm border-0 rounded-4 p-4 text-center">
               <h4 className="fw-bold">Accès restreint</h4>
               <p className="mb-0">Veuillez vous connecter pour accéder à votre messagerie ou utiliser le lien fourni après votre demande de visite.</p>
-              <button onClick={() => navigate('/login')} className="btn btn-primary mt-3 px-4 rounded-3 fw-bold">Se connecter</button>
+              <button onClick={() => navigate('/login')} className="signin-btn mt-3 px-4 fw-bold">Se connecter</button>
           </div>
       )}
 
@@ -208,10 +250,19 @@ const Messaging = () => {
         <div className="col-lg-4 col-md-5">
           <div className="card h-100">
             <div className="card-header bg-primary text-white">
-              <h5 className="mb-0">
-                <i className="bi bi-chat-dots me-2"></i>
-                Messages
-              </h5>
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">
+                  <i className="bi bi-chat-dots me-2"></i>
+                  Messages
+                </h5>
+                <button 
+                  className="btn btn-sm btn-light"
+                  onClick={() => fetchConversations()}
+                  title="Rafraîchir les conversations"
+                >
+                  <i className="bi bi-arrow-clockwise"></i>
+                </button>
+              </div>
             </div>
             <div className="list-group list-group-flush" style={{ maxHeight: '500px', overflowY: 'auto' }}>
               {conversations.length === 0 ? (
@@ -220,9 +271,9 @@ const Messaging = () => {
                   <p className="mt-2" style={{ color: '#000000', fontWeight: '500' }}>Aucune conversation</p>
                 </div>
               ) : (
-                conversations.map((conversation) => (
+                conversations.map((conversation, index) => (
                   <div
-                    key={conversation.id || conversation.autre_id}
+                    key={`conv_${conversation.id || conversation.autre_id || index}_${conversation.autre_email}`}
                     className={`list-group-item list-group-item-action cursor-pointer ${
                       selectedConversation?.autre_id == conversation.autre_id ? 'active' : ''
                     }`}
@@ -232,10 +283,24 @@ const Messaging = () => {
                     <div className="d-flex justify-content-between align-items-start">
                       <div className="flex-grow-1 me-2">
                         <h6 className="mb-1 text-truncate">
-                          {conversation.autre_prenoms} {conversation.autre_nom}
+                          {(() => {
+                            // Afficher le nom avec les vrais champs disponibles
+                            if (conversation.autre_prenoms && conversation.autre_nom) {
+                              return `${conversation.autre_prenoms} ${conversation.autre_nom}`;
+                            } else if (conversation.autre_email) {
+                              // Extraire et formater le nom de l'email
+                              const emailName = conversation.autre_email.split('@')[0];
+                              // Remplacer les points et underscores par des espaces
+                              const formattedName = emailName.replace(/[._]/g, ' ');
+                              // Mettre en majuscule la première lettre
+                              return formattedName.charAt(0).toUpperCase() + formattedName.slice(1);
+                            } else {
+                              return 'Utilisateur';
+                            }
+                          })()}
                         </h6>
                         <small className="text-muted d-block text-truncate">
-                          {conversation.autre_email}
+                          {conversation.autre_email || ''}
                         </small>
                         {conversation.bien_titre && (
                           <small className="text-muted d-block">
@@ -273,9 +338,25 @@ const Messaging = () => {
                   <div className="flex-grow-1 me-2">
                     <h6 className="mb-0 text-truncate">
                       <i className="bi bi-person-circle me-2"></i>
-                      {selectedConversation.autre_prenoms} {selectedConversation.autre_nom}
+                      {(() => {
+                        // Afficher le nom avec les vrais champs disponibles
+                        if (selectedConversation.autre_prenoms && selectedConversation.autre_nom) {
+                          return `${selectedConversation.autre_prenoms} ${selectedConversation.autre_nom}`;
+                        } else if (selectedConversation.autre_email) {
+                          // Extraire et formater le nom de l'email
+                          const emailName = selectedConversation.autre_email.split('@')[0];
+                          // Remplacer les points et underscores par des espaces
+                          const formattedName = emailName.replace(/[._]/g, ' ');
+                          // Mettre en majuscule la première lettre
+                          return formattedName.charAt(0).toUpperCase() + formattedName.slice(1);
+                        } else {
+                          return 'Utilisateur';
+                        }
+                      })()}
                     </h6>
-                    <small className="text-muted text-truncate">{selectedConversation.autre_email}</small>
+                    <small className="text-muted text-truncate">
+                      {selectedConversation.autre_email || ''}
+                    </small>
                     {selectedConversation.bien_titre && (
                       <small className="text-muted d-block">
                         <i className="bi bi-house-door me-1"></i>
@@ -295,16 +376,21 @@ const Messaging = () => {
                   </div>
                 ) : (
                   <div className="d-flex flex-column gap-3">
-                    {messages.map((message) => (
+                    {messages.map((message, index) => {
+                      const isMyMessage = user 
+                        ? (message.id_expediteur == user.id && message.expediteur_type !== 'visiteur')
+                        : (message.expediteur_type === 'visiteur');
+                      
+                      return (
                       <div
-                        key={message.id}
+                        key={`msg_${message.id || index}_${message.date_envoi}`}
                         className={`d-flex ${
-                          message.id_expediteur === user?.id ? 'justify-content-end' : 'justify-content-start'
+                          isMyMessage ? 'justify-content-end' : 'justify-content-start'
                         }`}
                       >
                         <div
                           className={`rounded-3 px-3 py-2 ${
-                            message.id_expediteur === user?.id
+                            isMyMessage
                               ? 'bg-primary text-white'
                               : 'bg-light text-dark'
                           }`}
@@ -312,14 +398,14 @@ const Messaging = () => {
                         >
                           <p className="mb-1">{message.contenu}</p>
                           <small className={`${
-                            message.id_expediteur === user?.id ? 'text-white-50' : 'text-muted'
+                            isMyMessage ? 'text-white-50' : 'text-muted'
                           }`}>
                             {formatTime(message.date_envoi)}
-                            {message.lu && message.id_expediteur === user?.id && ' · Lu'}
+                            {message.lu && isMyMessage && ' · Lu'}
                           </small>
                         </div>
                       </div>
-                    ))}
+                    )})}
                     <div ref={messagesEndRef} />
                   </div>
                 )}

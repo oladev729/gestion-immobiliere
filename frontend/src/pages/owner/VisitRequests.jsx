@@ -13,7 +13,11 @@ const VisitRequests = () => {
     const fetchVisites = () => {
         setLoading(true);
         api.get('/demandes-visite/recues')
-           .then(res => setVisites(res.data))
+           .then(res => {
+               // Filtrer pour n'afficher que les demandes de locataires (pas de visiteurs)
+               const locataireRequests = res.data.filter(v => v.type_demandeur !== 'visiteur');
+               setVisites(locataireRequests);
+           })
            .catch(() => {})
            .finally(() => setLoading(false));
     };
@@ -42,7 +46,7 @@ const VisitRequests = () => {
             id_bien: bienId,
             id_demande: demandeId,
             destinataire_type: v.type_demandeur === 'visiteur' ? 'visiteur' : 'utilisateur',
-            id_destinataire: v.id_locataire || null
+            id_destinataire: v.id_utilisateur || null
         };
         console.log('Sending message payload:', payload);
 
@@ -51,7 +55,8 @@ const VisitRequests = () => {
             
             setReplyMessage('');
             setReplyingTo(null);
-            navigate(`/messaging?demandeId=${demandeId}`);
+            // Rediriger vers la messagerie pour voir la conversation
+            navigate(`/messaging?demandeId=${demandeId}&type=${v.type_demandeur}`);
         } catch (error) {
             console.error('Erreur envoi réponse rapide:', error);
             const errorData = error.response?.data;
@@ -206,6 +211,16 @@ const VisitRequests = () => {
                                                                 Refuser
                                                             </button>
                                                         </>
+                                                    )}
+                                                    
+                                                    {v.statut_demande === 'acceptee' && (
+                                                        <button 
+                                                            onClick={() => navigate(`/owner/inviter-locataire?demandeId=${v.id_demande}&locataireId=${v.id_locataire}`)} 
+                                                            className="btn btn-sm btn-warning"
+                                                            title="Inviter pour contrat"
+                                                        >
+                                                            <i className="bi bi-file-contract"></i> Contrat
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>

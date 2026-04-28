@@ -1,7 +1,6 @@
 const Probleme = require('../models/Probleme');
 const db = require('../config/database');
 
-
 const problemeController = {
 
     async create(req, res) {
@@ -182,22 +181,42 @@ const problemeController = {
                 }
                 const numeroTransaction = 'CHG-' + Date.now();
                 const insertCharge = await db.query(
-                    `INSERT INTO payement (id_contact, numero_transaction, montant, type_paiement, statut_paiement, date_paiement, description)
-                     VALUES ($1, $2, $3, 'charge', 'en_attente', NOW(), $4) RETURNING *`,
+                    `INSERT INTO payement (id_contact, numero_transaction, montant, statut_paiement, date_paiement)
+                     VALUES ($1, $2, $3, 'en_attente', NOW()) RETURNING *`,
                     [
                         contrat.rows[0].id_contact,
                         numeroTransaction,
-                        parseFloat(montant_depense),
-                        description_travaux || ('Réparation : ' + probleme.titre)
+                        parseFloat(montant_depense)
                     ]
                 );
                 charge = insertCharge.rows[0];
+
+                // Créer une notification pour le locataire
+                try {
+                    await db.query(
+                        `INSERT INTO notification (id_utilisateur, titre, message, type, lu)
+                         VALUES (
+                            (SELECT id_utilisateur FROM locataire WHERE id_locataire = $1),
+                            'Nouvelle charge ajoutée',
+                            $2,
+                            'charge',
+                            false
+                         )`,
+                        [
+                            probleme.id_locataire,
+                            `Une charge de ${parseFloat(montant_depense).toLocaleString('fr-FR')} FCFA a été ajoutée pour la réparation : ${probleme.titre}`
+                        ]
+                    );
+                } catch (notifError) {
+                    console.error('Erreur création notification locataire:', notifError);
+                    // Ne pas bloquer le processus si la notification échoue
+                }
             }
 
             res.json({
                 message: charge
-                    ? 'Problème géré et charge ajoutée au locataire avec succès'
-                    : 'Statut du problème mis à jour avec succès',
+                    ? "Problème géré et charge ajoutée au locataire avec succès."
+                    : "Statut du problème mis à jour avec succès.",
                 probleme: problemeMisAJour,
                 charge
             });
