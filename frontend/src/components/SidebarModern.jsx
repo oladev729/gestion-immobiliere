@@ -9,23 +9,23 @@ const SidebarModern = ({ user: propUser }) => {
   const location = useLocation();
 
   const ownerLinks = [
-    { name: 'Tableau de bord', path: '/owner-dashboard' },
-    { name: 'Mes Biens', path: '/owner/properties' },
-    { name: 'Visites', path: '/owner/visits' },
-    { name: 'Paiements', path: '/owner/payments' },
-    { name: 'Documents', path: '/owner/documents' },
-    { name: 'Alertes', path: '/owner/alertes' },
-    { name: 'Messagerie', path: '/messaging' },
-    { name: 'Inviter Locataire', path: '/owner/inviter-locataire' },
+    { name: 'Tableau de bord', path: '/owner-dashboard', icon: 'bi-speedometer2' },
+    { name: 'Mes Biens', path: '/owner/properties', icon: 'bi-house' },
+    { name: 'Visites', path: '/owner/visits', icon: 'bi-calendar-check' },
+    { name: 'Paiements', path: '/owner/payments', icon: 'bi-credit-card' },
+    { name: 'Documents', path: '/owner/documents', icon: 'bi-file-text' },
+    { name: 'Alertes', path: '/owner/alertes', icon: 'bi-bell' },
+    { name: 'Messagerie', path: '/messaging', icon: 'bi-chat-dots' },
+    { name: 'Inviter Locataire', path: '/owner/inviter-locataire', icon: 'bi-person-plus' },
   ];
 
   const tenantLinks = [
-    { name: 'Recherche', path: '/tenant/properties' },
-    { name: 'Mes Locations', path: '/tenant/rentals' },
-    { name: 'Entretien', path: '/tenant/entretien' },
-    { name: 'Messagerie', path: '/tenant/messaging' },
-    { name: 'Signaler', path: '/tenant/report' },
-    { name: 'Paiements', path: '/tenant/payment' },
+    { name: 'Recherche', path: '/tenant/properties', icon: 'bi-search' },
+    { name: 'Mes Locations', path: '/tenant/rentals', icon: 'bi-house-door' },
+    { name: 'Entretien', path: '/tenant/entretien', icon: 'bi-tools' },
+    { name: 'Messagerie', path: '/tenant/messaging', icon: 'bi-chat-dots' },
+    { name: 'Signaler', path: '/tenant/report', icon: 'bi-exclamation-triangle' },
+    { name: 'Paiements', path: '/tenant/payment', icon: 'bi-credit-card' },
   ];
 
   const role = user?.type || user?.type_utilisateur;
@@ -67,11 +67,8 @@ const SidebarModern = ({ user: propUser }) => {
                     style={{ textDecoration: 'none', outline: 'none', border: 'none' }}
                   >
                     <div className="nav-content">
-                      {link.icon ? (
-                        <i className="bi bi-bell nav-icon"></i>
-                      ) : (
-                        <span className="nav-text">{link.name}</span>
-                      )}
+                      <i className={`bi ${link.icon} nav-icon`}></i>
+                      <span className="nav-text">{link.name}</span>
                     </div>
                   </NavLink>
                 </li>
@@ -147,22 +144,22 @@ const SidebarModern = ({ user: propUser }) => {
 
         .sidebar-nav {
           flex: 1;
+          padding: 0.5rem 0;
           overflow-y: auto;
-          padding: 0.4rem;
         }
 
         .nav-section {
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
         }
 
         .nav-section-title {
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           font-weight: 600;
-          color: #718096;
+          color: #9ca3af;
           text-transform: uppercase;
           letter-spacing: 0.05em;
+          padding: 0.5rem 1rem;
           margin-bottom: 0.5rem;
-          padding: 0 0.5rem;
         }
 
         .nav-list {
@@ -178,22 +175,18 @@ const SidebarModern = ({ user: propUser }) => {
         .nav-link {
           display: flex;
           align-items: center;
-          padding: 0.35rem 0.6rem;
-          border-radius: 0.4rem;
-          text-decoration: none !important;
-          color: #a0aec0;
+          padding: 0.5rem 0.75rem;
+          color: #e2e8f0;
+          text-decoration: none;
+          border-radius: 0.5rem;
           transition: all 250ms ease-in-out;
-          position: relative;
-          min-height: 30px;
-          border: none !important;
-          outline: none !important;
-          box-shadow: none !important;
+          margin: 0 0.5rem;
+          font-size: 0.85rem;
         }
 
         .nav-link:hover {
-          background: #2d3748;
+          background: #4a5568;
           color: #ffffff;
-          text-decoration: none !important;
         }
 
         .nav-link.active {
@@ -206,6 +199,9 @@ const SidebarModern = ({ user: propUser }) => {
         .nav-content {
           flex: 1;
           min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
 
         .nav-description {
@@ -217,14 +213,25 @@ const SidebarModern = ({ user: propUser }) => {
         }
 
         .nav-icon {
-          font-size: 1.2rem;
+          font-size: 1.1rem;
           color: #a0aec0;
           display: flex;
           align-items: center;
           justify-content: center;
+          width: 20px;
+        }
+
+        .nav-text {
+          font-size: 0.85rem;
+          color: #a0aec0;
+          font-weight: 500;
         }
 
         .nav-link.active .nav-icon {
+          color: #ffffff;
+        }
+
+        .nav-link.active .nav-text {
           color: #ffffff;
         }
 

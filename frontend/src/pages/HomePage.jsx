@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
+import { getImageUrl, IMAGE_FALLBACK } from "../utils/imageConfig";
 
 const HomePage = () => {
   const [biens, setBiens] = useState([]);
@@ -226,7 +227,7 @@ const HomePage = () => {
                     >
                       {bien.photo_principale ? (
                         <img
-                          src={`${api.defaults.baseURL.replace('/api', '')}${bien.photo_principale}`}
+                          src={getImageUrl(bien.photo_principale)}
                           alt={bien.titre}
                           style={{
                             width: "100%",
@@ -235,7 +236,7 @@ const HomePage = () => {
                           }}
                           onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = "https://images.unsplash.com/photo-1582408921715-18e7806365c1?w=400&q=80";
+                            e.target.src = IMAGE_FALLBACK;
                           }}
                         />
                       ) : (

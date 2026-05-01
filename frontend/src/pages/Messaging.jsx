@@ -26,6 +26,13 @@ const Messaging = () => {
     }
   }, [user]);
 
+  // Faire défiler vers le bas quand les messages changent
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
   const fetchConversations = async () => {
     try {
       setLoading(true);
@@ -34,24 +41,17 @@ const Messaging = () => {
       console.log('Toutes les conversations reçues:', response.data);
       console.log('Type utilisateur:', user?.type || user?.type_utilisateur);
       
-      // Log détaillé de la première conversation pour déboguer
-      if (response.data.length > 0) {
-        console.log('Détails de la première conversation:', response.data[0]);
-        console.log('Champs disponibles:', Object.keys(response.data[0]));
-      }
-      
-      // Filtrage simple et efficace des conversations
+      // Filtrage simplifié et robuste des conversations
       let filteredConversations = response.data.filter(conv => {
         const userId = parseInt(user.id);
         const expediteurId = parseInt(conv.id_expediteur);
         const destinataireId = parseInt(conv.id_destinataire);
-        const autreId = parseInt(conv.autre_id);
         
-        // L'utilisateur doit être soit l'expéditeur, soit le destinataire, soit l'interlocuteur identifié
-        return (expediteurId === userId || destinataireId === userId || autreId === userId);
+        // L'utilisateur doit être soit l'expéditeur, soit le destinataire
+        return (expediteurId === userId || destinataireId === userId);
       });
       
-      console.log('Conversations après filtrage simple:', filteredConversations);
+      console.log('Conversations après filtrage:', filteredConversations);
       setConversations(filteredConversations);
       
       // Si un demandeId est spécifié, on sélectionne la conv correspondante
@@ -115,88 +115,188 @@ const Messaging = () => {
   };
 
   const selectConversation = async (conversation) => {
-    console.log('Sélection FORCÉE de la conversation:', conversation);
-    console.log('ID demande:', conversation.id_demande || conversation.demandeId);
-    console.log('Email associé:', conversation.autre_email);
+    console.log('🎯 Sélection de la conversation:', conversation);
+    console.log('🆔 ID demande:', conversation.id_demande || conversation.demandeId);
+    console.log('📧 Email associé:', conversation.autre_email);
     
     setSelectedConversation(conversation);
+    
+    // Éviter les boucles infinies
+    if (selectedConversation?.id_demande === conversation.id_demande) {
+        console.log('⚠️ Conversation déjà sélectionnée, éviter le rechargement');
+        return;
+    }
     
     // FORCER le chargement des messages par demandeId si disponible
     const demandeId = conversation.id_demande || conversation.demandeId;
     if (demandeId) {
-        console.log('CHARGEMENT FORCÉ des messages par demandeId:', demandeId);
-        fetchMessages(null, demandeId);
+        console.log('📥 Chargement des messages par demandeId:', demandeId);
+        await fetchMessagesByDemandeId(demandeId);
     } else {
         // Sinon, charger par utilisateur
-        const otherUserId = conversation.autre_email || conversation.autre_id;
-        console.log('Chargement des messages par utilisateur:', otherUserId);
-        fetchMessages(otherUserId);
+        const otherUserId = conversation.autre_id || 
+          (conversation.id_expediteur === parseInt(user.id) ? conversation.id_destinataire : conversation.id_expediteur);
+        console.log('👤 Chargement des messages par utilisateur:', otherUserId);
+        await fetchMessages(otherUserId);
+    }
+  };
+
+  const fetchMessagesByDemandeId = async (demandeId) => {
+    try {
+      console.log('🌐 Récupération messages par demandeId:', demandeId);
+      
+      // Utiliser l'endpoint correct pour les messages par demandeId
+      const response = await api.get(`/messages/conversation/demande/${demandeId}`);
+      
+      console.log('📥 Messages reçus par demandeId:', response.data);
+      console.log('📊 Nombre de messages:', response.data.length);
+      
+      // Vérifier si les messages ont la bonne structure
+      if (response.data.length > 0) {
+        console.log('🔍 Structure du premier message:', response.data[0]);
+        console.log('🔍 Champs disponibles:', Object.keys(response.data[0]));
+      }
+      
+      // Trier les messages par date pour l'affichage correct
+      const sortedMessages = response.data.sort((a, b) => 
+        new Date(a.date_envoi) - new Date(b.date_envoi)
+      );
+      
+      // Forcer la mise à jour avec un nouvel état pour déclencher le re-rendu
+      setMessages([]);
+      setTimeout(() => {
+        setMessages(sortedMessages);
+      }, 50);
+      
+    } catch (error) {
+      console.error('❌ Erreur récupération messages par demandeId:', error);
+      console.error('❌ URL demandée:', `/messages/conversation/demande/${demandeId}`);
+      console.error('❌ Détails erreur:', error.response?.data || error.message);
+      
+      // En cas d'erreur, essayer de charger par utilisateur si disponible
+      if (selectedConversation && selectedConversation.autre_id) {
+        console.log('🔄 Fallback: chargement par utilisateur:', selectedConversation.autre_id);
+        await fetchMessages(selectedConversation.autre_id);
+      } else {
+        // Mettre un tableau vide pour éviter l'erreur d'affichage
+        setMessages([]);
+      }
     }
   };
 
   const fetchMessages = async (userId, idDemande = null) => {
     try {
       let url;
+      
       if (idDemande) {
-        // Utiliser l'endpoint correct pour les messages par demande
-        url = `/messages/conversation/visitor?id_demande=${idDemande}`;
+        url = `/messages/conversation/demande/${idDemande}`;
       } else if (userId) {
-        // Récupérer les messages par ID utilisateur
         url = `/messages/conversation/${userId}`;
       } else {
         console.error('Aucun ID fourni pour fetchMessages');
         return;
       }
       
-      console.log('Récupération messages depuis:', url);
+      console.log('🌐 Récupération messages depuis:', url);
       const response = await api.get(url);
-      console.log('Messages reçus:', response.data);
-      setMessages(response.data);
+      console.log('📥 Messages reçus:', response.data);
+      console.log('📊 Nombre de messages:', response.data.length);
+      
+      // Trier les messages par date
+      const sortedMessages = response.data.sort((a, b) => 
+        new Date(a.date_envoi) - new Date(b.date_envoi)
+      );
+      
+      setMessages(sortedMessages);
     } catch (error) {
-      console.error('Erreur récupération messages:', error);
-      console.error('URL demandée:', url);
+      console.error('❌ Erreur récupération messages:', error);
+      console.error('❌ URL demandée:', url);
+      console.error('❌ Détails erreur:', error.response?.data || error.message);
     }
   };
 
   const sendMessage = async (e) => {
+    console.log('🚀 Envoi de message...');
+    
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim()) {
+        console.log('⚠️ Message vide, envoi annulé');
+        return;
+    }
 
+    console.log('✅ Début envoi message...');
     setSendingMessage(true);
+    
     try {
-      const typeFromUrl = queryParams.get('type');
-      const isVisitor = typeFromUrl === 'visiteur' || selectedConversation.expediteur_type === 'visiteur' || selectedConversation.destinataire_type === 'visiteur';
-      
       const payload = {
-        contenu: newMessage,
+        contenu: newMessage.trim(),
         id_bien: selectedConversation.id_bien,
-        id_demande: demandeIdFromUrl || selectedConversation.id_demande,
-        destinataire_type: isVisitor ? 'visiteur' : 'utilisateur'
+        id_demande: selectedConversation.id_demande || demandeIdFromUrl
       };
 
+      // Déterminer le destinataire correctement
       if (user) {
-          payload.id_destinataire = selectedConversation.autre_id || selectedConversation.id_expediteur || selectedConversation.id_destinataire;
-      } else {
-          // Visiteur vers Propriétaire
-          payload.id_expediteur = demandeIdFromUrl; 
+        const currentUserId = parseInt(user.id);
+        const expediteurId = parseInt(selectedConversation.id_expediteur);
+        const destinataireId = parseInt(selectedConversation.id_destinataire);
+        
+        // Si l'utilisateur actuel est l'expéditeur, envoyer au destinataire
+        if (currentUserId === expediteurId) {
+          payload.id_destinataire = destinataireId;
+        } 
+        // Si l'utilisateur actuel est le destinataire, envoyer à l'expéditeur
+        else if (currentUserId === destinataireId) {
+          payload.id_destinataire = expediteurId;
+        }
+        // Fallback : utiliser autre_id si disponible
+        else if (selectedConversation.autre_id) {
+          payload.id_destinataire = selectedConversation.autre_id;
+        }
+        // Dernier fallback
+        else {
+          payload.id_destinataire = expediteurId === currentUserId ? destinataireId : expediteurId;
+        }
+        
+        // Déterminer le type de destinataire
+        const isVisitor = selectedConversation.expediteur_type === 'visiteur' || 
+                         selectedConversation.destinataire_type === 'visiteur';
+        payload.destinataire_type = isVisitor ? 'visiteur' : 'utilisateur';
       }
 
-      await api.post('/messages/send', payload);
+      console.log('📤 Payload d\'envoi:', payload);
       
+      const response = await api.post('/messages/send', payload);
+      console.log('✅ Message envoyé avec succès:', response.data);
+      
+      // Vider le champ de saisie immédiatement
       setNewMessage('');
-      if (user) {
-        if (selectedConversation.id_demande) {
-          fetchMessages(null, selectedConversation.id_demande);
-        } else {
-          const otherId = selectedConversation.autre_id || selectedConversation.id_expediteur || selectedConversation.id_destinataire;
-          fetchMessages(otherId);
+      
+      // Ajouter le nouveau message à la liste
+      setMessages(prevMessages => {
+        const updatedMessages = [...prevMessages, response.data];
+        // Trier par date pour maintenir l'ordre
+        return updatedMessages.sort((a, b) => 
+          new Date(a.date_envoi) - new Date(b.date_envoi)
+        );
+      });
+      
+      // Rafraîchir les conversations pour mettre à jour les infos
+      fetchConversations();
+      
+      // Forcer le rechargement des messages après un court délai pour s'assurer que le message est bien là
+      setTimeout(() => {
+        const demandeId = selectedConversation.id_demande || demandeIdFromUrl;
+        if (demandeId) {
+          fetchMessagesByDemandeId(demandeId);
         }
-        fetchConversations();
-      } else {
-        fetchVisitorContext();
-      }
+      }, 500);
+      
     } catch (error) {
-      console.error('Erreur envoi message:', error);
+      console.error('❌ Erreur envoi message:', error);
+      console.error('❌ Détails erreur:', error.response?.data || error.message);
+      
+      // Afficher une erreur à l'utilisateur
+      alert('Erreur lors de l\'envoi du message. Veuillez réessayer.');
     } finally {
       setSendingMessage(false);
     }
@@ -377,13 +477,31 @@ const Messaging = () => {
                 ) : (
                   <div className="d-flex flex-column gap-3">
                     {messages.map((message, index) => {
-                      const isMyMessage = user 
-                        ? (message.id_expediteur == user.id && message.expediteur_type !== 'visiteur')
-                        : (message.expediteur_type === 'visiteur');
+                      // Validation de sécurité pour éviter les erreurs
+                      if (!message || !message.contenu) {
+                        console.warn(`⚠️ Message invalide à l'index ${index}:`, message);
+                        return null;
+                      }
+                      
+                      // Logique simple et robuste pour déterminer si c'est mon message
+                      const isMyMessage = user && (
+                        message.id_expediteur == user.id || 
+                        (message.expediteur_type === 'utilisateur' && message.id_expediteur == user.id)
+                      );
+                      
+                      // Debug minimal pour identifier le problème
+                      if (index === 0 || index === messages.length - 1) {
+                        console.log(`🔍 Message ${index}:`, {
+                          id_expediteur: message.id_expediteur,
+                          user_id: user?.id,
+                          isMyMessage,
+                          contenu: message.contenu?.substring(0, 50) + '...'
+                        });
+                      }
                       
                       return (
                       <div
-                        key={`msg_${message.id || index}_${message.date_envoi}`}
+                        key={`msg_${message.id_message || index}_${message.date_envoi || Date.now()}`}
                         className={`d-flex ${
                           isMyMessage ? 'justify-content-end' : 'justify-content-start'
                         }`}
@@ -400,12 +518,12 @@ const Messaging = () => {
                           <small className={`${
                             isMyMessage ? 'text-white-50' : 'text-muted'
                           }`}>
-                            {formatTime(message.date_envoi)}
+                            {message.date_envoi && formatTime(message.date_envoi)}
                             {message.lu && isMyMessage && ' · Lu'}
                           </small>
                         </div>
                       </div>
-                    )})}
+                    )}).filter(Boolean)} {/* Filtrer les messages null */}
                     <div ref={messagesEndRef} />
                   </div>
                 )}

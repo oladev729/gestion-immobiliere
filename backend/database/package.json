@@ -1,0 +1,18 @@
+{
+  "name": "database-setup",
+  "version": "1.0.0",
+  "description": "Script d'initialisation de la base de données ImmoGest",
+  "main": "setup_database.js",
+  "scripts": {
+    "setup": "node setup_database.js",
+    "reset": "node setup_database.js --reset",
+    "check": "node check_database.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.0",
+    "dotenv": "^16.0.0"
+  },
+  "keywords": ["database", "postgresql", "immobilier"],
+  "author": "ImmoGest Team",
+  "license": "MIT"
+}

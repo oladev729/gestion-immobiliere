@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
 import { useSearch } from '../../context/SearchContext.jsx';
+import { getImageUrl, IMAGE_FALLBACK } from '../../utils/imageConfig';
 
 const OwnerProperties = () => {
     const { searchTerm } = useSearch();
@@ -31,7 +32,7 @@ const OwnerProperties = () => {
     const fetchBiens = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/biens/mes-biens');
+            const res = await api.get(`/biens/mes-biens?t=${Date.now()}`);
             setBiens(res.data);
         } catch (err) {
             console.error(err);
@@ -293,7 +294,15 @@ const OwnerProperties = () => {
                             <div key={bien.id_bien} style={{ backgroundColor: '#ffffff', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'transform 0.2s' }}>
                                 <div style={{ position: 'relative', height: '140px' }}>
                                     {bien.photos?.[0] ? (
-                                        <img src={`http://127.0.0.1:5055${bien.photos[0].url_photobien}`} alt={bien.titre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img 
+                                            src={getImageUrl(bien.photos[0].url_photobien)} 
+                                            alt={bien.titre} 
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = IMAGE_FALLBACK;
+                                            }}
+                                        />
                                     ) : (
                                         <div style={{ width: '100%', height: '100%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.7rem' }}>Pas de photo</div>
                                     )}

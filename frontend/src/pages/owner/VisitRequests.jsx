@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 
 const VisitRequests = () => {
+    const { user } = useAuth();
     const [visites, setVisites] = useState([]);
     const [loading, setLoading] = useState(true);
     const [replyingTo, setReplyingTo] = useState(null);
@@ -56,7 +58,8 @@ const VisitRequests = () => {
             setReplyMessage('');
             setReplyingTo(null);
             // Rediriger vers la messagerie pour voir la conversation
-            navigate(`/messaging?demandeId=${demandeId}&type=${v.type_demandeur}`);
+            const messagingPath = user?.type === 'locataire' ? '/tenant/messaging' : '/messaging';
+            navigate(`${messagingPath}?demandeId=${demandeId}&type=${v.type_demandeur}`);
         } catch (error) {
             console.error('Erreur envoi réponse rapide:', error);
             const errorData = error.response?.data;

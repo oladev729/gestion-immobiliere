@@ -161,9 +161,14 @@ class Bien {
         const setClause = [];
         const values = [id_bien];
         let paramIndex = 2;
+        const allowedColumns = [
+            'titre', 'description', 'type_bien', 'charge', 'loyer_mensuel', 
+            'adresse', 'ville', 'code_postal', 'superficie', 
+            'nombre_pieces', 'nombre_chambres', 'meuble', 'statut'
+        ];
 
         for (const [key, value] of Object.entries(bienData)) {
-            if (value !== undefined) {
+            if (value !== undefined && allowedColumns.includes(key)) {
                 setClause.push(`${key} = $${paramIndex}`);
                 values.push(value);
                 paramIndex++;
@@ -171,7 +176,7 @@ class Bien {
         }
 
         if (setClause.length === 0) {
-            throw new Error('Aucune donnée à mettre à jour');
+            return await this.findById(id_bien);
         }
 
         const query = `

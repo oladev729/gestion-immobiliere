@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import { AuthContext } from '../../context/AuthContext';
+import { getImageUrl, IMAGE_FALLBACK } from '../../utils/imageConfig';
 
 const AvailableProperties = () => {
     const { user } = useContext(AuthContext);
@@ -125,9 +126,13 @@ const AvailableProperties = () => {
                     <div className="col-md-6 mb-3" key={bien.id_bien}>
                         <div className="card shadow-sm border-0 h-100">
                             {bien.photo_principale ? (
-                                <img src={`http://127.0.0.1:5055${bien.photo_principale}`}
+                                <img src={getImageUrl(bien.photo_principale)}
                                     className="card-img-top" alt={bien.titre}
-                                    style={{ height: 180, objectFit: 'cover' }} />
+                                    style={{ height: 180, objectFit: 'cover' }} 
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = IMAGE_FALLBACK;
+                                    }} />
                             ) : (
                                 <div className="bg-secondary d-flex align-items-center justify-content-center"
                                     style={{ height: 180 }}>

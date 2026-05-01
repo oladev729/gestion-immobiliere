@@ -7,7 +7,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        cb(null, path.join(__dirname, '..', '..', 'uploads'));
     },
     filename: (req, file, cb) => {
         const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -29,7 +29,11 @@ router.post('/bien/:id', authenticateToken, upload.fields([
         // 1. Gérer la photo principale
         if (req.files['principale']) {
             const file = req.files['principale'][0];
-            const url = `/uploads/${file.filename}`;
+            const url = `/api/uploads/${file.filename}`;
+            
+            // Désactiver l'ancienne photo principale
+            await db.query('UPDATE photosbien SET est_principale = false WHERE id_bien = $1', [id]);
+            
             const result = await db.query(
                 'INSERT INTO photosbien (id_bien, url_photobien, est_principale) VALUES ($1, $2, true) RETURNING *',
                 [id, url]
@@ -40,7 +44,7 @@ router.post('/bien/:id', authenticateToken, upload.fields([
         // 2. Gérer les photos de détails
         if (req.files['details']) {
             for (const file of req.files['details']) {
-                const url = `/uploads/${file.filename}`;
+                const url = `/api/uploads/${file.filename}`;
                 const result = await db.query(
                     'INSERT INTO photosbien (id_bien, url_photobien, est_principale) VALUES ($1, $2, false) RETURNING *',
                     [id, url]
@@ -69,7 +73,7 @@ router.post('/probleme/:id', authenticateToken, upload.array('photos', 5), async
         }
         const inserted = [];
         for (const file of req.files) {
-            const url = `/uploads/${file.filename}`;
+            const url = `/api/uploads/${file.filename}`;
             // Utilise photosbp si elle existe, sinon stocke dans photosbien avec id_probleme
             try {
                 const result = await db.query(

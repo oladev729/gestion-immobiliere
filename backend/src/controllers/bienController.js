@@ -139,6 +139,9 @@ const bienController = {
     // ============================================================
     async update(req, res) {
         try {
+            console.log('Update request for bien ID:', req.params.id);
+            console.log('Update data:', req.body);
+            
             const bien = await Bien.findById(req.params.id);
             
             if (!bien) {
@@ -148,13 +151,16 @@ const bienController = {
             // Vérifier que le propriétaire connecté est bien le propriétaire du bien
             const proprietaire = await Proprietaire.findById(bien.id_proprietaire);
 
-            if (proprietaire.id_utilisateur !== req.user.id) {
+            // Conversion en Number pour être sûr de la comparaison
+            if (Number(proprietaire.id_utilisateur) !== Number(req.user.id)) {
+                console.log('Auth failed:', proprietaire.id_utilisateur, '!==', req.user.id);
                 return res.status(403).json({ 
                     message: 'Vous n\'êtes pas autorisé à modifier ce bien' 
                 });
             }
 
             const updatedBien = await Bien.update(req.params.id, req.body);
+            console.log('Update success:', updatedBien.id_bien);
 
             res.json({
                 message: 'Bien mis à jour avec succès',

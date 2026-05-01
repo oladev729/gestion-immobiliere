@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 });
 
 // Servir les fichiers statiques (uploads)
-app.use('/api/uploads', express.static('uploads'));
+app.use('/api/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Routes de test
 app.get('/api/health', (req, res) => {
@@ -72,6 +72,10 @@ app.use('/api/alertes', alertesRoutes);
 // ROUTES DES PAIEMENTS
 const paiementRoutes = require('./routes/paiementRoutes');
 app.use('/api/paiements', paiementRoutes);
+
+// ROUTES DES PAIEMENTS CAURISPAY
+const paymentRoutes = require('./routes/payment');
+app.use('/api/payment', paymentRoutes);
 
 // ROUTES DES DEMANDES DE VISITE
 const demandeVisiteRoutes = require('./routes/DemandeVisiteRoutes');
