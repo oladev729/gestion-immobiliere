@@ -67,7 +67,9 @@ app.use('/api/documents', documentRoutes);
 
 // ROUTES DES ALERTES
 const alertesRoutes = require('./routes/alertesRoutes');
+const alertesAutomatiquesRoutes = require('./routes/alertesAutomatiquesRoutes');
 app.use('/api/alertes', alertesRoutes);
+app.use('/api/alertes-automatiques', alertesAutomatiquesRoutes);
 
 // ROUTES DES LOCATAIRES
 const locataireRoutes = require('./routes/locataireRoutes');
@@ -108,6 +110,16 @@ app.use('/api/messages', messageRoutes);
 // ROUTES PROPRIÉTAIRES
 const proprietaireRoutes = require('./routes/proprietaireRoutes');
 app.use('/api/proprietaires', proprietaireRoutes);
+
+// Démarrer le service d'alertes automatiques
+try {
+    const AlertesAutomatiquesJob = require('./jobs/alertesAutomatiquesJob');
+    AlertesAutomatiquesJob.demarrer();
+    console.log('🔔 Service d\'alertes automatiques démarré');
+} catch (error) {
+    console.error('❌ Erreur lors du démarrage du service d\'alertes automatiques:', error.message);
+    console.log('⚠️ Veuillez installer node-cron: npm install node-cron');
+}
 
 // Démarrer le serveur
 const PORT = process.env.PORT || 5000;

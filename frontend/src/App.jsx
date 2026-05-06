@@ -20,7 +20,7 @@ import OwnerPayments from './pages/owner/OwnerPayments';
 import DocumentGeneratorPage from './pages/owner/DocumentGeneratorPage';
 import AlertesAvanceesPage from './pages/owner/AlertesAvanceesPage';
 import InviterLocataire from './pages/owner/InviterLocataire';
-import TestData from './pages/owner/TestData';
+// import TestData from "./pages/owner/TestData"; // Commenté car c'est une page de test
 
 // Pages Locataire
 import AvailableProperties from './pages/tenant/AvailableProperties';
@@ -83,7 +83,7 @@ function App() {
                         <Route path="/owner/documents" element={<Layout><DocumentGeneratorPage /></Layout>} />
                         <Route path="/owner/alertes" element={<Layout><AlertesAvanceesPage /></Layout>} />
                         <Route path="/owner/inviter-locataire" element={<Layout><InviterLocataire /></Layout>} />
-                        <Route path="/owner/test-data" element={<Layout><TestData /></Layout>} />
+                        {/* <Route path="/owner/test-data" element={<Layout><TestData /></Layout>} /> */}
                         <Route path="/messaging" element={
                             <AuthContext.Consumer>
                                 {({ user }) => user ? <Layout><Messaging /></Layout> : <Messaging />}
