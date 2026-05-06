@@ -18,9 +18,33 @@ const ReportIssue = () => {
     });
 
     useEffect(() => {
-        api.get('/contrats/mes-contrats-locataire')
-            .then(res => setContrats(res.data))
-            .catch(() => {});
+        console.log('🔥🔥🔥 ReportIssue.jsx - useEffect appelé');
+        console.log('🔥🔥🔥 ReportIssue.jsx - Appel API /contrats/mes-contrats-locataire');
+        console.log('🔥🔥🔥 ReportIssue.jsx - URL complète:', api.defaults.baseURL + '/contrats/mes-contrats-locataire');
+        console.log('🔥🔥🔥 ReportIssue.jsx - Token dans localStorage:', localStorage.getItem('token'));
+        console.log('🔥🔥🔥 ReportIssue.jsx - Token dans api.defaults:', api.defaults.headers?.Authorization);
+        
+        // Forcer l'ajout du token dans la requête
+        const token = localStorage.getItem('token');
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        };
+        
+        console.log('🔥🔥🔥 ReportIssue.jsx - Config de la requête:', config);
+        
+        api.get('/contrats/mes-contrats-locataire', config)
+            .then(res => {
+                console.log('🔥🔥🔥 ReportIssue.jsx - Réponse API reçue:', res.data);
+                setContrats(res.data);
+            })
+            .catch((error) => {
+                console.log('🔥🔥🔥 ReportIssue.jsx - Erreur API:', error);
+                console.log('🔥🔥🔥 ReportIssue.jsx - Status:', error.response?.status);
+                console.log('🔥🔥🔥 ReportIssue.jsx - Message:', error.response?.data?.message);
+            });
     }, []);
 
     const handleSubmit = async (e) => {
@@ -29,27 +53,46 @@ const ReportIssue = () => {
         setErrorMsg('');
         setLoading(true);
         try {
-            // 1. Créer le signalement
-            const res = await api.post('/problemes', data);
-            const id_probleme = res.data.probleme?.id_probleme;
-
-            // 2. Upload des photos si présentes
-            if (photos.length > 0 && id_probleme) {
+            console.log('🚀 Envoi du signalement de maintenance...');
+            console.log('📝 Données:', data);
+            
+            // Préparer les données pour la nouvelle API alertes
+            const alerteData = {
+                type_alerte: 'maintenance',
+                titre: data.titre,
+                description: data.description,
+                date_echeance: new Date().toISOString().split('T')[0], // Date du jour
+                priorite: data.priorite,
+                id_bien: data.id_bien,
+                periodicite: 'ponctuelle'
+            };
+            
+            console.log('📡 Envoi vers /alertes:', alerteData);
+            
+            // 1. Créer l'alerte avec la nouvelle API
+            const res = await api.post('/alertes', alerteData);
+            console.log('✅ Alerte créée:', res.data);
+            
+            // 2. Upload des photos si présentes (utiliser l'ancien système pour les photos)
+            if (photos.length > 0 && res.data.id_alerte) {
                 const formData = new FormData();
                 photos.forEach(photo => formData.append('photos', photo));
                 try {
-                    await api.post(`/photos/probleme/${id_probleme}`, formData, {
+                    await api.post(`/photos/alerte/${res.data.id_alerte}`, formData, {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
-                } catch {
+                    console.log('✅ Photos uploadées');
+                } catch (photoErr) {
+                    console.warn('⚠️ Erreur upload photos:', photoErr);
                     // Photos non uploadées mais signalement créé
                 }
             }
 
-            setSuccessMsg('Signalement envoyé avec succès !');
+            setSuccessMsg('Signalement envoyé avec succès ! Le propriétaire en a été notifié.');
             setData({ id_bien: '', titre: '', description: '', categorie: 'plomberie', priorite: 'moyenne' });
             setPhotos([]);
         } catch (err) {
+            console.error('❌ Erreur lors de l\'envoi du signalement:', err);
             setErrorMsg(err.response?.data?.message || "Erreur lors de l'envoi du signalement");
         } finally {
             setLoading(false);
@@ -84,7 +127,7 @@ const ReportIssue = () => {
                             <option value="">Sélectionner votre logement</option>
                             {contrats.filter(c => c.statut_contrat === 'actif').map(c => (
                                 <option key={c.id_bien} value={c.id_bien}>
-                                    {c.bien_titre} — {c.bien_ville || ''}
+                                    {c.bien_titre} {c.ville ? `— ${c.ville}` : ''}
                                 </option>
                             ))}
                         </select>

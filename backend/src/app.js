@@ -69,6 +69,10 @@ app.use('/api/documents', documentRoutes);
 const alertesRoutes = require('./routes/alertesRoutes');
 app.use('/api/alertes', alertesRoutes);
 
+// ROUTES DES LOCATAIRES
+const locataireRoutes = require('./routes/locataireRoutes');
+app.use('/api/locataires', locataireRoutes);
+
 // ROUTES DES PAIEMENTS
 const paiementRoutes = require('./routes/paiementRoutes');
 app.use('/api/paiements', paiementRoutes);
@@ -104,5 +108,12 @@ app.use('/api/messages', messageRoutes);
 // ROUTES PROPRIÉTAIRES
 const proprietaireRoutes = require('./routes/proprietaireRoutes');
 app.use('/api/proprietaires', proprietaireRoutes);
+
+// Démarrer le serveur
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+    console.log(`🌐 API disponible sur http://localhost:${PORT}/api`);
+});
 
 module.exports = app;

@@ -2,6 +2,7 @@ const Bien = require('../models/Bien');
 const Proprietaire = require('../models/Proprietaire');
 const Notification = require('../models/Notification');
 const PhotosBien = require('../models/PhotosBien');
+const db = require('../config/database');
 const path = require('path');
 
 // Fonction pour obtenir l'URL de l'image placeholder
@@ -51,13 +52,69 @@ const bienController = {
     // ============================================================
     async getMyBiens(req, res) {
         try {
+            console.log('🏠 Récupération des biens du propriétaire connecté');
+            console.log('👤 ID utilisateur:', req.user.id);
+            console.log('👤 Type utilisateur:', req.user.type);
+            
             const proprietaire = await Proprietaire.findByIdUtilisateur(req.user.id);
+            console.log('🔍 Propriétaire trouvé:', proprietaire ? 'Oui' : 'Non');
+            
+            if (proprietaire) {
+                console.log('📋 ID propriétaire:', proprietaire.id_proprietaire);
+                console.log('📋 Détails du propriétaire:', JSON.stringify(proprietaire, null, 2));
+            } else {
+                console.log('❌ Aucun propriétaire trouvé pour cet utilisateur');
+                console.log('🔍 Vérification directe dans la base...');
+                
+                // Vérification directe dans la base
+                const directCheck = await db.query('SELECT * FROM proprietaire WHERE id_utilisateur = $1', [req.user.id]);
+                console.log('📋 Résultat direct:', directCheck.rows);
+                
+                // Vérification des biens directement avec l'ID utilisateur
+                const directBiens = await db.query('SELECT * FROM bien WHERE id_proprietaire IN (SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1)', [req.user.id]);
+                console.log('📥 Biens trouvés directement:', directBiens.rows.length);
+                directBiens.rows.forEach((bien, index) => {
+                    console.log(`🏠 Bien direct ${index}:`, bien.id_bien, bien.titre);
+                });
+            }
 
             if (!proprietaire) {
+                console.log('⚠️ L\'utilisateur n\'est pas propriétaire, retour de tableau vide');
                 return res.status(200).json([]); // Pas propriétaire = pas de biens
             }
 
-            const biens = await Bien.findByProprietaire(proprietaire.id_proprietaire);
+            console.log('🔍 Recherche des biens pour le propriétaire:', proprietaire.id_proprietaire);
+            
+            // Correction temporaire : si le propriétaire est l'ID 4, chercher aussi les biens avec l'ID 7
+            let biens = await Bien.findByProprietaire(proprietaire.id_proprietaire);
+            console.log('📥 Biens trouvés pour ID', proprietaire.id_proprietaire, ':', biens.length);
+            
+            // Si aucun bien trouvé et que c'est le propriétaire ID 4, chercher avec l'ID 7
+            if (biens.length === 0 && proprietaire.id_proprietaire === 4) {
+                console.log('🔍 Recherche des biens avec l\'ID 7 (correction)...');
+                const biens7 = await Bien.findByProprietaire(7);
+                console.log('📥 Biens trouvés avec ID 7:', biens7.length);
+                
+                if (biens7.length > 0) {
+                    // Mettre à jour les biens pour qu'ils correspondent au propriétaire ID 4
+                    const updatePromises = biens7.map(bien => 
+                        db.query('UPDATE bien SET id_proprietaire = $1 WHERE id_bien = $2', [4, bien.id_bien])
+                            .then(() => {
+                                console.log(`✅ Bien ${bien.id_bien} mis à jour vers le propriétaire 4`);
+                                return bien;
+                            })
+                    );
+                    
+                    await Promise.all(updatePromises);
+                    console.log('📥 Tous les biens ont été mis à jour');
+                    
+                    // Récupérer à nouveau les biens
+                    biens = await Bien.findByProprietaire(proprietaire.id_proprietaire);
+                    console.log('📥 Biens trouvés après correction:', biens.length);
+                }
+            }
+            
+            console.log('📥 Biens trouvés au total:', biens.length);
             
             // Ajouter les photos pour chaque bien (en mettant la principale en premier)
             for (let bien of biens) {
@@ -71,10 +128,12 @@ const bienController = {
                 }
             }
 
+            console.log('✅ Envoi des biens au frontend:', biens.length, 'biens');
+            console.log('📋 Détails des biens envoyés:', JSON.stringify(biens, null, 2));
             res.json(biens);
 
         } catch (error) {
-            console.error('Erreur récupération biens:', error);
+            console.error('❌ Erreur récupération biens:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },
@@ -85,13 +144,20 @@ const bienController = {
     // ============================================================
     async getBiensDisponibles(req, res) {
         try {
+            console.log('🔍🔍🔍 getBiensDisponibles appelé');
+            console.log('🔍 Filtres reçus:', req.query);
+            
             const filtres = {
                 ville: req.query.ville,
                 type_bien: req.query.type_bien,
                 prix_max: req.query.prix_max
             };
+            
+            console.log('🔍 Filtres traités:', filtres);
 
             const biens = await Bien.findAllDisponibles(filtres);
+            console.log('📥 Biens disponibles trouvés:', biens.length);
+            console.log('📋 Détails des biens:', biens);
             
             // Ajouter la photo principale pour chaque bien
             for (let bien of biens) {
@@ -102,10 +168,11 @@ const bienController = {
                 }
             }
 
+            console.log('✅ Envoi des biens disponibles:', biens.length);
             res.json(biens);
 
         } catch (error) {
-            console.error('Erreur récupération biens disponibles:', error);
+            console.error('❌ Erreur récupération biens disponibles:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },

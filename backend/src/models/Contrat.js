@@ -78,11 +78,19 @@ class Contrat {
     // RÉCUPÉRER TOUS LES CONTRATS D'UN LOCATAIRE
     // ============================================================
     static async findByLocataire(id_locataire) {
+        console.log('🔍 findByLocataire appelé avec id_locataire:', id_locataire);
+        
         const query = `
             SELECT c.*, 
+                   c.montant_depot_guarantie_attendu as depot_garantie,
+                   c.montant_depot_guarantie_attendu as montant_depot_garantie_attendu,
                    b.titre as bien_titre,
                    b.adresse as adresse,
                    b.ville as ville,
+                   b.description as bien_description,
+                   b.type_bien,
+                   b.loyer_mensuel as bien_loyer,
+                   b.statut as bien_statut,
                    u_prop.nom as proprietaire_nom,
                    u_prop.prenoms as proprietaire_prenoms,
                    u_loc.nom as locataire_nom,
@@ -96,8 +104,20 @@ class Contrat {
             WHERE c.id_locataire = $1
             ORDER BY c.date_creation DESC
         `;
-        const result = await db.query(query, [id_locataire]);
-        return result.rows;
+        
+        console.log('📝 Requête SQL:', query);
+        console.log('📋 Paramètre:', [id_locataire]);
+        
+        try {
+            const result = await db.query(query, [id_locataire]);
+            console.log('📥 Résultat de la requête:', result.rows);
+            console.log('📊 Nombre de résultats:', result.rows.length);
+            return result.rows;
+        } catch (error) {
+            console.error('❌ Erreur dans findByLocataire:', error);
+            console.error('❌ Message d\'erreur:', error.message);
+            throw error;
+        }
     }
 
     // ============================================================

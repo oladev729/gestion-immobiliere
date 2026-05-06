@@ -84,12 +84,15 @@ const Entretien = () => {
                 });
             }
 
-            // Récupérer les alertes (endpoint qui existe)
+            // Récupérer les alertes (nouvelle API pour les communications du propriétaire)
             try {
+                console.log('🔄 Récupération des alertes communications...');
                 const alertesRes = await api.get('/alertes/mes-alertes');
-                setAlertes(alertesRes.data.alertes || []);
+                console.log('✅ Réponse alertes:', alertesRes.data);
+                setAlertes(alertesRes.data || []);
             } catch (err) {
-                console.error('Erreur chargement alertes:', err);
+                console.error('❌ Erreur chargement alertes:', err);
+                console.error('❌ Détails erreur:', err.response?.data);
                 setAlertes([]);
             }
 
@@ -424,14 +427,14 @@ const Entretien = () => {
                         </div>
                     )}
 
-                    {/* Onglet Alertes */}
+                    {/* Onglet Alertes - Communications du propriétaire */}
                     {activeTab === 'alertes' && (
                         <div className="row">
                             {alertes.length === 0 ? (
                                 <div className="col-12">
                                     <div className="alert alert-info text-center">
                                         <i className="fas fa-info-circle me-2"></i>
-                                        Aucune alerte trouvée pour le moment.
+                                        Aucune communication reçue pour le moment.
                                     </div>
                                 </div>
                             ) : (
@@ -441,27 +444,64 @@ const Entretien = () => {
                                             <div className="card-body">
                                                 <div className="d-flex justify-content-between align-items-start mb-2">
                                                     <h6 className="card-title mb-0">
-                                                        <i className="fas fa-bell me-2 text-warning"></i>
-                                                        Alerte
+                                                        <i className={`fas me-2 ${
+                                                            alerte.type_alerte === 'fiscale' ? 'fa-file-invoice-dollar text-warning' : 'fa-tools text-primary'
+                                                        }`}></i>
+                                                        {alerte.type_alerte === 'fiscale' ? 'Communication fiscale' : 'Information maintenance'}
                                                     </h6>
-                                                    <span className={`badge ${getStatutBadge(alerte.statut_alerte)}`}>
-                                                        {getStatutLabel(alerte.statut_alerte)}
+                                                    <span className={`badge ${getStatutBadge(alerte.statut)}`}>
+                                                        {getStatutLabel(alerte.statut)}
                                                     </span>
                                                 </div>
                                                 
                                                 <div className="mb-2">
-                                                    <small className="text-muted">Type:</small>
-                                                    <div className="fw-semibold">{alerte.type_alerte}</div>
+                                                    <small className="text-muted">De:</small>
+                                                    <div className="fw-semibold">
+                                                        {alerte.proprietaire_nom && alerte.proprietaire_prenom 
+                                                            ? `${alerte.proprietaire_prenom} ${alerte.proprietaire_nom}` 
+                                                            : 'Votre propriétaire'
+                                                        }
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="mb-2">
+                                                    <small className="text-muted">Titre:</small>
+                                                    <div className="fw-semibold">{alerte.titre}</div>
                                                 </div>
                                                 
                                                 <div className="mb-2">
                                                     <small className="text-muted">Message:</small>
-                                                    <div>{alerte.message}</div>
+                                                    <div>{alerte.description}</div>
                                                 </div>
+                                                
+                                                {alerte.bien_titre && (
+                                                    <div className="mb-2">
+                                                        <small className="text-muted">Bien concerné:</small>
+                                                        <div>{alerte.bien_titre}</div>
+                                                    </div>
+                                                )}
                                                 
                                                 <div className="mb-2">
                                                     <small className="text-muted">Date:</small>
                                                     <div>{new Date(alerte.date_creation).toLocaleDateString('fr-FR')}</div>
+                                                </div>
+                                                
+                                                {alerte.date_echeance && (
+                                                    <div className="mb-2">
+                                                        <small className="text-muted">Échéance:</small>
+                                                        <div className="text-warning">
+                                                            {new Date(alerte.date_echeance).toLocaleDateString('fr-FR')}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                <div className="mb-2">
+                                                    <small className="text-muted">Priorité:</small>
+                                                    <div>
+                                                        <span className={`badge ${alerte.priorite === 'urgente' ? 'bg-danger' : alerte.priorite === 'haute' ? 'bg-warning' : alerte.priorite === 'moyenne' ? 'bg-info' : 'bg-secondary'}`}>
+                                                            {alerte.priorite.charAt(0).toUpperCase() + alerte.priorite.slice(1)}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

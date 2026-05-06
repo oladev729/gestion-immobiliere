@@ -3,10 +3,14 @@ import api from '../api/axios';
 import MaintenanceRecues from '../pages/owner/MaintenanceRecues';
 
 const AlertesAvancees = () => {
+  console.log('🚀 Chargement du composant AlertesAvancees - VERSION 2.0');
+  console.log('🔍 Test de fetchBiens intégré');
+  
   const [alertes, setAlertes] = useState([]);
-  const [activeTab, setActiveTab] = useState('fiscales');
+  const [activeTab, setActiveTab] = useState('maintenance'); // Signalements des locataires par défaut
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [locataires, setLocataires] = useState([]); // Pour les communications fiscales
   const [form, setForm] = useState({
     type_alerte: 'fiscale',
     titre: '',
@@ -14,39 +18,110 @@ const AlertesAvancees = () => {
     date_echeance: '',
     priorite: 'moyenne',
     id_bien: '',
+    id_locataire: '', // Pour les communications aux locataires
     periodicite: 'annuelle'
   });
   const [biens, setBiens] = useState([]);
 
   useEffect(() => {
+    console.log('🔄 useEffect appelé - Chargement initial des données');
     fetchAlertes();
     fetchBiens();
+    fetchLocataires();
   }, []);
 
   const fetchAlertes = async () => {
     try {
+      console.log('🔍 Récupération des alertes...');
       const response = await api.get('/alertes/mes-alertes');
+      console.log('📥 Alertes reçues:', response.data);
+      console.log('📊 Nombre d\'alertes:', response.data?.length || 0);
       setAlertes(response.data);
     } catch (error) {
-      console.error('Erreur lors de la récupération des alertes:', error);
+      console.error('❌ Erreur lors de la récupération des alertes:', error);
+      console.error('❌ Détails de l\'erreur:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchLocataires = async () => {
+    try {
+      console.log('👥 Récupération des locataires...');
+      const response = await api.get('/locataires/mes-locataires');
+      console.log('📥 Locataires reçus:', response.data);
+      setLocataires(response.data);
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des locataires:', error);
+    }
+  };
+
   const fetchBiens = async () => {
     try {
+      console.log('🏠 Récupération des biens...');
+      
+      // Forcer l'ajout du token JWT
+      const token = localStorage.getItem('token');
+      console.log('🔑 Token utilisé pour les biens:', token ? 'Présent' : 'Absent');
+      
+      console.log('📡 Envoi de la requête GET /biens/mes-biens...');
+      
+      // Utiliser l'API par défaut (avec interceptor déjà configuré)
+      console.log('🌐 URL complète de la requête:', api.defaults.baseURL + '/biens/mes-biens');
+      
       const response = await api.get('/biens/mes-biens');
-      setBiens(response.data);
+      
+      console.log('✅ Réponse reçue - Status:', response.status);
+      console.log('✅ Headers de la réponse:', response.headers);
+      console.log('📥 Biens reçus (brut):', response.data);
+      console.log('� Type de données reçues:', typeof response.data);
+      console.log('📥 Est-ce un tableau?', Array.isArray(response.data));
+      console.log('�� Nombre de biens:', response.data?.length || 0);
+      console.log('📊 Clés de l\'objet:', Object.keys(response.data || {}));
+      
+      // Afficher la structure de chaque bien pour debugging
+      if (response.data && response.data.length > 0) {
+        response.data.forEach((bien, index) => {
+          console.log(`🏠 Bien ${index}:`, {
+            id: bien.id,
+            id_bien: bien.id_bien,
+            titre: bien.titre,
+            toutesProps: Object.keys(bien)
+          });
+        });
+      } else {
+        console.log('⚠️ Aucun bien reçu ou tableau vide');
+      }
+      
+      setBiens(response.data || []);
     } catch (error) {
-      console.error('Erreur lors de la récupération des biens:', error);
+      console.error('❌ Erreur lors de la récupération des biens:', error);
+      console.error('❌ Message d\'erreur:', error.message);
+      console.error('❌ Détails de l\'erreur:', error.response?.data || 'Pas de détails');
+      console.error('❌ Status de l\'erreur:', error.response?.status || 'Pas de status');
+      console.error('❌ Code d\'erreur:', error.code || 'Pas de code');
+      setBiens([]);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🚀 Soumission du formulaire d\'alerte');
+    console.log('📝 Données du formulaire:', form);
+    
+    // Validation des champs requis
+    if (!form.titre || !form.description || !form.date_echeance) {
+      console.error('❌ Champs requis manquants');
+      alert('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    
     try {
-      await api.post('/alertes', form);
+      console.log('📡 Envoi de la requête POST à /alertes...');
+      const response = await api.post('/alertes', form);
+      console.log('✅ Réponse du serveur:', response.data);
+      
+      // Réinitialiser le formulaire
       setForm({
         type_alerte: 'fiscale',
         titre: '',
@@ -56,30 +131,62 @@ const AlertesAvancees = () => {
         id_bien: '',
         periodicite: 'annuelle'
       });
+      
+      // Fermer le formulaire et rafraîchir la liste
       setShowForm(false);
       fetchAlertes();
+      
+      // Afficher un message de succès
+      alert('Alerte créée avec succès !');
+      
     } catch (error) {
-      console.error('Erreur lors de la création de l\'alerte:', error);
+      console.error('❌ Erreur lors de la création de l\'alerte:', error);
+      console.error('❌ Détails de l\'erreur:', error.response?.data || error.message);
+      
+      // Afficher un message d'erreur plus détaillé
+      const errorMessage = error.response?.data?.message || error.message || 'Erreur inconnue';
+      alert(`Erreur lors de la création de l'alerte: ${errorMessage}`);
     }
   };
 
   const handleDelete = async (id) => {
+    console.log('🗑️ handleDelete appelé avec ID:', id);
     if (window.confirm('Supprimer cette alerte ?')) {
+      console.log('✅ Confirmation acceptée');
       try {
-        await api.delete(`/alertes/${id}`);
+        console.log('🔄 Appel API DELETE vers:', `/alertes/${id}`);
+        const response = await api.delete(`/alertes/${id}`);
+        console.log('📥 Réponse API:', response.status, response.data);
+        console.log('🔄 Rafraîchissement des alertes...');
         fetchAlertes();
       } catch (error) {
-        console.error('Erreur lors de la suppression de l\'alerte:', error);
+        console.error('❌ Erreur lors de la suppression de l\'alerte:', error);
+        console.error('❌ Détails de l\'erreur:', error.response?.status, error.response?.data);
+        alert(`Erreur lors de la suppression: ${error.response?.data?.message || error.message}`);
       }
+    } else {
+      console.log('❌ Suppression annulée par l\'utilisateur');
     }
   };
 
   const handleMarquerTraitee = async (id) => {
     try {
-      await api.patch(`/alertes/${id}/marquer-traitee`);
+      await api.put(`/alertes/${id}/traiter`);
       fetchAlertes();
     } catch (error) {
       console.error('Erreur lors du traitement de l\'alerte:', error);
+    }
+  };
+
+  const handleSupprimerAlerte = async (id) => {
+    try {
+      console.log('🗑️ Suppression de l\'alerte:', id);
+      await api.delete(`/alertes/${id}`);
+      console.log('✅ Alerte supprimée, rafraîchissement...');
+      fetchAlertes(); // Rafraîchir la liste des alertes
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression de l\'alerte:', error);
+      alert('Erreur lors de la suppression de l\'alerte');
     }
   };
 
@@ -105,8 +212,39 @@ const AlertesAvancees = () => {
     }
   };
 
+  const getPriorityBadgeColor = (priorite) => {
+    switch (priorite) {
+      case 'urgente': return 'bg-danger';
+      case 'haute': return 'bg-warning';
+      case 'moyenne': return 'bg-warning text-dark';
+      case 'basse': return 'bg-success';
+      default: return 'bg-secondary';
+    }
+  };
+
   const getAlertesFiltrees = () => {
-    return alertes.filter(alerte => alerte.type_alerte === activeTab.slice(0, -1));
+    console.log('🔍 Filtrage des alertes:');
+    console.log('  - Onglet actif:', activeTab);
+    console.log('  - Total alertes:', alertes.length);
+    console.log('  - Alertes:', alertes);
+    
+    const filtered = alertes.filter(alerte => {
+      let match = false;
+      
+      if (activeTab === 'maintenance') {
+        // Onglet maintenance : signalements des locataires (expediteur_type = 'locataire')
+        match = alerte.expediteur_type === 'locataire';
+      } else if (activeTab === 'fiscales') {
+        // Onglet fiscales : communications du propriétaire (expediteur_type = 'proprietaire')
+        match = alerte.expediteur_type === 'proprietaire';
+      }
+      
+      console.log(`    - Alerte ${alerte.id_alerte}: type=${alerte.type_alerte}, expediteur=${alerte.expediteur_type}, onglet=${activeTab}, match=${match}`);
+      return match;
+    });
+    
+    console.log('  - Alertes filtrées:', filtered.length);
+    return filtered;
   };
 
   const alertesFiltrees = getAlertesFiltrees();
@@ -133,8 +271,9 @@ const AlertesAvancees = () => {
                 className="btn btn-primary"
                 onClick={() => setShowForm(true)}
                 style={{ borderRadius: '8px' }}
+                disabled={activeTab === 'maintenance'} // Désactivé dans l'onglet maintenance
               >
-                + nouvelle alerte
+                {activeTab === 'fiscales' ? '+ nouvelle communication' : 'signalements reçus'}
               </button>
             </div>
 
@@ -142,42 +281,42 @@ const AlertesAvancees = () => {
             <ul className="nav nav-tabs mb-4">
               <li className="nav-item">
                 <button
-                  className={`nav-link ${activeTab === 'fiscales' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('fiscales')}
-                  style={{ border: 'none', background: 'none', color: activeTab === 'fiscales' ? '#3b82f6' : '#6b7280' }}
-                >
-                  alertes fiscales
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
                   className={`nav-link ${activeTab === 'maintenance' ? 'active' : ''}`}
                   onClick={() => setActiveTab('maintenance')}
                   style={{ border: 'none', background: 'none', color: activeTab === 'maintenance' ? '#3b82f6' : '#6b7280' }}
                 >
-                  maintenance
+                  signalements reçus
+                </button>
+              </li>
+              <li className="nav-item">
+                <button
+                  className={`nav-link ${activeTab === 'fiscales' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('fiscales')}
+                  style={{ border: 'none', background: 'none', color: activeTab === 'fiscales' ? '#3b82f6' : '#6b7280' }}
+                >
+                  communications locataires
                 </button>
               </li>
             </ul>
 
-            {/* Formulaire d'ajout */}
-            {showForm && (
+            {/* Formulaire d'ajout - seulement pour les communications fiscales */}
+            {showForm && activeTab === 'fiscales' && (
               <div className="card mb-4">
                 <div className="card-header">
-                  <h5 className="mb-0">créer une nouvelle alerte</h5>
+                  <h5 className="mb-0">créer une communication pour les locataires</h5>
                 </div>
                 <div className="card-body">
                   <form onSubmit={handleSubmit}>
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label className="form-label">type d'alerte</label>
+                        <label className="form-label">type de communication</label>
                         <select
                           className="form-select"
                           value={form.type_alerte}
                           onChange={(e) => setForm({...form, type_alerte: e.target.value})}
                         >
-                          <option value="fiscale">fiscale</option>
-                          <option value="maintenance">maintenance</option>
+                          <option value="fiscale">fiscalité</option>
+                          <option value="maintenance">information maintenance</option>
                         </select>
                       </div>
                       <div className="col-md-6 mb-3">
@@ -224,6 +363,22 @@ const AlertesAvancees = () => {
                         />
                       </div>
                       <div className="col-md-4 mb-3">
+                        <label className="form-label">locataire concerné</label>
+                        <select
+                          className="form-select"
+                          value={form.id_locataire}
+                          onChange={(e) => setForm({...form, id_locataire: e.target.value})}
+                          required
+                        >
+                          <option value="">sélectionner un locataire</option>
+                          {locataires.map(locataire => (
+                            <option key={locataire.id_locataire} value={locataire.id_locataire}>
+                              {locataire.locataire_nom} {locataire.locataire_prenom} - {locataire.bien_titre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-4 mb-3">
                         <label className="form-label">bien concerné</label>
                         <select
                           className="form-select"
@@ -231,7 +386,7 @@ const AlertesAvancees = () => {
                           onChange={(e) => setForm({...form, id_bien: e.target.value})}
                         >
                           <option value="">sélectionner un bien</option>
-                          {biens.map(bien => (
+                          {console.log('🏠 Biens dans le select:', biens) || biens.map(bien => (
                             <option key={bien.id_bien} value={bien.id_bien}>
                               {bien.titre}
                             </option>
@@ -272,8 +427,58 @@ const AlertesAvancees = () => {
 
             {/* Onglet Maintenance */}
             {activeTab === 'maintenance' && (
-              <div className="tab-content">
-                <MaintenanceRecues />
+              <div className="card">
+                <div className="card-header">
+                  <h5 className="mb-0">
+                    maintenance
+                    <span className="badge bg-primary ms-2">{alertesFiltrees.length}</span>
+                  </h5>
+                </div>
+                <div className="card-body">
+                  {console.log('🎯 Affichage des alertes - onglet:', activeTab, 'alertesFiltrees.length:', alertesFiltrees.length)}
+                  {alertesFiltrees.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-muted">aucune alerte de maintenance trouvée</p>
+                    </div>
+                  ) : (
+                    <div className="alert-list">
+                      {console.log('🎨 Rendu des alertes:', alertesFiltrees.length, 'alertes')}
+                      {alertesFiltrees.map((alerte) => {
+                        // Version simplifiée pour contourner le problème CSS
+                        return (
+                          <div key={alerte.id_alerte} style={{border: '2px solid blue', padding: '15px', margin: '10px', backgroundColor: 'lightblue'}}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
+                              <div style={{flex: 1}}>
+                                <h4>{alerte.titre}</h4>
+                                <p>{alerte.description}</p>
+                                <small>Type: {alerte.type_alerte} | Expediteur: {alerte.expediteur_type}</small>
+                                {alerte.bien_titre && <p><small>Bien: {alerte.bien_titre}</small></p>}
+                              </div>
+                              <button 
+                                onClick={() => handleDelete(alerte.id_alerte)}
+                                style={{
+                                  backgroundColor: '#dc3545', 
+                                  color: 'white', 
+                                  border: 'none', 
+                                  borderRadius: '50%', 
+                                  width: '30px', 
+                                  height: '30px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                                title="Supprimer l'alerte"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
