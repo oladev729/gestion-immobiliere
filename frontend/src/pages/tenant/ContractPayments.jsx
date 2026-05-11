@@ -60,6 +60,9 @@ const ContractPayments = () => {
     setShowPaymentForm(false);
     fetchContractPayments(); // Rafraîchir la liste des paiements
     fetchContractDetails(); // Mettre à jour le statut du contrat
+    
+    // Notification de confirmation
+    alert(`✅ Paiement de ${formatAmount(paymentData.montant)} effectué avec succès!\n\nRéférence: ${paymentData.merchantReference}\n\nUne quittance sera générée automatiquement.`);
   };
 
   const handlePaymentError = (error) => {

@@ -44,8 +44,13 @@ class Contrat {
                 nb_mois_depot_guarantie,
                 montant_depot_guarantie_attendu,
                 date_signature,
-                statut_contrat
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                statut_contrat,
+                texte_contrat,
+                clauses_personnalisees,
+                texte_personnalise,
+                version_contrat,
+                date_modification_texte
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             RETURNING *
         `;
 
@@ -60,7 +65,12 @@ class Contrat {
             nb_mois_depot_guarantie || 1,
             montant_depot_guarantie_attendu,
             date_signature || new Date(),
-            'actif'
+            'actif',
+            contratData.texte_contrat || null,
+            contratData.clauses_personnalisees || null,
+            contratData.texte_personnalise || false,
+            contratData.version_contrat || 1,
+            contratData.date_modification_texte || null
         ];
 
         const result = await db.query(query, values);
@@ -212,6 +222,43 @@ class Contrat {
 
         const result = await db.query(query, values);
         return result.rows[0];
+    }
+
+    // ============================================================
+    // METTRE À JOUR LE TEXTE DU CONTRAT
+    // ============================================================
+    static async updateTexteContrat(id_contrat, texteData) {
+        try {
+            const { texte_contrat, clauses_personnalisees } = texteData;
+            
+            // Récupérer la version actuelle
+            const versionQuery = 'SELECT version_contrat FROM contact WHERE id_contact = $1';
+            const versionResult = await db.query(versionQuery, [id_contrat]);
+            
+            if (versionResult.rows.length === 0) {
+                throw new Error('Contrat non trouvé');
+            }
+            
+            const currentVersion = versionResult.rows[0].version_contrat || 1;
+            const newVersion = currentVersion + 1;
+            
+            const query = `
+                UPDATE contact 
+                SET texte_contrat = $2,
+                    clauses_personnalisees = $3,
+                    texte_personnalise = TRUE,
+                    version_contrat = $4,
+                    date_modification_texte = CURRENT_TIMESTAMP
+                WHERE id_contact = $1 
+                RETURNING *
+            `;
+            
+            const result = await db.query(query, [id_contrat, texte_contrat, clauses_personnalisees, newVersion]);
+            return result.rows[0];
+        } catch (error) {
+            console.error('Erreur mise à jour texte contrat:', error);
+            throw error;
+        }
     }
 
     // ============================================================

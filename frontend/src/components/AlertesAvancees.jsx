@@ -10,7 +10,18 @@ const AlertesAvancees = () => {
   const [activeTab, setActiveTab] = useState('maintenance'); // Signalements des locataires par défaut
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showChargeForm, setShowChargeForm] = useState(false); // Pour le formulaire de charges
   const [locataires, setLocataires] = useState([]); // Pour les communications fiscales
+  const [charges, setCharges] = useState([]); // Pour les charges
+  const [chargeForm, setChargeForm] = useState({
+    titre: '',
+    description: '',
+    montant: '',
+    type: 'divers',
+    date_echeance: '',
+    id_locataire: '',
+    id_bien: ''
+  });
   const [form, setForm] = useState({
     type_alerte: 'fiscale',
     titre: '',
@@ -28,18 +39,25 @@ const AlertesAvancees = () => {
     fetchAlertes();
     fetchBiens();
     fetchLocataires();
+    fetchCharges();
   }, []);
 
   const fetchAlertes = async () => {
     try {
       console.log('🔍 Récupération des alertes...');
+      console.log('🔍 Token JWT:', localStorage.getItem('token'));
       const response = await api.get('/alertes/mes-alertes');
       console.log('📥 Alertes reçues:', response.data);
       console.log('📊 Nombre d\'alertes:', response.data?.length || 0);
+      console.log('📋 Détail des alertes reçues:');
+      response.data.forEach((alerte, index) => {
+        console.log(`  ${index + 1}. ID: ${alerte.id_alerte}, Titre: ${alerte.titre}, Type: ${alerte.type_alerte}, Expediteur: ${alerte.expediteur_type}`);
+      });
       setAlertes(response.data);
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des alertes:', error);
-      console.error('❌ Détails de l\'erreur:', error.response?.data || error.message);
+      console.error('❌ Status:', error.response?.status);
+      console.error('❌ Message:', error.response?.data?.message);
     } finally {
       setLoading(false);
     }
@@ -146,6 +164,102 @@ const AlertesAvancees = () => {
       // Afficher un message d'erreur plus détaillé
       const errorMessage = error.response?.data?.message || error.message || 'Erreur inconnue';
       alert(`Erreur lors de la création de l'alerte: ${errorMessage}`);
+    }
+  };
+
+  const fetchCharges = async () => {
+    try {
+      console.log('💰 Récupération des charges...');
+      const response = await api.get('/alertes/charges');
+      console.log('📥 Charges reçues:', response.data);
+      setCharges(response.data);
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des charges:', error);
+    }
+  };
+
+  const handleMarkChargeAsPaid = async (chargeId) => {
+    try {
+      console.log('✅ Marquage de la charge comme payée:', chargeId);
+      await api.put(`/charges/${chargeId}/payer`);
+      // Rafraîchir la liste des charges
+      fetchCharges();
+    } catch (error) {
+      console.error('❌ Erreur lors du marquage de la charge comme payée:', error);
+      alert('Erreur lors du marquage de la charge comme payée');
+    }
+  };
+
+  const handleDeleteCharge = async (chargeId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette charge ?')) {
+      return;
+    }
+    
+    try {
+      console.log('🗑️ Suppression de la charge:', chargeId);
+      await api.delete(`/charges/${chargeId}`);
+      // Rafraîchir la liste des charges
+      fetchCharges();
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression de la charge:', error);
+      alert('Erreur lors de la suppression de la charge');
+    }
+  };
+
+  const handleChargeFormChange = (e) => {
+    const { name, value } = e.target;
+    setChargeForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCreateChargesTable = async () => {
+    try {
+      console.log('🔧 Création de la table charges...');
+      const response = await api.post('/alertes/create-charges-table');
+      console.log('✅ Table charges créée:', response.data);
+      alert('Table charges créée avec succès !');
+      fetchCharges(); // Rafraîchir la liste des charges
+    } catch (error) {
+      console.error('❌ Erreur lors de la création de la table:', error);
+      alert('Erreur lors de la création de la table charges');
+    }
+  };
+
+  const handleCreateCharge = async (e) => {
+    e.preventDefault();
+    console.log('💰 Création d\'une nouvelle charge:', chargeForm);
+    
+    // Validation du montant
+    if (!chargeForm.montant || chargeForm.montant <= 0) {
+      alert('Le montant doit être supérieur à 0');
+      return;
+    }
+    
+    try {
+      const response = await api.post('/alertes/charges', chargeForm);
+      console.log('✅ Charge créée avec succès:', response.data);
+      
+      // Réinitialiser le formulaire
+      setChargeForm({
+        titre: '',
+        description: '',
+        montant: '',
+        type: 'divers',
+        date_echeance: '',
+        id_locataire: '',
+        id_bien: ''
+      });
+      setShowChargeForm(false);
+      
+      // Rafraîchir la liste des charges
+      fetchCharges();
+      
+      alert('Charge créée avec succès !');
+    } catch (error) {
+      console.error('❌ Erreur lors de la création de la charge:', error);
+      alert('Erreur lors de la création de la charge');
     }
   };
 
@@ -267,14 +381,24 @@ const AlertesAvancees = () => {
               <h2 style={{ color: '#1e293b', fontWeight: '700' }}>
                 alertes avancées
               </h2>
-              <button
-                className="btn btn-primary"
-                onClick={() => setShowForm(true)}
-                style={{ borderRadius: '8px' }}
-                disabled={activeTab === 'maintenance'} // Désactivé dans l'onglet maintenance
-              >
-                {activeTab === 'fiscales' ? '+ nouvelle communication' : 'signalements reçus'}
-              </button>
+              {activeTab === 'fiscales' && (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowForm(true)}
+                  style={{ borderRadius: '8px' }}
+                >
+                  + alerte
+                </button>
+              )}
+              {activeTab === 'charges' && (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowChargeForm(true)}
+                  style={{ borderRadius: '8px' }}
+                >
+                  + charge
+                </button>
+              )}
             </div>
 
             {/* Onglets */}
@@ -294,22 +418,31 @@ const AlertesAvancees = () => {
                   onClick={() => setActiveTab('fiscales')}
                   style={{ border: 'none', background: 'none', color: activeTab === 'fiscales' ? '#3b82f6' : '#6b7280' }}
                 >
-                  communications locataires
+                alertes
+                </button>
+              </li>
+              <li className="nav-item">
+                <button
+                  className={`nav-link ${activeTab === 'charges' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('charges')}
+                  style={{ border: 'none', background: 'none', color: activeTab === 'charges' ? '#3b82f6' : '#6b7280' }}
+                >
+                charges
                 </button>
               </li>
             </ul>
 
-            {/* Formulaire d'ajout - seulement pour les communications fiscales */}
+            {/* Formulaire d'ajout - seulement pour les alertes fiscales */}
             {showForm && activeTab === 'fiscales' && (
               <div className="card mb-4">
                 <div className="card-header">
-                  <h5 className="mb-0">créer une communication pour les locataires</h5>
+                  <h5 className="mb-0">créer un alerte pour locataires</h5>
                 </div>
                 <div className="card-body">
                   <form onSubmit={handleSubmit}>
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label className="form-label">type de communication</label>
+                        <label className="form-label">type d'alerte</label>
                         <select
                           className="form-select"
                           value={form.type_alerte}
@@ -416,6 +549,108 @@ const AlertesAvancees = () => {
                         type="button"
                         className="btn btn-secondary"
                         onClick={() => setShowForm(false)}
+                      >
+                        annuler
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Formulaire d'ajout - seulement pour les charges */}
+            {showChargeForm && activeTab === 'charges' && (
+              <div className="card mb-4">
+                <div className="card-header">
+                  <h5 className="mb-0">ajouter une charge</h5>
+                </div>
+                <div className="card-body">
+                  <form onSubmit={handleCreateCharge}>
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">titre de la charge</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={chargeForm.titre}
+                          onChange={(e) => setChargeForm({...chargeForm, titre: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Montant (FCFA)</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="montant"
+                          value={chargeForm.montant}
+                          onChange={handleChargeFormChange}
+                          required
+                          min="0"
+                          step="100"
+                        />
+                        {chargeForm.montant && chargeForm.montant < 0 && (
+                          <div className="text-danger small mt-1">Le montant doit être supérieur à 0</div>
+                        )}
+                      </div>
+                      <div className="col-12 mb-3">
+                        <label className="form-label">description</label>
+                        <textarea
+                          className="form-control"
+                          rows="3"
+                          value={chargeForm.description}
+                          onChange={(e) => setChargeForm({...chargeForm, description: e.target.value})}
+                        />
+                      </div>
+                      <div className="col-md-4 mb-3">
+                        <label className="form-label">type de charge</label>
+                        <select
+                          className="form-select"
+                          value={chargeForm.type}
+                          onChange={(e) => setChargeForm({...chargeForm, type: e.target.value})}
+                        >
+                          <option value="divers">divers</option>
+                          <option value="eau">eau</option>
+                          <option value="energie">énergie</option>
+                          <option value="chauffage">chauffage</option>
+                          <option value="copropriete">copropriété</option>
+                          <option value="entretien">entretien</option>
+                        </select>
+                      </div>
+                      <div className="col-md-4 mb-3">
+                        <label className="form-label">date d'échéance</label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={chargeForm.date_echeance}
+                          onChange={(e) => setChargeForm({...chargeForm, date_echeance: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="col-md-4 mb-3">
+                        <label className="form-label">locataire concerné</label>
+                        <select
+                          className="form-select"
+                          value={chargeForm.id_locataire}
+                          onChange={(e) => setChargeForm({...chargeForm, id_locataire: e.target.value})}
+                        >
+                          <option value="">tous les locataires</option>
+                          {locataires.map(locataire => (
+                            <option key={locataire.id_locataire} value={locataire.id_locataire}>
+                              {locataire.locataire_nom} {locataire.locataire_prenom} - {locataire.bien_titre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="d-flex gap-2">
+                      <button type="submit" className="btn btn-primary">
+                        créer la charge
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowChargeForm(false)}
                       >
                         annuler
                       </button>
@@ -596,6 +831,108 @@ const AlertesAvancees = () => {
                 </div>
               </div>
             )}
+
+            {/* Onglet Charges */}
+            {activeTab === 'charges' && (
+              <div className="card">
+                <div className="card-header">
+                  <h5 className="mb-0">
+                    charges
+                    <span className="badge bg-primary ms-2">{charges.length}</span>
+                  </h5>
+                </div>
+                <div className="card-body">
+                  {charges.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-muted">aucune charge trouvée</p>
+                      <button 
+                        className="btn btn-warning btn-sm mt-3"
+                        onClick={handleCreateChargesTable}
+                        title="Créer la table charges"
+                      >
+                        🔧 Créer la table charges
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="alert-list">
+                      {charges.map((charge) => {
+                        const isPaid = charge.statut === 'payee';
+                        const isOverdue = new Date(charge.date_echeance) < new Date() && !isPaid;
+                        
+                        return (
+                          <div
+                            key={charge.id_charge}
+                            className={`alert-item ${isPaid ? 'alert-traitee' : ''}`}
+                            style={{
+                              borderLeft: `4px solid ${isPaid ? '#10b981' : isOverdue ? '#ef4444' : '#f59e0b'}`,
+                              backgroundColor: isPaid ? '#f0fdf4' : '#ffffff',
+                              marginBottom: '1rem',
+                              padding: '1rem',
+                              borderRadius: '8px',
+                              border: '1px solid #e2e8f0'
+                            }}
+                          >
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div className="flex-grow-1">
+                                <div className="d-flex align-items-center mb-2">
+                                  <h6 className="mb-0 me-2" style={{ color: '#1e293b' }}>
+                                    {charge.titre}
+                                  </h6>
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      backgroundColor: isPaid ? '#10b981' : isOverdue ? '#ef4444' : '#f59e0b',
+                                      color: 'white',
+                                      fontSize: '0.75rem'
+                                    }}
+                                  >
+                                    {isPaid ? 'payée' : isOverdue ? 'en retard' : 'en attente'}
+                                  </span>
+                                  <span className="badge bg-info ms-2">{charge.type}</span>
+                                </div>
+                                <p className="text-muted mb-2">{charge.description}</p>
+                                <div className="d-flex align-items-center gap-3">
+                                  <small className="text-muted">
+                                    📅 Échéance: {new Date(charge.date_echeance).toLocaleDateString('fr-FR')}
+                                  </small>
+                                  <small className="text-muted">
+                                    💰 Montant: {charge.montant.toLocaleString('fr-FR')} FCFA
+                                  </small>
+                                  {charge.id_locataire && (
+                                    <small className="text-muted">
+                                      👤 Locataire: {charge.locataire_nom} {charge.locataire_prenoms}
+                                    </small>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="d-flex flex-column gap-2">
+                                {!isPaid && (
+                                  <button
+                                    className="btn btn-sm btn-success"
+                                    onClick={() => handleMarkChargeAsPaid(charge.id_charge)}
+                                    title="Marquer comme payée"
+                                  >
+                                    ✅
+                                  </button>
+                                )}
+                                <button
+                                  className="btn btn-sm btn-outline-secondary"
+                                  onClick={() => handleDeleteCharge(charge.id_charge)}
+                                  title="Supprimer"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       </div>

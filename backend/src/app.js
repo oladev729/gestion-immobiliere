@@ -99,6 +99,14 @@ app.use('/api/photos', photoRoutes);
 const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
 
+// ROUTES DES QUITTANCES
+const quittanceRoutes = require('./routes/quittanceRoutes');
+app.use('/api/quittances', quittanceRoutes);
+
+// ROUTES DASHBOARD
+const dashboardRoutes = require('./routes/dashboardRoutes');
+app.use('/api/dashboard', dashboardRoutes);
+
 //  ROUTES DES VISITEURS
 const visiteurRoutes = require('./routes/visiteurRoutes');
 app.use('/api/visiteurs', visiteurRoutes);
@@ -111,11 +119,13 @@ app.use('/api/messages', messageRoutes);
 const proprietaireRoutes = require('./routes/proprietaireRoutes');
 app.use('/api/proprietaires', proprietaireRoutes);
 
-// Démarrer le service d'alertes automatiques
+// Démarrer le service d'alertes automatiques (désactivé temporairement)
 try {
-    const AlertesAutomatiquesJob = require('./jobs/alertesAutomatiquesJob');
-    AlertesAutomatiquesJob.demarrer();
-    console.log('🔔 Service d\'alertes automatiques démarré');
+    // const AlertesAutomatiquesJob = require('./jobs/alertesAutomatiquesJob');
+    // const AlertesFiscalesJob = require('./jobs/alertesFiscalesJob');
+    // AlertesAutomatiquesJob.demarrer();
+    // AlertesFiscalesJob.demarrer();
+    console.log('⚠️ Service d\'alertes automatiques temporairement désactivé');
 } catch (error) {
     console.error('❌ Erreur lors du démarrage du service d\'alertes automatiques:', error.message);
     console.log('⚠️ Veuillez installer node-cron: npm install node-cron');

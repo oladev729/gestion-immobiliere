@@ -24,20 +24,27 @@ const DocumentGenerator = () => {
   const generateReceipt = async (paymentId) => {
     setLoading(true);
     try {
-      const response = await api.post(`/documents/generate-receipt/${paymentId}`);
+      const response = await api.post(`/quittances/generate/${paymentId}`);
+      
+      // Sauvegarder dans le coffre-fort numérique
+      await api.post('/documents/coffre-fort', {
+        type: 'quittance',
+        id_paiement: paymentId,
+        chemin_fichier: response.data.fileName
+      });
       
       // Créer un lien de téléchargement
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blob = new Blob([response.data.pdfBuffer], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `quittance_${paymentId}.pdf`;
+      a.download = response.data.fileName;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      alert('Quittance générée avec succès!');
+      alert('Quittance générée et archivée dans le coffre-fort!');
     } catch (error) {
       console.error('Erreur lors de la génération de la quittance:', error);
       alert('Erreur lors de la génération de la quittance');

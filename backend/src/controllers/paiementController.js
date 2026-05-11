@@ -1,6 +1,7 @@
 const Paiement = require('../models/Paiement');
 const LoyerMensuel = require('../models/LoyerMensuel');
 const DepotGarantie = require('../models/DepotGarantie');
+const Quittance = require('../models/Quittance');
 const db = require('../config/database');
 const axios = require('axios');
 const caurispayService = require('../services/caurispayService');
@@ -35,6 +36,51 @@ const paiementController = {
                 montant,
                 statut_paiement: 'valide'
             });
+
+            // 🧾 GÉNÉRER AUTOMATIQUEMENT LA QUITTANCE
+            try {
+                console.log('🧾 Génération automatique de quittance pour le paiement:', paiement.id_payement);
+                
+                // Récupérer les informations nécessaires pour la quittance
+                const quittanceQuery = `
+                    SELECT p.id_payement, lm.mois_concerne, lm.id_contact, 
+                           c.id_locataire, c.id_proprietaire, c.id_bien,
+                           l.id_utilisateur as locataire_id_utilisateur,
+                           prop.id_utilisateur as proprietaire_id_utilisateur,
+                           b.titre as bien_titre
+                    FROM payement p
+                    LEFT JOIN loyermensuel lm ON p.id_loyer = lm.id_loyer
+                    LEFT JOIN contact c ON lm.id_contact = c.id_contact
+                    LEFT JOIN locataire l ON c.id_locataire = l.id_locataire
+                    LEFT JOIN proprietaire prop ON c.id_proprietaire = prop.id_proprietaire
+                    LEFT JOIN bien b ON c.id_bien = b.id_bien
+                    WHERE p.id_payement = $1
+                `;
+                
+                const quittanceResult = await db.query(quittanceQuery, [paiement.id_payement]);
+                
+                if (quittanceResult.rows.length > 0) {
+                    const quittanceInfo = quittanceResult.rows[0];
+                    
+                    const quittanceData = {
+                        id_paiement: paiement.id_payement,
+                        id_locataire: quittanceInfo.locataire_id_utilisateur,
+                        id_proprietaire: quittanceInfo.proprietaire_id_utilisateur,
+                        id_bien: quittanceInfo.id_bien,
+                        type_quittance: 'loyer',
+                        periode: quittanceInfo.mois_concerne,
+                        montant: paiement.montant,
+                        date_paiement: paiement.date_paiement,
+                        reference_paiement: paiement.numero_transaction
+                    };
+
+                    const quittance = await Quittance.create(quittanceData);
+                    console.log('✅ Quittance générée avec succès:', quittance.id_quittance);
+                }
+            } catch (quittanceError) {
+                console.error('⚠️ Erreur génération quittance automatique:', quittanceError);
+                // Ne pas bloquer le paiement si la quittance échoue
+            }
 
             res.status(201).json({
                 message: 'Paiement effectué avec succès',

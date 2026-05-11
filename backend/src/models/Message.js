@@ -42,6 +42,8 @@ class Message {
 
     static async getConversation(userId1, userId2, id_bien = null, id_demande = null) {
         try {
+            console.log('🔍 getConversation - userId1:', userId1, 'userId2:', userId2, 'id_bien:', id_bien, 'id_demande:', id_demande);
+            
             let query = `
                 SELECT m.*, 
                        u1.nom as expediteur_nom, u1.prenoms as expediteur_prenoms, u1.email as expediteur_email,
@@ -85,10 +87,12 @@ class Message {
                 params = [id_demande];
             }
 
-            if (id_bien && params.length >= 3) {
+            // Filtrer par bien pour éviter les messages dupliqués entre différentes discussions
+            if (id_bien) {
                 query += ' AND m.id_bien = $4';
                 params.push(id_bien);
             }
+            // NE PAS filtrer par id_bien IS NULL - on veut tous les messages pour ce demandeId
             
             query += ' ORDER BY m.date_envoi ASC';
             
@@ -103,6 +107,7 @@ class Message {
     static async getConversations(userId) {
         try {
             console.log('--- getConversations pour userId:', userId);
+            console.log('🔍 Récupération des conversations avec filtrage par bien pour éviter les doublons');
             const query = `
                 WITH all_conversations AS (
                     -- 1. Messages existants
@@ -144,7 +149,8 @@ class Message {
                     AND NOT EXISTS (SELECT 1 FROM messages m2 WHERE m2.id_demande = div.id_demande)
                 )
                 SELECT DISTINCT ON (COALESCE(c.id_demande, 0), type_conv, COALESCE(c.id_bien, 0), 
-                                   CASE WHEN c.id_demande IS NULL THEN LEAST(COALESCE(id_expediteur, 0), COALESCE(id_destinataire, 0)) ELSE 0 END)
+                                   CASE WHEN c.id_demande IS NULL THEN LEAST(COALESCE(id_expediteur, 0), COALESCE(id_destinataire, 0)) ELSE 0 END,
+                                   CASE WHEN c.id_demande IS NULL THEN GREATEST(COALESCE(id_expediteur, 0), COALESCE(id_destinataire, 0)) ELSE 0 END)
                     c.*,
                     CASE 
                         WHEN type_conv = 'visiteur' THEN NULL
@@ -196,11 +202,22 @@ class Message {
                 LEFT JOIN utilisateur u_prop ON p3.id_utilisateur = u_prop.id_utilisateur
                 LEFT JOIN bien b ON c.id_bien = b.id_bien
                 ORDER BY COALESCE(c.id_demande, 0), type_conv, COALESCE(c.id_bien, 0), 
-                         CASE WHEN c.id_demande IS NULL THEN LEAST(COALESCE(c.id_expediteur, 0), COALESCE(c.id_destinataire, 0)) ELSE 0 END, 
+                         CASE WHEN c.id_demande IS NULL THEN LEAST(COALESCE(c.id_expediteur, 0), COALESCE(c.id_destinataire, 0)) ELSE 0 END,
+                         CASE WHEN c.id_demande IS NULL THEN GREATEST(COALESCE(c.id_expediteur, 0), COALESCE(c.id_destinataire, 0)) ELSE 0 END,
                          date_envoi DESC
             `;
             
             const result = await db.query(query, [userId]);
+            console.log(`📊 Résultat conversations pour userId ${userId}:`, result.rows.length, 'conversations trouvées');
+            result.rows.forEach((conv, index) => {
+                console.log(`💬 Conversation ${index + 1}:`, {
+                    id_bien: conv.id_bien,
+                    bien_titre: conv.bien_titre,
+                    type_conv: conv.type_conv,
+                    autre_nom: conv.autre_nom,
+                    dernier_message: conv.contenu?.substring(0, 50) + '...'
+                });
+            });
             return result.rows;
         } catch (error) {
             console.error('Erreur récupération conversations:', error);

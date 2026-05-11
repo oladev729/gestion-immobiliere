@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
+// VERSION SIMPLIFIÉE POUR DÉBOGUER
 const Messaging = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -36,23 +37,91 @@ const Messaging = () => {
   const fetchConversations = async () => {
     try {
       setLoading(true);
+      console.log('🚀 Chargement des conversations pour utilisateur:', user.id);
+      
       const response = await api.get('/messages/conversations');
+      console.log('� Conversations brutes reçues:', response.data);
       
-      console.log('Toutes les conversations reçues:', response.data);
-      console.log('Type utilisateur:', user?.type || user?.type_utilisateur);
-      
-      // Filtrage simplifié et robuste des conversations
-      let filteredConversations = response.data.filter(conv => {
+      // Filtrage simple par utilisateur
+      const filteredConversations = response.data.filter(conv => {
         const userId = parseInt(user.id);
         const expediteurId = parseInt(conv.id_expediteur);
         const destinataireId = parseInt(conv.id_destinataire);
         
-        // L'utilisateur doit être soit l'expéditeur, soit le destinataire
         return (expediteurId === userId || destinataireId === userId);
       });
       
-      console.log('Conversations après filtrage:', filteredConversations);
-      setConversations(filteredConversations);
+      console.log('🔍 Conversations filtrées:', filteredConversations);
+      console.log('📊 Nombre de conversations filtrées:', filteredConversations.length);
+      
+      // AFFICHAGE DIRECT SANS REGROUPEMENT POUR DÉBOGAGE
+      if (filteredConversations.length === 0) {
+        console.log('⚠️ Aucune conversation après filtrage - affichage direct des données brutes');
+        console.log('📥 Données brutes reçues:', response.data);
+        
+        // Vérifier si les IDs correspondent
+        response.data.forEach((conv, index) => {
+          console.log(`🔍 Conversation brute ${index + 1}:`, {
+            id_expediteur: conv.id_expediteur,
+            id_destinataire: conv.id_destinataire,
+            user_id: user.id,
+            match_expediteur: parseInt(conv.id_expediteur) === parseInt(user.id),
+            match_destinataire: parseInt(conv.id_destinataire) === parseInt(user.id)
+          });
+        });
+      }
+      
+      // Regroupement PAR BIEN - solution simple
+      const conversationsParBien = {};
+      
+      filteredConversations.forEach(conv => {
+        const bienId = conv.id_bien || 'general';
+        
+        if (!conversationsParBien[bienId]) {
+          conversationsParBien[bienId] = {
+            bien_id: bienId,
+            bien_titre: conv.bien_titre || 'Discussion générale',
+            conversations: [],
+            dernier_message: conv
+          };
+        }
+        
+        conversationsParBien[bienId].conversations.push(conv);
+        
+        // Garder le message le plus récent comme représentant
+        if (new Date(conv.date_envoi) > new Date(conversationsParBien[bienId].dernier_message.date_envoi)) {
+          conversationsParBien[bienId].dernier_message = conv;
+        }
+      });
+      
+      const finalConversations = Object.values(conversationsParBien);
+      console.log('🎯 Conversations groupées par bien:', finalConversations);
+      
+      // Créer une structure simple pour l'affichage
+      const displayConversations = finalConversations.map(group => ({
+        ...group.dernier_message,
+        group_key: `${group.bien_id}`,
+        bien_titre: group.bien_titre,
+        id_bien: group.bien_id,
+        nombre_messages: group.conversations.length
+      }));
+      
+      console.log('💬 Conversations finales pour affichage:', displayConversations);
+      console.log('📊 Nombre de conversations finales:', displayConversations.length);
+      
+      // Vérifier la structure de chaque conversation
+      displayConversations.forEach((conv, index) => {
+        console.log(`🔍 Conversation ${index + 1}:`, {
+          group_key: conv.group_key,
+          bien_titre: conv.bien_titre,
+          id_bien: conv.id_bien,
+          autre_nom: conv.autre_nom,
+          autre_prenoms: conv.autre_prenoms,
+          contenu: conv.contenu?.substring(0, 50) + '...'
+        });
+      });
+      
+      setConversations(displayConversations);
       
       // Si un demandeId est spécifié, on sélectionne la conv correspondante
       if (demandeIdFromUrl) {
@@ -118,26 +187,36 @@ const Messaging = () => {
     console.log('🎯 Sélection de la conversation:', conversation);
     console.log('🆔 ID demande:', conversation.id_demande || conversation.demandeId);
     console.log('📧 Email associé:', conversation.autre_email);
+    console.log('🏠 ID bien:', conversation.id_bien);
     
     setSelectedConversation(conversation);
     
-    // Éviter les boucles infinies
-    if (selectedConversation?.id_demande === conversation.id_demande) {
+    // Éviter les boucles infinies - utiliser une clé unique
+    const currentKey = `${conversation.id_demande || conversation.id_bien || 'general'}_${conversation.autre_email}`;
+    const selectedKey = selectedConversation ? `${selectedConversation.id_demande || selectedConversation.id_bien || 'general'}_${selectedConversation.autre_email}` : null;
+    
+    if (selectedKey === currentKey) {
         console.log('⚠️ Conversation déjà sélectionnée, éviter le rechargement');
         return;
     }
     
-    // FORCER le chargement des messages par demandeId si disponible
-    const demandeId = conversation.id_demande || conversation.demandeId;
-    if (demandeId) {
-        console.log('📥 Chargement des messages par demandeId:', demandeId);
-        await fetchMessagesByDemandeId(demandeId);
-    } else {
-        // Sinon, charger par utilisateur
-        const otherUserId = conversation.autre_id || 
-          (conversation.id_expediteur === parseInt(user.id) ? conversation.id_destinataire : conversation.id_expediteur);
-        console.log('👤 Chargement des messages par utilisateur:', otherUserId);
-        await fetchMessages(otherUserId);
+    try {
+        // FORCER le chargement des messages par demandeId si disponible
+        const demandeId = conversation.id_demande || conversation.demandeId;
+        if (demandeId) {
+            console.log('📥 Chargement des messages par demandeId:', demandeId);
+            await fetchMessagesByDemandeId(demandeId);
+        } else {
+            // Charger par utilisateur ET par bien pour filtrer correctement
+            const otherUserId = conversation.autre_id || 
+              (conversation.id_expediteur === parseInt(user.id) ? conversation.id_destinataire : conversation.id_expediteur);
+            const bienId = conversation.id_bien;
+            console.log('👤 Chargement des messages par utilisateur:', otherUserId, 'et bien:', bienId);
+            await fetchMessages(otherUserId, null, bienId);
+        }
+    } catch (error) {
+        console.error('❌ Erreur lors du chargement des messages:', error);
+        setMessages([]); // Vider les messages en cas d'erreur
     }
   };
 
@@ -146,7 +225,13 @@ const Messaging = () => {
       console.log('🌐 Récupération messages par demandeId:', demandeId);
       
       // Utiliser l'endpoint correct pour les messages par demandeId
-      const response = await api.get(`/messages/conversation/demande/${demandeId}`);
+      // Forcer l'inclusion du token JWT pour éviter les erreurs 401
+      const token = localStorage.getItem('token');
+      const response = await api.get(`/messages/conversation/demande/${demandeId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
       console.log('📥 Messages reçus par demandeId:', response.data);
       console.log('📊 Nombre de messages:', response.data.length);
@@ -184,40 +269,49 @@ const Messaging = () => {
     }
   };
 
-  const fetchMessages = async (userId, idDemande = null) => {
+  const fetchMessages = async (userId, idDemande = null, idBien = null) => {
     try {
       let url;
       
       if (idDemande) {
         url = `/messages/conversation/demande/${idDemande}`;
       } else if (userId) {
-        url = `/messages/conversation/${userId}`;
+        url = `/messages/conversation/${userId}${idBien ? `?id_bien=${idBien}` : ''}`;
       } else {
         console.error('Aucun ID fourni pour fetchMessages');
         return;
       }
       
-      console.log('🌐 Récupération messages depuis:', url);
+      console.log('📡 URL de récupération des messages:', url);
+      console.log('👤 User ID:', userId);
+      console.log('🏠 Bien ID:', idBien);
+      
       const response = await api.get(url);
       console.log('📥 Messages reçus:', response.data);
       console.log('📊 Nombre de messages:', response.data.length);
       
-      // Trier les messages par date
       const sortedMessages = response.data.sort((a, b) => 
         new Date(a.date_envoi) - new Date(b.date_envoi)
       );
       
-      setMessages(sortedMessages);
+      console.log('📋 Messages triés:', sortedMessages);
+      
+      // Forcer la mise à jour avec un nouvel état pour déclencher le re-rendu
+      setMessages([]);
+      setTimeout(() => {
+        setMessages(sortedMessages);
+        console.log('✅ Messages affichés:', sortedMessages.length);
+      }, 50);
+      
     } catch (error) {
       console.error('❌ Erreur récupération messages:', error);
       console.error('❌ URL demandée:', url);
       console.error('❌ Détails erreur:', error.response?.data || error.message);
+      setMessages([]);
     }
   };
 
   const sendMessage = async (e) => {
-    console.log('🚀 Envoi de message...');
-    
     e.preventDefault();
     if (!newMessage.trim()) {
         console.log('⚠️ Message vide, envoi annulé');
@@ -373,9 +467,9 @@ const Messaging = () => {
               ) : (
                 conversations.map((conversation, index) => (
                   <div
-                    key={`conv_${conversation.id || conversation.autre_id || index}_${conversation.autre_email}`}
+                    key={`conv_${conversation.group_key || conversation.id_bien || conversation.id || index}_${conversation.autre_email || Math.random()}`}
                     className={`list-group-item list-group-item-action cursor-pointer ${
-                      selectedConversation?.autre_id == conversation.autre_id ? 'active' : ''
+                      selectedConversation?.group_key === conversation.group_key ? 'active' : ''
                     }`}
                     onClick={() => selectConversation(conversation)}
                     style={{ cursor: 'pointer' }}
@@ -406,6 +500,12 @@ const Messaging = () => {
                           <small className="text-muted d-block">
                             <i className="bi bi-house-door me-1"></i>
                             {conversation.bien_titre}
+                          </small>
+                        )}
+                        {conversation.id_bien && (
+                          <small className="text-primary d-block">
+                            <i className="bi bi-building me-1"></i>
+                            Bien ID: {conversation.id_bien}
                           </small>
                         )}
                       </div>

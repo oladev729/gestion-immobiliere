@@ -26,6 +26,25 @@ const initiatePayment = async (req, res) => {
             });
         }
 
+        // Vérifier si le paiement existe déjà pour éviter les doublons
+        if (idContrat && typePaiement === 'LOYER') {
+            const existingPaymentQuery = `
+                SELECT id FROM paiements 
+                WHERE id_contrat = $1 
+                AND type_paiement = $2 
+                AND statut = 'SUCCES'
+                AND DATE_TRUNC('month', date_creation) = DATE_TRUNC('month', CURRENT_DATE)
+            `;
+            const existingPayment = await db.query(existingPaymentQuery, [idContrat, typePaiement]);
+            
+            if (existingPayment.rows.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Le loyer pour ce mois a déjà été payé'
+                });
+            }
+        }
+
         // Générer une référence unique
         const reference = caurisPayService.generateReference();
         
@@ -174,6 +193,28 @@ const checkPaymentStatus = async (req, res) => {
                 )
             `;
             await db.query(contratQuery, [merchantReference]);
+
+            // Générer automatiquement la quittance
+            try {
+                const QuittanceController = require('./quittanceController');
+                const paymentIdQuery = `
+                    SELECT id FROM paiements 
+                    WHERE reference_marchand = $1
+                `;
+                const paymentResult = await db.query(paymentIdQuery, [merchantReference]);
+                
+                if (paymentResult.rows.length > 0) {
+                    const paymentId = paymentResult.rows[0].id;
+                    await QuittanceController.generateQuittance({
+                        body: { id_paiement: paymentId, type_quittance: 'LOYER' }
+                    }, {
+                        json: (data) => console.log('✅ Quittance générée automatiquement:', data)
+                    });
+                }
+            } catch (quittanceError) {
+                console.error('❌ Erreur génération quittance automatique:', quittanceError);
+                // Ne pas bloquer le processus si la quittance échoue
+            }
         }
 
         res.json({
