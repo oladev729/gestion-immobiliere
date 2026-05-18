@@ -200,6 +200,67 @@ class Bien {
     }
 
     // ============================================================
+    // METTRE À JOUR UN BIEN
+    // ============================================================
+    static async update(id_bien, bienData) {
+        const { 
+            titre, 
+            description, 
+            type_bien, 
+            charge, 
+            loyer_mensuel, 
+            adresse, 
+            ville,
+            code_postal,
+            superficie,
+            nombre_pieces,
+            nombre_chambres,
+            meuble,
+            statut
+        } = bienData;
+
+        const query = `
+            UPDATE bien 
+            SET 
+                titre = $2, 
+                description = $3, 
+                type_bien = $4, 
+                charge = $5, 
+                loyer_mensuel = $6, 
+                adresse = $7, 
+                ville = $8,
+                code_postal = $9,
+                superficie = $10,
+                nombre_pieces = $11,
+                nombre_chambres = $12,
+                meuble = $13,
+                statut = COALESCE($14, statut)
+            WHERE id_bien = $1
+            RETURNING *
+        `;
+
+        const values = [
+            id_bien,
+            titre,
+            description || null,
+            type_bien,
+            charge ? Number(charge) : 0,
+            loyer_mensuel ? Number(loyer_mensuel) : null,
+            adresse,
+            ville,
+            code_postal || null,
+            superficie ? Number(superficie) : null,
+            nombre_pieces ? Number(nombre_pieces) : null,
+            nombre_chambres ? Number(nombre_chambres) : null,
+            meuble || false,
+            statut || null
+        ];
+
+        const result = await db.query(query, values);
+        return result.rows[0];
+    }
+
+    // ============================================================
     // CHANGER LE STATUT D'UN BIEN
     // ============================================================
     static async changeStatut(id_bien, statut) {

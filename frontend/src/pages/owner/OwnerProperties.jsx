@@ -291,59 +291,212 @@ const OwnerProperties = () => {
                 {formStep === 0 && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
                         {biensFiltres.map(bien => (
-                            <div key={bien.id_bien} style={{ backgroundColor: '#ffffff', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'transform 0.2s' }}>
-                                <div style={{ position: 'relative', height: '140px' }}>
+                            <div key={bien.id_bien} className="premium-real-estate-card" style={{
+                                backgroundColor: '#ffffff',
+                                borderRadius: '8px',
+                                overflow: 'hidden',
+                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.07)',
+                                border: '1px solid #e5e7eb',
+                                transition: 'all 0.3s ease',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                height: '100%',
+                                textAlign: 'left'
+                            }}>
+                                {/* IMAGE CONTAINER */}
+                                <div style={{ position: 'relative', height: '240px', overflow: 'hidden' }}>
                                     {bien.photos?.[0] ? (
                                         <img 
                                             src={getImageUrl(bien.photos[0].url_photobien)} 
                                             alt={bien.titre} 
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                            className="card-img-hero"
+                                            style={{ 
+                                                width: '100%', 
+                                                height: '100%', 
+                                                objectFit: 'cover',
+                                                transition: 'transform 0.5s ease'
+                                            }} 
                                             onError={(e) => {
                                                 e.target.onerror = null;
                                                 e.target.src = IMAGE_FALLBACK;
                                             }}
                                         />
                                     ) : (
-                                        <div style={{ width: '100%', height: '100%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.7rem' }}>Pas de photo</div>
+                                        <div style={{ width: '100%', height: '100%', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                            Pas de photo
+                                        </div>
                                     )}
-                                    <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}>
+
+                                    {/* FLOATING BADGE (TOP-RIGHT) */}
+                                    <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 2 }}>
                                         <span style={{
-                                            backgroundColor: bien.statut === 'disponible' ? '#ecfdf5' : '#fff7ed',
-                                            color: bien.statut === 'disponible' ? '#065f46' : '#9a3412',
-                                            padding: '0.15rem 0.5rem', borderRadius: '9999px', fontSize: '0.65rem', fontWeight: '700', textTransform: 'uppercase'
+                                            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                                            color: '#ffffff',
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.7rem',
+                                            fontWeight: '800',
+                                            letterSpacing: '0.5px',
+                                            textTransform: 'uppercase'
                                         }}>
-                                            {bien.statut}
+                                            {bien.statut === 'disponible' ? 'A LOUER' : 'OCCUPÉ'}
                                         </span>
                                     </div>
+
+                                    {/* FLOATING ACTION BUTTONS (BOTTOM-RIGHT) */}
+                                    <div style={{ position: 'absolute', bottom: '12px', right: '12px', display: 'flex', gap: '6px', zIndex: 2 }}>
+                                        <div style={{
+                                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                            color: '#ffffff',
+                                            width: '32px',
+                                            height: '32px',
+                                            borderRadius: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            backdropFilter: 'blur(4px)'
+                                        }}>
+                                            <i className="bi bi-arrows-fullscreen" style={{ fontSize: '0.8rem' }}></i>
+                                        </div>
+                                        <div style={{
+                                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                            color: '#ffffff',
+                                            width: '32px',
+                                            height: '32px',
+                                            borderRadius: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            backdropFilter: 'blur(4px)'
+                                        }}>
+                                            <i className="bi bi-heart" style={{ fontSize: '0.8rem' }}></i>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div style={{ padding: '0.75rem' }}>
-                                    <h3 style={{ fontSize: '0.9rem', fontWeight: '700', color: '#111827', marginBottom: '0.25rem' }}>{bien.titre}</h3>
-                                    <p style={{ color: '#6b7280', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
-                                        <i className="bi bi-geo-alt" style={{ marginRight: '0.25rem' }}></i>
+
+                                {/* CARD BODY CONTENT */}
+                                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flexGrow: 1, backgroundColor: '#ffffff' }}>
+                                    {/* 1. PRICE (LARGE, BOLD, PURE BLACK) */}
+                                    <div style={{
+                                        fontSize: '1.2rem',
+                                        fontWeight: '800',
+                                        color: '#000000',
+                                        marginBottom: '6px',
+                                        fontFamily: 'Inter, sans-serif'
+                                    }}>
+                                        {Number(bien.loyer_mensuel).toLocaleString()} CFA<span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#000000' }}>/Mois</span>
+                                    </div>
+
+                                    {/* 2. TITLE (BOLD, PURE BLACK) */}
+                                    <h3 style={{
+                                        fontSize: '1.02rem',
+                                        fontWeight: '800',
+                                        color: '#000000',
+                                        marginBottom: '6px',
+                                        lineHeight: '1.3',
+                                        overflow: 'hidden',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical'
+                                    }}>
+                                        {bien.titre}
+                                    </h3>
+
+                                    {/* 2.5. DESCRIPTION (PURE BLACK, ONE LINE, COMPACT) */}
+                                    <p style={{
+                                        fontSize: "0.85rem",
+                                        color: "#000000",
+                                        marginBottom: "8px",
+                                        lineHeight: "1.3",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                        fontWeight: "500"
+                                    }}>
+                                        {bien.description || "Aucune description fournie pour ce bien."}
+                                    </p>
+
+                                    {/* 3. LOCATION (PURE BLACK OR VERY DARK, PIN ICON) */}
+                                    <p style={{
+                                        color: '#000000',
+                                        fontSize: '0.78rem',
+                                        fontWeight: '550',
+                                        marginBottom: '16px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                    }}>
+                                        <i className="bi bi-geo-alt" style={{ color: '#000000' }}></i>
                                         {bien.adresse}, {bien.ville}
                                     </p>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                                        <span style={{ fontSize: '1rem', fontWeight: '800', color: '#2563eb' }}>{Number(bien.loyer_mensuel).toLocaleString()} FCFA <span style={{ fontSize: '0.7rem', fontWeight: '500', color: '#6b7280' }}>/mois</span></span>
+
+                                    {/* 4. SPECS ROW (HORIZONTAL AT BOTTOM - PUSHED BY MARGIN TOP AUTO) */}
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        gap: '8px',
+                                        fontSize: '0.8rem',
+                                        color: '#000000',
+                                        paddingTop: '12px',
+                                        borderTop: '1px solid #e5e7eb',
+                                        fontWeight: '700',
+                                        marginTop: 'auto'
+                                    }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <i className="bi bi-tag" style={{ color: '#000000' }}></i> {bien.id_bien}
+                                            </span>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <i className="bi bi-door-open" style={{ color: '#000000' }}></i> {bien.nombre_pieces}
+                                            </span>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <i className="bi bi-arrows-fullscreen" style={{ color: '#000000' }}></i> {bien.superficie} m²
+                                            </span>
+                                        </div>
+
+                                    {/* BUTTON ACTIONS */}
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                        <button 
+                                            onClick={() => handleEdit(bien)}
+                                            style={{ 
+                                                flex: 1, 
+                                                padding: '10px', 
+                                                borderRadius: '6px', 
+                                                border: 'none', 
+                                                backgroundColor: '#2563eb', 
+                                                color: '#ffffff', 
+                                                cursor: 'pointer', 
+                                                fontSize: '0.8rem', 
+                                                fontWeight: '700', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center', 
+                                                gap: '6px', 
+                                                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <i className="bi bi-pencil-square"></i> Modifier
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDelete(bien.id_bien)} 
+                                            style={{ 
+                                                padding: '10px 14px', 
+                                                borderRadius: '6px', 
+                                                border: '1px solid #fee2e2', 
+                                                backgroundColor: '#fff5f5', 
+                                                color: '#ef4444', 
+                                                cursor: 'pointer', 
+                                                fontSize: '0.8rem', 
+                                                fontWeight: '700',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            title="Supprimer"
+                                        >
+                                            <i className="bi bi-trash"></i>
+                                        </button>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', color: '#4b5563', padding: '0.5rem 0', borderTop: '1px solid #f1f5f9' }}>
-                                        <span><i className="bi bi-arrows-fullscreen"></i> {bien.superficie} m²</span>
-                                        <span><i className="bi bi-door-open"></i> {bien.nombre_pieces} p.</span>
-                                    </div>
-                                </div>
-                                <div style={{ padding: '0.5rem 0.75rem', backgroundColor: '#f8fafc', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '0.4rem' }}>
-                                    <button 
-                                        onClick={() => handleEdit(bien)}
-                                        style={{ flex: 1, padding: '0.35rem', borderRadius: '0.4rem', border: '1px solid #dbeafe', backgroundColor: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', textDecoration: 'none' }}
-                                    >
-                                        Modifier
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDelete(bien.id_bien)} 
-                                        style={{ padding: '0.35rem 0.6rem', borderRadius: '0.4rem', border: '1px solid #fee2e2', backgroundColor: '#fff', color: '#ef4444', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '600', textDecoration: 'none' }}
-                                        title="Supprimer"
-                                    >
-                                        Supprimer
-                                    </button>
                                 </div>
                             </div>
                         ))}

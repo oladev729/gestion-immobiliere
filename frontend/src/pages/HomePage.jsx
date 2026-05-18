@@ -214,114 +214,207 @@ const HomePage = () => {
                 {biens.map((bien) => (
                   <div className="col-md-4 mb-4" key={bien.id_bien}>
                     <div
-                      className="h-100"
+                      onClick={() => handleVoirPlus(bien.id_bien)}
+                      className="premium-real-estate-card"
                       style={{
-                        background: "rgba(255,255,255,0.1)",
-                        backdropFilter: "blur(16px)",
-                        WebkitBackdropFilter: "blur(16px)",
-                        border: "1px solid rgba(255,255,255,0.25)",
-                        borderRadius: 16,
+                        backgroundColor: "#ffffff",
+                        borderRadius: "8px",
                         overflow: "hidden",
-                        boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+                        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.07)",
+                        border: "1px solid #e5e7eb",
+                        transition: "all 0.3s ease",
+                        display: "flex",
+                        flexDirection: "column",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        height: "100%"
                       }}
                     >
-                      {bien.photo_principale ? (
-                        <img
-                          src={getImageUrl(bien.photo_principale)}
-                          alt={bien.titre}
-                          style={{
-                            width: "100%",
-                            height: 200,
-                            objectFit: "cover",
-                          }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = IMAGE_FALLBACK;
-                          }}
-                        />
-                      ) : (
-                        <div
-                          className="d-flex align-items-center justify-content-center"
-                          style={{
-                            height: 200,
-                            background: "rgba(255,255,255,0.08)",
-                          }}
-                        >
-                          <span className="text-white opacity-50">
-                            Pas de photo
-                          </span>
-                        </div>
-                      )}
-                      <div className="p-3">
-                        <div className="d-flex justify-content-between align-items-start mb-2">
-                          <h5 className="mb-0 text-white fw-bold">
-                            {bien.titre}
-                          </h5>
-                          <span className="badge bg-success">Disponible</span>
-                        </div>
-                        <p
-                          className="small mb-1"
-                          style={{ color: "rgba(255,255,255,0.7)" }}
-                        >
-                          📍 {bien.adresse}, {bien.ville}
-                        </p>
-                        <p
-                          className="small mb-2"
-                          style={{ color: "rgba(255,255,255,0.6)" }}
-                        >
-                          {bien.superficie && `${bien.superficie} m²`}
-                          {bien.nombre_pieces &&
-                            ` · ${bien.nombre_pieces} pièces`}
-                          {bien.meuble ? " · Meublé" : ""}
-                        </p>
-                        <p
-                          className="fw-bold fs-5 mb-0"
-                          style={{ color: "#7ee8a2" }}
-                        >
-                          {Number(bien.loyer_mensuel).toLocaleString("fr-FR")}{" "}
-                          FCFA
-                          <span
-                            className="fs-6"
-                            style={{ color: "rgba(255,255,255,0.5)" }}
-                          >
-                            {" "}
-                            /mois
-                          </span>
-                        </p>
-                        <div className="d-flex gap-2 mt-2 flex-wrap">
-                          <span
-                            className="badge"
+                      {/* IMAGE CONTAINER */}
+                      <div style={{ position: "relative", height: "280px", overflow: "hidden" }}>
+                        {bien.photo_principale ? (
+                          <img
+                            src={getImageUrl(bien.photo_principale)}
+                            alt={bien.titre}
+                            className="card-img-hero"
                             style={{
-                              background: "rgba(255,255,255,0.15)",
-                              color: "#fff",
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              transition: "transform 0.5s ease"
                             }}
-                          >
-                            {bien.type_bien}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = IMAGE_FALLBACK;
+                            }}
+                          />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
+                            Pas de photo
+                          </div>
+                        )}
+
+                        {/* FLOATING A LOUER BADGE (TOP-RIGHT) */}
+                        <div style={{ position: "absolute", top: "12px", right: "12px", zIndex: 2 }}>
+                          <span style={{
+                            backgroundColor: "rgba(0, 0, 0, 0.75)",
+                            color: "#ffffff",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            fontSize: "0.7rem",
+                            fontWeight: "800",
+                            letterSpacing: "0.5px",
+                            textTransform: "uppercase"
+                          }}>
+                            A LOUER
                           </span>
-                          {bien.proprietaire_nom && (
-                            <span
-                              className="badge"
-                              style={{
-                                background: "rgba(255,255,255,0.15)",
-                                color: "#fff",
-                              }}
-                            >
-                              {bien.proprietaire_prenoms}{" "}
-                              {bien.proprietaire_nom}
-                            </span>
-                          )}
                         </div>
-                        <button
-                          onClick={() => handleVoirPlus(bien.id_bien)}
-                          className="btn btn-primary w-100 mt-3 fw-bold"
-                          style={{ borderRadius: "12px", padding: "10px" }}
-                        >
-                          Voir plus
-                        </button>
+
+                        {/* FLOATING ACTION BUTTONS (BOTTOM-RIGHT) */}
+                        <div style={{ position: "absolute", bottom: "12px", right: "12px", display: "flex", gap: "6px", zIndex: 2 }}>
+                          <div style={{
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            color: "#ffffff",
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            backdropFilter: "blur(4px)"
+                          }}>
+                            <i className="bi bi-arrows-fullscreen" style={{ fontSize: "0.8rem" }}></i>
+                          </div>
+                          <div style={{
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            color: "#ffffff",
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            backdropFilter: "blur(4px)"
+                          }}>
+                            <i className="bi bi-heart" style={{ fontSize: "0.8rem" }}></i>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* CARD BODY CONTENT */}
+                      <div style={{ padding: "16px", display: "flex", flexDirection: "column", flexGrow: 1, backgroundColor: "#ffffff" }}>
+                        {/* 1. PRICE (LARGE, BOLD, BLACK, TOP) */}
+                        <div style={{
+                          fontSize: "1.2rem",
+                          fontWeight: "800",
+                          color: "#000000",
+                          marginBottom: "6px",
+                          fontFamily: "Inter, sans-serif"
+                        }}>
+                          {Number(bien.loyer_mensuel).toLocaleString()} CFA<span style={{ fontSize: "0.8rem", fontWeight: "600", color: "#000000" }}>/Mois</span>
+                        </div>
+
+                        {/* 2. TITLE (BOLD, BLACK) */}
+                        <h3 style={{
+                          fontSize: "1.02rem",
+                          fontWeight: "800",
+                          color: "#000000",
+                          marginBottom: "6px",
+                          lineHeight: "1.3",
+                          overflow: "hidden",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical"
+                        }}>
+                          {bien.titre}
+                        </h3>
+
+                        {/* 2.5. DESCRIPTION (PURE BLACK, ONE LINE, COMPACT) */}
+                        <p style={{
+                          fontSize: "0.85rem",
+                          color: "#000000",
+                          marginBottom: "8px",
+                          lineHeight: "1.3",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          fontWeight: "500"
+                        }}>
+                          {bien.description || "Aucune description fournie pour ce bien."}
+                        </p>
+
+                        {/* 3. LOCATION (GREY, PIN ICON) */}
+                        <p style={{
+                          color: "#000000",
+                          fontSize: "0.78rem",
+                          fontWeight: "550",
+                          marginBottom: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}>
+                          <i className="bi bi-geo-alt" style={{ color: "#000000" }}></i>
+                          {bien.adresse}, {bien.ville}
+                        </p>
+
+                        {/* 4. SPECS ROW (HORIZONTAL AT BOTTOM - PUSHED BY MARGIN TOP AUTO) */}
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                          fontSize: "0.8rem",
+                          color: "#000000",
+                          paddingTop: "12px",
+                          borderTop: "1px solid #e5e7eb",
+                          fontWeight: "700",
+                          marginTop: "auto"
+                        }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                              <i className="bi bi-tag" style={{ color: "#000000" }}></i> {bien.id_bien}
+                            </span>
+                            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                              <i className="bi bi-door-open" style={{ color: "#000000" }}></i> {bien.nombre_pieces}
+                            </span>
+                            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                              <i className="bi bi-arrows-fullscreen" style={{ color: "#000000" }}></i> {bien.superficie} m²
+                            </span>
+                            {bien.meuble && (
+                              <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#047857" }}>
+                                <i className="bi bi-check-circle-fill"></i> Meublé
+                              </span>
+                            )}
+                          </div>
+
+                          {/* BUTTON ACTIONS */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
+                              <button
+                                  style={{
+                                      width: '100%',
+                                      padding: '8px 12px',
+                                      borderRadius: '6px',
+                                      border: 'none',
+                                      backgroundColor: '#2563eb',
+                                      color: '#ffffff',
+                                      cursor: 'pointer',
+                                      fontSize: '0.8rem',
+                                      fontWeight: '700',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)',
+                                      transition: 'all 0.2s'
+                                  }}
+                                  onClick={() => handleVoirPlus(bien.id_bien)}>
+                                  <i className="bi bi-eye"></i> Voir les détails
+                              </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
                 {biens.length === 0 && (
                   <div className="col-12 text-center py-5">
                     <p style={{ color: "rgba(255,255,255,0.6)" }}>
@@ -580,6 +673,20 @@ const HomePage = () => {
           to { opacity: 1; transform: translateY(0); }
         }
         
+        .premium-real-estate-card {
+          transition: box-shadow 0.3s ease, border-color 0.3s ease !important;
+        }
+
+        .premium-real-estate-card:hover {
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+          border-color: #2563eb !important;
+        }
+        
+        .premium-action-btn:hover {
+          background: #1d4ed8 !important;
+          box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3) !important;
+        }
+
         .signin-btn {
           background: #1a73e8 !important;
           color: white !important;
