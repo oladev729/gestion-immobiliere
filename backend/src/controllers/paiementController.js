@@ -150,7 +150,7 @@ const paiementController = {
             // Vérifier que le contrat appartient bien au locataire connecté
             const contrat = await db.query(
                 `SELECT c.id_contact, c.id_bien, b.titre,
-                        u_loc.nom AS nom_locataire, u_loc.prenom AS prenom_locataire, u_loc.email AS email_locataire
+                        u_loc.nom AS nom_locataire, u_loc.prenoms AS prenom_locataire, u_loc.email AS email_locataire
                  FROM contact c
                  JOIN bien b ON b.id_bien = c.id_bien
                  JOIN locataire l ON l.id_locataire = c.id_locataire
@@ -351,7 +351,7 @@ const paiementController = {
         try {
             const result = await db.query(
                 `SELECT p.*, b.titre AS bien_titre,
-                        u.nom AS locataire_nom, u.prenom AS locataire_prenom
+                        u.nom AS locataire_nom, u.prenoms AS locataire_prenom
                  FROM payement p
                  JOIN contact c ON c.id_contact = p.id_contact
                  JOIN bien b ON b.id_bien = c.id_bien
@@ -505,6 +505,375 @@ const paiementController = {
         } catch (error) {
             console.error('Erreur stats paiements:', error);
             res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // INITIER UN PAIEMENT EN LIGNE VIA FEDAPAY
+    // ============================================================
+    async initierFedaPay(req, res) {
+        try {
+            const { id_contact, montant, type_paiement, description, phoneNumber, operatorCode, mois_concerne, annee } = req.body;
+            
+            console.log('🚀 Initialisation paiement FedaPay:', { id_contact, montant, type_paiement, mois_concerne, annee });
+            
+            // Validation des données
+            if (!id_contact || !montant || !phoneNumber) {
+                return res.status(400).json({ 
+                    message: 'Données requises manquantes',
+                    required: ['id_contact', 'montant', 'phoneNumber']
+                });
+            }
+            
+            // 1. Récupérer les infos du locataire pour FedaPay
+            const locataireQuery = `
+                SELECT u.nom, u.prenoms as prenom, u.email, u.telephone, b.titre as bien_titre
+                FROM contact c
+                JOIN locataire l ON c.id_locataire = l.id_locataire
+                JOIN utilisateur u ON l.id_utilisateur = u.id_utilisateur
+                JOIN bien b ON c.id_bien = b.id_bien
+                WHERE c.id_contact = $1 AND l.id_utilisateur = $2
+            `;
+            const locataireRes = await db.query(locataireQuery, [id_contact, req.user.id]);
+            
+            if (locataireRes.rows.length === 0) {
+                return res.status(404).json({ message: 'Locataire ou contrat non trouvé' });
+            }
+            
+            const locataire = locataireRes.rows[0];
+            
+            // 1.5 Déterminer l'id_loyer s'il s'agit d'un loyer
+            let id_loyer = null;
+            if (type_paiement === 'loyer' && mois_concerne) {
+                const monthsMap = {
+                    'janvier': '01',
+                    'février': '02',
+                    'mars': '03',
+                    'avril': '04',
+                    'mai': '05',
+                    'juin': '06',
+                    'juillet': '07',
+                    'août': '08',
+                    'septembre': '09',
+                    'octobre': '10',
+                    'novembre': '11',
+                    'décembre': '12'
+                };
+                const monthNum = monthsMap[mois_concerne.toLowerCase()];
+                if (monthNum) {
+                    const targetAnnee = annee || new Date().getFullYear().toString();
+                    const dbMoisConcerne = `${targetAnnee}-${monthNum}`;
+                    console.log('🔍 Recherche loyermensuel pour:', { id_contact, dbMoisConcerne });
+                    
+                    const lmQuery = 'SELECT id_loyer, statut FROM loyermensuel WHERE id_contact = $1 AND mois_concerne = $2';
+                    const lmRes = await db.query(lmQuery, [id_contact, dbMoisConcerne]);
+                    if (lmRes.rows.length > 0) {
+                        id_loyer = lmRes.rows[0].id_loyer;
+                        console.log('✅ Trouvé id_loyer:', id_loyer);
+                        
+                        if (lmRes.rows[0].statut === 'paye') {
+                            return res.status(400).json({
+                                success: false,
+                                message: 'Cette échéance a déjà été payée !'
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // 2. Générer une référence unique pour le paiement
+            const merchantReference = `FEDA_${Date.now()}_${id_contact}`;
+            
+            // 3. Créer l'enregistrement de paiement en base
+            const paiement = await Paiement.create({
+                id_contact,
+                id_loyer,
+                montant,
+                type_paiement: 'fedapay',
+                statut_paiement: 'en_attente',
+                numero_transaction: merchantReference,
+                description: description || `Paiement FedaPay - ${type_paiement} - ${locataire.bien_titre}`,
+                date_paiement: new Date()
+            });
+            
+            // 4. Appeler l'API FedaPay pour initialiser le paiement
+            const targetPhone = phoneNumber || locataire.telephone || '64000001';
+            const fedaPayResponse = await paiementController.initiateFedaPayPayment({
+                montant,
+                telephone: targetPhone,
+                operateur: operatorCode || 'BJMTN',
+                reference: merchantReference,
+                description: description || `Paiement via FedaPay pour ${locataire.bien_titre}`,
+                customer: {
+                    firstname: locataire.prenom,
+                    lastname: locataire.nom,
+                    email: locataire.email
+                }
+            });
+            
+            if (fedaPayResponse.success) {
+                // Mettre à jour le paiement avec la référence FedaPay si différente
+                if (fedaPayResponse.reference !== merchantReference) {
+                    await Paiement.updateReference(paiement.id_payment, fedaPayResponse.reference);
+                }
+                
+                res.json({
+                    success: true,
+                    message: 'Paiement FedaPay initialisé avec succès',
+                    merchantReference: fedaPayResponse.reference,
+                    processingReference: fedaPayResponse.processingReference,
+                    paymentUrl: fedaPayResponse.paymentUrl
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: 'Erreur lors de l\'initialisation du paiement FedaPay',
+                    error: fedaPayResponse.error
+                });
+            }
+            
+        } catch (error) {
+            console.error('❌ Erreur initialisation paiement FedaPay:', error);
+            res.status(500).json({ 
+                message: 'Erreur lors de l\'initialisation du paiement',
+                error: error.message 
+            });
+        }
+    },
+
+    // Vérifier le statut d'un paiement FedaPay
+    async checkFedaPayStatus(req, res) {
+        try {
+            const { merchantReference, processingReference } = req.body;
+            
+            console.log('🔍 Vérification statut FedaPay:', { merchantReference, processingReference });
+            
+            // Appeler l'API FedaPay pour vérifier le statut
+            const statusResponse = await paiementController.checkFedaPayPaymentStatus(merchantReference, processingReference);
+            
+            if (statusResponse.success) {
+                // Mettre à jour le statut en base si succès
+                if (statusResponse.status === 'approved' || statusResponse.status === 'captured') {
+                    await Paiement.markAsPaid(statusResponse.reference || merchantReference, statusResponse.transactionId);
+                    
+                    // 🧾 GÉNÉRATION AUTOMATIQUEMENT DE LA QUITTANCE POUR FEDAPAY
+                    try {
+                        console.log('🧾 Récupération des détails pour génération automatique de quittance FedaPay...');
+                        const queryPaiement = `
+                            SELECT p.id_payment, p.montant, p.numero_transaction, p.date_paiement, p.id_loyer,
+                                   lm.mois_concerne, lm.id_contact, 
+                                   c.id_locataire, b.id_proprietaire, c.id_bien,
+                                   l.id_utilisateur as locataire_id_utilisateur,
+                                   prop.id_utilisateur as proprietaire_id_utilisateur,
+                                   b.titre as bien_titre
+                            FROM payement p
+                            LEFT JOIN loyermensuel lm ON p.id_loyer = lm.id_loyer
+                            LEFT JOIN contact c ON p.id_contact = c.id_contact
+                            LEFT JOIN locataire l ON c.id_locataire = l.id_locataire
+                            LEFT JOIN bien b ON c.id_bien = b.id_bien
+                            LEFT JOIN proprietaire prop ON b.id_proprietaire = prop.id_proprietaire
+                            WHERE p.numero_transaction = $1 OR p.numero_transaction = $2
+                        `;
+                        const resPaiement = await db.query(queryPaiement, [
+                            statusResponse.reference || merchantReference || null, 
+                            statusResponse.transactionId ? statusResponse.transactionId.toString() : null
+                        ]);
+                        
+                        if (resPaiement.rows.length > 0) {
+                            const paiement = resPaiement.rows[0];
+                            
+                            if (paiement.id_loyer) {
+                                // 1. Marquer le loyer mensuel comme payé
+                                console.log('🔹 Passage du loyermensuel à statut = paye pour id_loyer:', paiement.id_loyer);
+                                await db.query(
+                                    'UPDATE loyermensuel SET statut = $2 WHERE id_loyer = $1',
+                                    [paiement.id_loyer, 'paye']
+                                );
+                                
+                                // 2. Vérifier si la quittance n'existe pas déjà
+                                const checkQuittance = await db.query(
+                                    'SELECT id_quittance FROM quittance WHERE id_paiement = $1',
+                                    [paiement.id_payment]
+                                );
+                                
+                                if (checkQuittance.rows.length === 0) {
+                                    // 3. Générer la quittance
+                                    const quittanceData = {
+                                        id_paiement: paiement.id_payment,
+                                        id_locataire: paiement.locataire_id_utilisateur,
+                                        id_proprietaire: paiement.proprietaire_id_utilisateur,
+                                        id_bien: paiement.id_bien,
+                                        type_quittance: 'loyer',
+                                        periode: paiement.mois_concerne,
+                                        montant: paiement.montant,
+                                        date_paiement: paiement.date_paiement || new Date(),
+                                        reference_paiement: paiement.numero_transaction
+                                    };
+                                    
+                                    const quittance = await Quittance.create(quittanceData);
+                                    console.log('✅ Quittance FedaPay générée avec succès:', quittance.id_quittance);
+                                } else {
+                                    console.log('ℹ️ La quittance pour ce paiement existe déjà.');
+                                }
+                            }
+                        } else {
+                            console.log('⚠️ Aucun paiement trouvé en base pour générer la quittance.');
+                        }
+                    } catch (quittanceErr) {
+                        console.error('❌ Erreur lors de la génération automatique de quittance FedaPay:', quittanceErr);
+                    }
+                }
+                
+                res.json({
+                    success: true,
+                    status: statusResponse.status,
+                    transactionId: statusResponse.transactionId,
+                    message: 'Statut récupéré avec succès'
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: 'Erreur lors de la vérification du statut',
+                    error: statusResponse.error
+                });
+            }
+            
+        } catch (error) {
+            console.error('❌ Erreur vérification statut FedaPay:', error);
+            res.status(500).json({ 
+                message: 'Erreur lors de la vérification du statut',
+                error: error.message 
+            });
+        }
+    },
+
+    // Obtenir les données du widget FedaPay
+    async getFedaPayWidgetData(req, res) {
+        try {
+            console.log('📦 Récupération données widget FedaPay');
+            
+            const widgetData = {
+                merchantId: process.env.FEDAPAY_MERCHANT_ID || 'FEDA_MERCHANT',
+                publicKey: process.env.FEDAPAY_PUBLIC_KEY,
+                apiUrl: process.env.FEDAPAY_API_URL || 'https://api.fedapay.com/v1',
+                currency: 'XOF',
+                country: 'BJ',
+                supportedOperators: ['BJMTN', 'BJMOOV', 'BJCELTIIS']
+            };
+            
+            res.json({
+                success: true,
+                widgetData
+            });
+            
+        } catch (error) {
+            console.error('❌ Erreur récupération widget FedaPay:', error);
+            res.status(500).json({ 
+                message: 'Erreur lors de la récupération des données du widget',
+                error: error.message 
+            });
+        }
+    },
+
+    // Services internes FedaPay
+    async initiateFedaPayPayment(paymentData) {
+        try {
+            const FEDAPAY_SECRET_KEY = process.env.FEDAPAY_SECRET_KEY;
+            const FEDAPAY_API_URL = process.env.FEDAPAY_API_URL || 'https://api.fedapay.com/v1';
+
+            console.log('📡 Appel API FedaPay pour créer transaction...');
+            
+            // 1. Créer la transaction
+            const transactionRes = await axios.post(`${FEDAPAY_API_URL}/transactions`, {
+                amount: paymentData.montant,
+                currency: { iso: 'XOF' },
+                description: paymentData.description,
+                callback_url: `${FRONTEND_URL}/payment-success`,
+                customer: {
+                    firstname: paymentData.customer.firstname,
+                    lastname: paymentData.customer.lastname,
+                    email: paymentData.customer.email,
+                    phone_number: {
+                        number: paymentData.telephone,
+                        country: 'BJ'
+                    }
+                }
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${FEDAPAY_SECRET_KEY}`
+                }
+            });
+
+            const transaction = transactionRes.data['v1/transaction'] || transactionRes.data.v1_transaction || transactionRes.data.transaction || transactionRes.data;
+            
+            if (!transaction || (!transaction.reference && !transaction.id)) {
+                console.error("Structure de réponse inattendue:", transactionRes.data);
+                throw new Error("Réponse API FedaPay invalide");
+            }
+            
+            // 2. Si c'est Mobile Money, on peut soit renvoyer l'URL de checkout, 
+            // soit tenter un paiement direct si l'opérateur est fourni
+            // Pour l'instant, on renvoie l'URL de checkout ou on gère le token
+            
+            return {
+                success: true,
+                reference: transaction.reference || `REF-${transaction.id}`,
+                transactionId: transaction.id,
+                paymentUrl: transaction.payment_url || transaction.checkout_url || `https://checkout.fedapay.com/${transaction.reference || transaction.id}`,
+                processingReference: transaction.id ? transaction.id.toString() : '',
+                message: 'Transaction créée avec succès'
+            };
+            
+        } catch (error) {
+            console.error('❌ Erreur API FedaPay (initiate):', error.response?.data || error.message);
+            return { 
+                success: false, 
+                error: error.response?.data?.message || error.message 
+            };
+        }
+    },
+
+    async checkFedaPayPaymentStatus(merchantReference, processingReference) {
+        try {
+            const FEDAPAY_SECRET_KEY = process.env.FEDAPAY_SECRET_KEY;
+            const FEDAPAY_API_URL = process.env.FEDAPAY_API_URL || 'https://api.fedapay.com/v1';
+
+            console.log(`📡 Vérification statut transaction ${merchantReference} sur FedaPay...`);
+            
+            // On peut chercher par ID ou par référence
+            const url = processingReference ? 
+                `${FEDAPAY_API_URL}/transactions/${processingReference}` : 
+                `${FEDAPAY_API_URL}/transactions?reference=${merchantReference}`;
+
+            const res = await axios.get(url, {
+                headers: {
+                    'Authorization': `Bearer ${FEDAPAY_SECRET_KEY}`
+                }
+            });
+
+            let transaction;
+            if (res.data['v1/transaction'] || res.data.v1_transaction) {
+                transaction = res.data['v1/transaction'] || res.data.v1_transaction;
+            } else if ((res.data['v1/transactions'] && res.data['v1/transactions'].length > 0) || (res.data.v1_transactions && res.data.v1_transactions.length > 0)) {
+                transaction = (res.data['v1/transactions'] || res.data.v1_transactions)[0];
+            } else {
+                throw new Error('Transaction non trouvée sur FedaPay');
+            }
+            
+            return {
+                success: true,
+                status: transaction.status, // 'approved', 'captured', 'declined', 'pending', etc.
+                transactionId: transaction.id,
+                reference: transaction.reference,
+                message: 'Statut récupéré'
+            };
+            
+        } catch (error) {
+            console.error('❌ Erreur vérification statut FedaPay:', error.response?.data || error.message);
+            return { 
+                success: false, 
+                error: error.response?.data?.message || error.message 
+            };
         }
     }
 };

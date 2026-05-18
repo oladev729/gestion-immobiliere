@@ -40,8 +40,8 @@ router.get('/mes-alertes', authenticateToken, async (req, res) => {
       }
       
       query = `
-        SELECT a.*, b.titre as bien_titre, 
-               u_loc.nom as locataire_nom, u_loc.prenoms as locataire_prenoms
+        SELECT a.*, b.titre as bien_titre, b.adresse as bien_adresse,
+               u_loc.nom as locataire_nom, u_loc.prenoms as locataire_prenoms, u_loc.email as locataire_email
         FROM alertes a
         LEFT JOIN bien b ON a.id_bien = b.id_bien
         LEFT JOIN locataire l ON a.id_locataire = l.id_locataire
@@ -79,7 +79,11 @@ router.get('/mes-alertes', authenticateToken, async (req, res) => {
         type_alerte: alerte.type_alerte,
         expediteur_type: alerte.expediteur_type,
         destinataire_type: alerte.destinataire_type,
-        locataire_nom: alerte.locataire_nom
+        locataire_nom: alerte.locataire_nom,
+        locataire_prenoms: alerte.locataire_prenoms,
+        locataire_email: alerte.locataire_email,
+        bien_titre: alerte.bien_titre,
+        bien_adresse: alerte.bien_adresse
       });
     });
     
@@ -782,6 +786,20 @@ router.get('/charges', authenticateToken, async (req, res) => {
     console.log('💰 Récupération des charges - DÉBUT');
     console.log('👤 ID utilisateur:', req.user.id);
     
+    // Vérifier si la table charges existe
+    const tableExists = await db.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'charges'
+      )
+    `);
+    
+    if (!tableExists.rows[0].exists) {
+      console.log('❌ La table charges n\'existe pas');
+      return res.json([]);
+    }
+    
     // Récupérer l'ID du propriétaire
     const proprietaireInfo = await db.query('SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1', [req.user.id]);
     
@@ -916,7 +934,7 @@ router.post('/charges', authenticateToken, async (req, res) => {
     console.log('  - date_echeance:', date_echeance);
     
     const query = `
-      INSERT INTO charges (id_proprietaire, id_locataire, id_bien, titre, description, montant, type_charge, date_echeance)
+      INSERT INTO charges (id_proprietaire, id_locataire, id_bien, titre, description, montant, type, date_echeance)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `;

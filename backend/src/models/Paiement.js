@@ -189,14 +189,84 @@ class Paiement {
     // ============================================================
     // METTRE À JOUR LE STATUT D'UN PAIEMENT
     // ============================================================
-    static async updateStatut(id_payment, statut) {
+    // ============================================================
+    // CRÉER UN ENREGISTREMENT DE PAIEMENT (GÉNÉRIQUE)
+    // ============================================================
+    static async create(data) {
+        const {
+            id_contact,
+            id_loyer,
+            montant,
+            type_paiement,
+            statut_paiement,
+            numero_transaction,
+            description,
+            date_paiement
+        } = data;
+
+        const query = `
+            INSERT INTO payement (
+                id_contact,
+                id_loyer,
+                montant,
+                statut_paiement,
+                numero_transaction,
+                date_paiement
+            ) VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *
+        `;
+
+        const values = [
+            id_contact,
+            id_loyer || null,
+            montant,
+            statut_paiement || 'en_attente',
+            numero_transaction || `FEDA-${Date.now()}`,
+            date_paiement || new Date()
+        ];
+
+        const result = await db.query(query, values);
+        return result.rows[0];
+    }
+
+    // ============================================================
+    // METTRE À JOUR LA RÉFÉRENCE D'UN PAIEMENT
+    // ============================================================
+    static async updateReference(id_payment, reference) {
         const query = `
             UPDATE payement 
-            SET statut_paiement = $2 
+            SET numero_transaction = $2 
             WHERE id_payment = $1 
             RETURNING *
         `;
-        const result = await db.query(query, [id_payment, statut]);
+        const result = await db.query(query, [id_payment, reference]);
+        return result.rows[0];
+    }
+
+    // ============================================================
+    // MARQUER UN PAIEMENT COMME PAYÉ
+    // ============================================================
+    static async markAsPaid(numero_transaction, transactionId) {
+        const query = `
+            UPDATE payement 
+            SET statut_paiement = 'valide',
+                date_paiement = CURRENT_TIMESTAMP
+            WHERE numero_transaction = $1 OR numero_transaction = $2
+            RETURNING *
+        `;
+        const result = await db.query(query, [numero_transaction, transactionId]);
+        return result.rows[0];
+    }
+
+    // ============================================================
+    // RÉCUPÉRER UN PAIEMENT PAR RÉFÉRENCE
+    // ============================================================
+    static async findByReference(reference) {
+        const query = `
+            SELECT * FROM payement 
+            WHERE numero_transaction = $1
+        `;
+        const result = await db.query(query, [reference]);
         return result.rows[0];
     }
 }

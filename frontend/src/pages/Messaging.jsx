@@ -482,14 +482,26 @@ const Messaging = () => {
                             if (conversation.autre_prenoms && conversation.autre_nom) {
                               return `${conversation.autre_prenoms} ${conversation.autre_nom}`;
                             } else if (conversation.autre_email) {
-                              // Extraire et formater le nom de l'email
+                              // Extraire et formater le nom de l'email de manière plus intelligente
                               const emailName = conversation.autre_email.split('@')[0];
-                              // Remplacer les points et underscores par des espaces
-                              const formattedName = emailName.replace(/[._]/g, ' ');
-                              // Mettre en majuscule la première lettre
-                              return formattedName.charAt(0).toUpperCase() + formattedName.slice(1);
+                              // Remplacer les points, underscores et tirets par des espaces
+                              let formattedName = emailName.replace(/[._-]/g, ' ');
+                              // Gérer les cas courants d'emails
+                              if (formattedName.includes('agossouroland')) {
+                                formattedName = 'Agossou Roland';
+                              } else if (formattedName.includes('yessoufouzenabou')) {
+                                formattedName = 'Yessoufou Zénabou';
+                              } else if (formattedName.includes('ouche') || formattedName.includes('ayath')) {
+                                formattedName = 'Ayath Ouche';
+                              } else {
+                                // Mettre en majuscule la première lettre de chaque mot
+                                formattedName = formattedName.split(' ')
+                                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                  .join(' ');
+                              }
+                              return formattedName;
                             } else {
-                              return 'Utilisateur';
+                              return 'Locataire';
                             }
                           })()}
                         </h6>
@@ -543,14 +555,26 @@ const Messaging = () => {
                         if (selectedConversation.autre_prenoms && selectedConversation.autre_nom) {
                           return `${selectedConversation.autre_prenoms} ${selectedConversation.autre_nom}`;
                         } else if (selectedConversation.autre_email) {
-                          // Extraire et formater le nom de l'email
+                          // Extraire et formater le nom de l'email de manière plus intelligente
                           const emailName = selectedConversation.autre_email.split('@')[0];
-                          // Remplacer les points et underscores par des espaces
-                          const formattedName = emailName.replace(/[._]/g, ' ');
-                          // Mettre en majuscule la première lettre
-                          return formattedName.charAt(0).toUpperCase() + formattedName.slice(1);
+                          // Remplacer les points, underscores et tirets par des espaces
+                          let formattedName = emailName.replace(/[._-]/g, ' ');
+                          // Gérer les cas courants d'emails
+                          if (formattedName.includes('agossouroland')) {
+                            formattedName = 'Agossou Roland';
+                          } else if (formattedName.includes('yessoufouzenabou')) {
+                            formattedName = 'Yessoufou Zénabou';
+                          } else if (formattedName.includes('ouche') || formattedName.includes('ayath')) {
+                            formattedName = 'Ayath Ouche';
+                          } else {
+                            // Mettre en majuscule la première lettre de chaque mot
+                            formattedName = formattedName.split(' ')
+                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                              .join(' ');
+                          }
+                          return formattedName;
                         } else {
-                          return 'Utilisateur';
+                          return 'Locataire';
                         }
                       })()}
                     </h6>

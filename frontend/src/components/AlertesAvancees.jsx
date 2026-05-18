@@ -51,7 +51,21 @@ const AlertesAvancees = () => {
       console.log('📊 Nombre d\'alertes:', response.data?.length || 0);
       console.log('📋 Détail des alertes reçues:');
       response.data.forEach((alerte, index) => {
-        console.log(`  ${index + 1}. ID: ${alerte.id_alerte}, Titre: ${alerte.titre}, Type: ${alerte.type_alerte}, Expediteur: ${alerte.expediteur_type}`);
+        console.log(`📋 === ALERTE ${index + 1} ===`);
+        console.log(`  ID: ${alerte.id_alerte}`);
+        console.log(`  Titre: ${alerte.titre}`);
+        console.log(`  Type: ${alerte.type_alerte}`);
+        console.log(`  Expediteur: ${alerte.expediteur_type}`);
+        console.log(`🏠 BIEN:`);
+        console.log(`  - Titre: ${alerte.bien_titre || 'NON TROUVÉ'}`);
+        console.log(`  - Adresse: ${alerte.bien_adresse || 'NON TROUVÉE'}`);
+        console.log(`👤 LOCATAIRE:`);
+        console.log(`  - Prénoms: ${alerte.locataire_prenoms || 'NON TROUVÉ'}`);
+        console.log(`  - Nom: ${alerte.locataire_nom || 'NON TROUVÉ'}`);
+        console.log(`  - Email: ${alerte.locataire_email || 'NON TROUVÉ'}`);
+        console.log(`📋 TOUS LES CHAMPS:`, Object.keys(alerte));
+        console.log(`🔍 OBJET COMPLET:`, alerte);
+        console.log(`========================`);
       });
       setAlertes(response.data);
     } catch (error) {
@@ -175,6 +189,8 @@ const AlertesAvancees = () => {
       setCharges(response.data);
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des charges:', error);
+      // Ne pas bloquer l'interface si les charges ne peuvent pas être récupérées
+      setCharges([]);
     }
   };
 
@@ -679,15 +695,60 @@ const AlertesAvancees = () => {
                     <div className="alert-list">
                       {console.log('🎨 Rendu des alertes:', alertesFiltrees.length, 'alertes')}
                       {alertesFiltrees.map((alerte) => {
-                        // Version simplifiée pour contourner le problème CSS
+                        // Version améliorée avec affichage propre
+                        const getExpediteurNom = () => {
+                          if (alerte.expediteur_type === 'locataire') {
+                            // Priorité 1: nom et prénom disponibles
+                            if (alerte.locataire_nom && alerte.locataire_prenoms) {
+                              return `${alerte.locataire_prenoms} ${alerte.locataire_nom}`;
+                            }
+                            // Priorité 2: email disponible
+                            else if (alerte.locataire_email) {
+                              const emailName = alerte.locataire_email.split('@')[0];
+                              let formattedName = emailName.replace(/[._-]/g, ' ');
+                              if (formattedName.includes('ouche') || formattedName.includes('ayath')) {
+                                formattedName = 'Ayath Ouche';
+                              } else {
+                                formattedName = formattedName.split(' ')
+                                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                  .join(' ');
+                              }
+                              return formattedName;
+                            }
+                            // Priorité 3: type d'expéditeur
+                            else {
+                              return 'Locataire';
+                            }
+                          } else {
+                            return alerte.expediteur_type || 'Inconnu';
+                          }
+                        };
+
                         return (
-                          <div key={alerte.id_alerte} style={{border: '2px solid blue', padding: '15px', margin: '10px', backgroundColor: 'lightblue'}}>
+                          <div key={alerte.id_alerte} style={{border: '2px solid #007bff', padding: '20px', margin: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'}}>
                             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
                               <div style={{flex: 1}}>
-                                <h4>{alerte.titre}</h4>
-                                <p>{alerte.description}</p>
-                                <small>Type: {alerte.type_alerte} | Expediteur: {alerte.expediteur_type}</small>
-                                {alerte.bien_titre && <p><small>Bien: {alerte.bien_titre}</small></p>}
+                                <h4 style={{color: '#007bff', marginBottom: '10px'}}>{alerte.titre}</h4>
+                                <p style={{marginBottom: '15px', lineHeight: '1.5'}}>{alerte.description}</p>
+                                
+                                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '10px'}}>
+                                  <div>
+                                    <strong style={{color: '#495057'}}>Type:</strong> 
+                                    <span style={{marginLeft: '5px'}}>{alerte.type_alerte}</span>
+                                  </div>
+                                  <div>
+                                    <strong style={{color: '#495057'}}>Expediteur:</strong> 
+                                    <span style={{marginLeft: '5px', color: '#007bff'}}>{getExpediteurNom()}</span>
+                                  </div>
+                                  <div>
+                                    <strong style={{color: '#495057'}}>Bien:</strong> 
+                                    <span style={{marginLeft: '5px'}}>{alerte.bien_titre || 'Non spécifié'}</span>
+                                  </div>
+                                  <div>
+                                    <strong style={{color: '#495057'}}>Adresse:</strong> 
+                                    <span style={{marginLeft: '5px'}}>{alerte.bien_adresse || 'Non spécifiée'}</span>
+                                  </div>
+                                </div>
                               </div>
                               <button 
                                 onClick={() => handleDelete(alerte.id_alerte)}

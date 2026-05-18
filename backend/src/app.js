@@ -131,11 +131,14 @@ try {
     console.log('⚠️ Veuillez installer node-cron: npm install node-cron');
 }
 
-// Démarrer le serveur
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-    console.log(`🌐 API disponible sur http://localhost:${PORT}/api`);
+// GESTION DES ERREURS 404 - DOIT ÊTRE LA DERNIÈRE ROUTE
+app.use((req, res) => {
+    console.log(`❌ 404 - Route non trouvée: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({
+        message: `Route non trouvée: ${req.method} ${req.originalUrl}`,
+        error: 'Not Found',
+        path: req.originalUrl
+    });
 });
 
 module.exports = app;

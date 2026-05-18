@@ -3,7 +3,7 @@
 -- ============================================================
 CREATE TABLE IF NOT EXISTS quittance (
     id_quittance SERIAL PRIMARY KEY,
-    id_paiement INTEGER REFERENCES payement(id_payement),
+    id_paiement INTEGER REFERENCES payement(id_payment),
     id_locataire INTEGER REFERENCES utilisateur(id_utilisateur),
     id_proprietaire INTEGER REFERENCES utilisateur(id_utilisateur),
     id_bien INTEGER REFERENCES bien(id_bien),

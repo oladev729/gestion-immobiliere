@@ -426,11 +426,11 @@ const HomePage = () => {
           }}
         >
           <div className="container">
-            <h2 className="fw-bold mb-3">
+            <h2 className="fw-bold mb-3 text-white">
               Prêt à trouver votre logement ?
             </h2>
             <p
-              className="lead mb-4"
+              className="lead mb-4 text-white"
               style={{ color: "rgba(255,255,255,0.85)" }}
             >
               Rejoignez des milliers de locataires et propriétaires sur{" "}

@@ -32,6 +32,7 @@ import ContractInvitation from './pages/tenant/ContractInvitation';
 import TenantMessaging from './pages/tenant/TenantMessaging';
 import HomePage from './pages/HomePage';
 import Messaging from './pages/Messaging';
+import PaymentSuccess from './pages/tenant/PaymentSuccess';
 
 const PublicRoute = ({ children }) => {
     const { user } = useContext(AuthContext);
@@ -97,6 +98,7 @@ function App() {
                         <Route path="/tenant/entretien" element={<Layout><Entretien /></Layout>} />
                         <Route path="/tenant/report" element={<Layout><ReportIssue /></Layout>} />
                         <Route path="/tenant/payment" element={<Layout><TenantPayment /></Layout>} />
+                        <Route path="/payment-success" element={<PaymentSuccess />} />
                         <Route path="/tenant/contract-invitation" element={<Layout><ContractInvitation /></Layout>} />
                         <Route path="/tenant/messaging" element={<Layout><TenantMessaging /></Layout>} />
 

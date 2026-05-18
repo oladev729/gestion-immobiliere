@@ -38,7 +38,7 @@ router.get('/impayes', authenticateToken, paiementController.getImpayes);
 router.get('/stats', authenticateToken, paiementController.getStats);
 
 // ============================================================
-// ROUTES CAURISPAY
+// ROUTES CAURISPAY (GARDÉ POUR COMPATIBILITÉ)
 // ============================================================
 
 // Initier un paiement CaurisPay (locataire)
@@ -49,6 +49,28 @@ router.post('/caurispay/statut', authenticateToken, paiementController.checkCaur
 
 // Obtenir les données du widget CaurisPay
 router.get('/caurispay/widget', authenticateToken, paiementController.getCaurisPayWidgetData);
+
+// ============================================================
+// ROUTES FEDAPAY
+// ============================================================
+
+// Route de test pour vérifier si les routes FedaPay sont accessibles
+router.get('/fedapay/test', (req, res) => {
+    console.log('✅ Route FedaPay test appelée !');
+    res.json({ message: 'Route FedaPay fonctionne !', timestamp: new Date() });
+});
+
+// Initier un paiement FedaPay (locataire)
+router.post('/fedapay/initier', authenticateToken, (req, res, next) => {
+    console.log('🚀 Route /fedapay/initier atteinte');
+    next();
+}, paiementController.initierFedaPay);
+
+// Vérifier statut paiement FedaPay
+router.post('/fedapay/statut', authenticateToken, paiementController.checkFedaPayStatus);
+
+// Obtenir les données du widget FedaPay
+router.get('/fedapay/widget', authenticateToken, paiementController.getFedaPayWidgetData);
 
 // Paiements reçus par le propriétaire
 router.get('/recus', authenticateToken, paiementController.paiementsRecus);
