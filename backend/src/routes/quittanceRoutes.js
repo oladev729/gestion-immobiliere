@@ -26,6 +26,6 @@ router.get('/quittances-locataires', authorize('proprietaire'), quittanceControl
 // ============================================================
 // TÉLÉCHARGER UNE QUITTANCE EN PDF
 // ============================================================
-router.get('/telecharger/:id_quittance', quittanceController.downloadQuittance);
+router.get('/:id_quittance/pdf', quittanceController.downloadQuittancePDF);
 
 module.exports = router;

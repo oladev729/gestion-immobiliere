@@ -6,6 +6,7 @@ const DocumentGenerator = () => {
   const [payments, setPayments] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('contracts');
 
   useEffect(() => {
@@ -22,34 +23,37 @@ const DocumentGenerator = () => {
   };
 
   const generateReceipt = async (paymentId) => {
-    setLoading(true);
+    setGenerating(true);
     try {
-      const response = await api.post(`/quittances/generate/${paymentId}`);
-      
-      // Sauvegarder dans le coffre-fort numérique
-      await api.post('/documents/coffre-fort', {
-        type: 'quittance',
+      const response = await api.post('/quittances/generer', {
         id_paiement: paymentId,
-        chemin_fichier: response.data.fileName
+        type_quittance: 'loyer'
+      });
+      
+      // Télécharger le PDF de la quittance
+      const quittanceId = response.data.quittance.id_quittance;
+      const pdfResponse = await api.get(`/quittances/${quittanceId}/pdf`, {
+        responseType: 'blob'
       });
       
       // Créer un lien de téléchargement
-      const blob = new Blob([response.data.pdfBuffer], { type: 'application/pdf' });
+      const blob = new Blob([pdfResponse.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = response.data.fileName;
+      a.download = `quittance_${quittanceId}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      alert('Quittance générée et archivée dans le coffre-fort!');
+      alert('Quittance générée avec succès!');
+      setSelectedPayment(null);
     } catch (error) {
       console.error('Erreur lors de la génération de la quittance:', error);
       alert('Erreur lors de la génération de la quittance');
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   };
 
@@ -134,14 +138,6 @@ const DocumentGenerator = () => {
                                 </td>
                                 <td>
                                   <button
-                                    className="btn btn-primary btn-sm me-2"
-                                    onClick={() => generateReceipt(payment.id_payment)}
-                                    disabled={loading || payment.statut_paiement !== 'payé'}
-                                    style={{ borderRadius: '8px' }}
-                                  >
-                                    {loading ? 'génération...' : 'générer'}
-                                  </button>
-                                  <button
                                     className="btn btn-secondary btn-sm"
                                     onClick={() => setSelectedPayment(payment)}
                                     style={{ borderRadius: '8px' }}
@@ -196,21 +192,21 @@ const DocumentGenerator = () => {
               <div className="modal-footer">
                 <button
                   type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setSelectedPayment(null)}
-                >
-                  fermer
-                </button>
-                <button
-                  type="button"
                   className="btn btn-primary"
                   onClick={() => {
                     generateReceipt(selectedPayment.id_payment);
                     setSelectedPayment(null);
                   }}
-                  disabled={loading}
+                  disabled={generating}
                 >
-                  {loading ? 'génération...' : 'générer le pdf'}
+                  {generating ? 'génération...' : 'générer le pdf'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setSelectedPayment(null)}
+                >
+                  fermer
                 </button>
               </div>
             </div>

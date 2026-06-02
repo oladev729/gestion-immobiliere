@@ -22,6 +22,7 @@ const SidebarModern = ({ user: propUser }) => {
   const tenantLinks = [
     { name: 'Recherche', path: '/tenant/properties', icon: 'bi-search' },
     { name: 'Mes Locations', path: '/tenant/rentals', icon: 'bi-house-door' },
+    { name: 'Quittances', path: '/tenant/quittances', icon: 'bi-file-earmark-text' },
     { name: 'Entretien', path: '/tenant/entretien', icon: 'bi-tools' },
     { name: 'Messagerie', path: '/tenant/messaging', icon: 'bi-chat-dots' },
     { name: 'Signaler', path: '/tenant/report', icon: 'bi-exclamation-triangle' },

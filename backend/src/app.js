@@ -57,10 +57,6 @@ app.use('/api/biens', bienRoutes);
 const contratRoutes = require('./routes/contratRoutes');
 app.use('/api/contrats', contratRoutes);
 
-// ROUTES DES INVITATIONS DE CONTRAT
-const contractInvitationRoutes = require('./routes/contractInvitationRoutes');
-app.use('/api/contract-invitations', contractInvitationRoutes);
-
 // ROUTES DES DOCUMENTS
 const documentRoutes = require('./routes/documentRoutes');
 app.use('/api/documents', documentRoutes);
@@ -78,10 +74,6 @@ app.use('/api/locataires', locataireRoutes);
 // ROUTES DES PAIEMENTS
 const paiementRoutes = require('./routes/paiementRoutes');
 app.use('/api/paiements', paiementRoutes);
-
-// ROUTES DES PAIEMENTS CAURISPAY
-const paymentRoutes = require('./routes/payment');
-app.use('/api/payment', paymentRoutes);
 
 // ROUTES DES DEMANDES DE VISITE
 const demandeVisiteRoutes = require('./routes/DemandeVisiteRoutes');
@@ -133,6 +125,15 @@ try {
 } catch (error) {
     console.error('❌ Erreur lors du démarrage du service d\'alertes automatiques:', error.message);
     console.log('⚠️ Veuillez installer node-cron: npm install node-cron');
+}
+
+// Vérification des contrats expirés (exécuté au démarrage)
+try {
+    const { checkExpiredContracts } = require('./jobs/checkExpiredContracts');
+    checkExpiredContracts();
+    console.log('✅ Vérification des contrats expirés effectuée au démarrage');
+} catch (error) {
+    console.error('❌ Erreur lors de la vérification des contrats expirés:', error.message);
 }
 
 // GESTION DES ERREURS 404 - DOIT ÊTRE LA DERNIÈRE ROUTE

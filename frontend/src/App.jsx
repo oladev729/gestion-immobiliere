@@ -28,8 +28,9 @@ import TenantRentals from './pages/tenant/TenantRentals';
 import Entretien from './pages/tenant/Entretien';
 import ReportIssue from './pages/tenant/ReportIssue';
 import TenantPayment from './pages/tenant/TenantPayment';
-import ContractInvitation from './pages/tenant/ContractInvitation';
 import TenantMessaging from './pages/tenant/TenantMessaging';
+import Quittances from './pages/tenant/Quittances';
+import ContratView from './pages/tenant/ContratView';
 import HomePage from './pages/HomePage';
 import Messaging from './pages/Messaging';
 import PaymentSuccess from './pages/tenant/PaymentSuccess';
@@ -95,11 +96,12 @@ function App() {
                         {/* Routes Locataire */}
                         <Route path="/tenant/properties" element={<Layout><AvailableProperties /></Layout>} />
                         <Route path="/tenant/rentals" element={<Layout><TenantRentals /></Layout>} />
+                        <Route path="/tenant/contrat/:id" element={<Layout><ContratView /></Layout>} />
                         <Route path="/tenant/entretien" element={<Layout><Entretien /></Layout>} />
                         <Route path="/tenant/report" element={<Layout><ReportIssue /></Layout>} />
                         <Route path="/tenant/payment" element={<Layout><TenantPayment /></Layout>} />
+                        <Route path="/tenant/quittances" element={<Layout><Quittances /></Layout>} />
                         <Route path="/payment-success" element={<PaymentSuccess />} />
-                        <Route path="/tenant/contract-invitation" element={<Layout><ContractInvitation /></Layout>} />
                         <Route path="/tenant/messaging" element={<Layout><TenantMessaging /></Layout>} />
 
                         <Route path="*" element={<Navigate to="/login" />} />

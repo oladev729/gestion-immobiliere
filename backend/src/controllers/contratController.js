@@ -120,61 +120,23 @@ const contratController = {
     // RÉCUPÉRER MES CONTRATS (locataire)
     // ============================================================
     async getMyContratsLocataire(req, res) {
-        console.log('🔥🔥🔥 ROUTE mes-contrats-locataire APPELÉE - DEBUG SIMPLE');
         try {
-            console.log('🔥 ROUTE mes-contrats-locataire APPELÉE');
-            console.log('👤 ID utilisateur:', req.user?.id);
-            console.log('👤 Type utilisateur:', req.user?.type);
-            
             const locataire = await db.query(
                 'SELECT id_locataire FROM locataire WHERE id_utilisateur = $1',
                 [req.user.id]
             );
 
-            console.log('📋 Résultat recherche locataire:', locataire.rows);
-            console.log('📊 Nombre de locataires trouvés:', locataire.rows.length);
-
             if (locataire.rows.length === 0) {
-                console.log('❌ Aucun locataire trouvé pour cet utilisateur');
                 return res.status(200).json([]);
             }
 
             const id_locataire = locataire.rows[0].id_locataire;
-            console.log('✅ ID locataire trouvé:', id_locataire);
-
-            // Diagnostic: Vérifier directement la table locataire_bien
-            console.log('🔍 Diagnostic direct de locataire_bien...');
-            const diagnosticQuery = `
-                SELECT * FROM locataire_bien 
-                WHERE id_locataire = $1
-            `;
-            const diagnosticResult = await db.query(diagnosticQuery, [id_locataire]);
-            console.log('📋 Diagnostic locataire_bien:', diagnosticResult.rows);
-            console.log('📊 Nombre d\'enregistrements dans locataire_bien:', diagnosticResult.rows.length);
-
-            // Diagnostic: Vérifier tous les locataires_bien
-            console.log('🔍 Diagnostic de tous les locataires_bien...');
-            const allDiagnosticQuery = 'SELECT * FROM locataire_bien LIMIT 10';
-            const allDiagnosticResult = await db.query(allDiagnosticQuery);
-            console.log('📋 Tous les locataires_bien (limit 10):', allDiagnosticResult.rows);
-
-            // Diagnostic: Vérifier tous les locataires
-            console.log('🔍 Diagnostic de tous les locataires...');
-            const allLocatairesQuery = 'SELECT * FROM locataire LIMIT 10';
-            const allLocatairesResult = await db.query(allLocatairesQuery);
-            console.log('📋 Tous les locataires (limit 10):', allLocatairesResult.rows);
-
-            console.log('🔍 Appel de Contrat.findByLocataire...');
             const contrats = await Contrat.findByLocataire(id_locataire);
-            console.log('📥 Contrats récupérés:', contrats);
-            console.log('📊 Nombre de contrats:', contrats.length);
             
             res.json(contrats);
 
         } catch (error) {
-            console.error('❌ ERREUR dans getMyContratsLocataire:', error);
-            console.error('❌ Message d\'erreur:', error.message);
-            console.error('❌ Stack trace:', error.stack);
+            console.error('Erreur récupération contrats locataire:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },
@@ -184,11 +146,14 @@ const contratController = {
     // ============================================================
     async getContratById(req, res) {
         try {
+            console.log('📄 Récupération du contrat ID:', req.params.id);
             const contrat = await Contrat.findById(req.params.id);
             
             if (!contrat) {
                 return res.status(404).json({ message: 'Contrat non trouvé' });
             }
+
+            console.log('✅ Contrat trouvé:', contrat);
 
             // Vérifier les droits d'accès
             const user = req.user;
@@ -212,11 +177,45 @@ const contratController = {
                 });
             }
 
-            res.json(contrat);
+            // Récupérer les informations complètes du bien, locataire et propriétaire
+            console.log('🏠 Récupération du bien ID:', contrat.id_bien);
+            const bien = await db.query(
+                'SELECT * FROM bien WHERE id_bien = $1',
+                [contrat.id_bien]
+            );
+            console.log('✅ Bien trouvé:', bien.rows.length, 'lignes');
+
+            console.log('👤 Récupération du locataire ID:', contrat.id_locataire);
+            const locataireInfo = await db.query(
+                `SELECT l.*, u.nom, u.prenoms, u.telephone, u.email, l.piece_identite 
+                 FROM locataire l 
+                 JOIN utilisateur u ON l.id_utilisateur = u.id_utilisateur
+                 WHERE l.id_locataire = $1`,
+                [contrat.id_locataire]
+            );
+            console.log('✅ Locataire trouvé:', locataireInfo.rows.length, 'lignes');
+
+            console.log('👤 Récupération du propriétaire ID:', contrat.id_proprietaire);
+            const proprietaireInfo = await db.query(
+                `SELECT p.*, u.nom, u.prenoms, u.telephone, u.email, p.adresse_fiscale 
+                 FROM proprietaire p 
+                 JOIN utilisateur u ON p.id_utilisateur = u.id_utilisateur
+                 WHERE p.id_proprietaire = $1`,
+                [contrat.id_proprietaire]
+            );
+            console.log('✅ Propriétaire trouvé:', proprietaireInfo.rows.length, 'lignes');
+
+            res.json({
+                ...contrat,
+                bien: bien.rows[0] || {},
+                locataire: locataireInfo.rows[0] || {},
+                proprietaire: proprietaireInfo.rows[0] || {}
+            });
 
         } catch (error) {
-            console.error('Erreur récupération contrat:', error);
-            res.status(500).json({ message: 'Erreur serveur' });
+            console.error('❌ Erreur récupération contrat:', error);
+            console.error('Stack trace:', error.stack);
+            res.status(500).json({ message: 'Erreur serveur', details: error.message });
         }
     },
 
