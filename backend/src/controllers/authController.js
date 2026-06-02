@@ -29,8 +29,8 @@ const authController = {
 
             if (type_utilisateur === 'locataire') {
                 await db.query(
-                    `INSERT INTO locataire (id_utilisateur, compte_confirme, email_invite) VALUES ($1, $2, $3)`,
-                    [newUser.id_utilisateur, true, email]
+                    `INSERT INTO locataire (id_utilisateur, compte_confirme, email_invite, piece_identite) VALUES ($1, $2, $3, $4)`,
+                    [newUser.id_utilisateur, true, email, req.body.piece_identite || null]
                 );
             }
 
@@ -151,7 +151,7 @@ const authController = {
             let roleInfo = null;
             if (user.type_utilisateur === 'proprietaire') {
                 const result = await db.query(
-                    'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
+                    'SELECT id_proprietaire, adresse_fiscale FROM proprietaire WHERE id_utilisateur = $1',
                     [user.id_utilisateur]
                 );
                 roleInfo = result.rows[0];
@@ -304,7 +304,23 @@ const authController = {
         try {
             const user = await Utilisateur.findById(req.user.id);
             if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
-            res.json({ user });
+            
+            let roleInfo = null;
+            if (user.type_utilisateur === 'proprietaire') {
+                const result = await db.query(
+                    'SELECT id_proprietaire, adresse_fiscale FROM proprietaire WHERE id_utilisateur = $1',
+                    [user.id_utilisateur]
+                );
+                roleInfo = result.rows[0];
+            } else if (user.type_utilisateur === 'locataire') {
+                const result = await db.query(
+                    'SELECT id_locataire, compte_confirme, piece_identite FROM locataire WHERE id_utilisateur = $1',
+                    [user.id_utilisateur]
+                );
+                roleInfo = result.rows[0];
+            }
+            
+            res.json({ user: { ...user, roleInfo } });
         } catch (error) {
             console.error('Erreur profil:', error);
             res.status(500).json({ message: 'Erreur serveur' });
@@ -460,7 +476,7 @@ const authController = {
     // ============================================================
     async confirmerInvitation(req, res) {
         try {
-            const { token, mot_de_passe, telephone } = req.body;
+            const { token, mot_de_passe, telephone, piece_identite } = req.body;
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             const invitation = await db.query(
@@ -489,9 +505,10 @@ const authController = {
 
             await db.query(
                 `UPDATE locataire SET id_utilisateur = $1, compte_confirme = true,
-                 date_confirmation = CURRENT_TIMESTAMP, statut_invitation = 'accepte'
+                 date_confirmation = CURRENT_TIMESTAMP, statut_invitation = 'accepte',
+                 piece_identite = $3
                  WHERE email_invite = $2`,
-                [newUser.id_utilisateur, decoded.email]
+                [newUser.id_utilisateur, decoded.email, piece_identite || null]
             );
 
             if (newUser.type_utilisateur === 'proprietaire') {
@@ -538,7 +555,8 @@ const authController = {
                     u.email,
                     u.telephone,
                     u.statut,
-                    l.compte_confirme
+                    l.compte_confirme,
+                    l.piece_identite
                 FROM utilisateur u
                 JOIN locataire l ON l.id_utilisateur = u.id_utilisateur
                 WHERE u.statut = 'actif'

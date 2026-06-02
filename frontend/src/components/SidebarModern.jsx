@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import '../styles/design-system.css';
 
 const SidebarModern = ({ user: propUser }) => {
-  const { user: contextUser } = React.useContext(AuthContext);
+  const { user: contextUser, logout } = React.useContext(AuthContext);
   const user = propUser || contextUser;
   const location = useLocation();
 
@@ -14,7 +14,7 @@ const SidebarModern = ({ user: propUser }) => {
     { name: 'Visites', path: '/owner/visits', icon: 'bi-calendar-check' },
     { name: 'Paiements', path: '/owner/payments', icon: 'bi-credit-card' },
     { name: 'Documents', path: '/owner/documents', icon: 'bi-file-text' },
-    { name: 'Alertes', path: '/owner/alertes', icon: 'bi-bell' },
+    { name: 'Annonces', path: '/owner/alertes', icon: 'bi-bell' },
     { name: 'Messagerie', path: '/messaging', icon: 'bi-chat-dots' },
     { name: 'Inviter Locataire', path: '/owner/inviter-locataire', icon: 'bi-person-plus' },
   ];
@@ -77,6 +77,14 @@ const SidebarModern = ({ user: propUser }) => {
           </ul>
         </div>
       </nav>
+
+      {/* Bouton Déconnexion en bas */}
+      <div className="sidebar-logout-section">
+        <button className="sidebar-logout-btn" onClick={logout}>
+          <i className="bi bi-box-arrow-right nav-icon"></i>
+          <span className="nav-text">Se déconnecter</span>
+        </button>
+      </div>
 
       <style>{`
         .sidebar-modern {
@@ -146,6 +154,40 @@ const SidebarModern = ({ user: propUser }) => {
           flex: 1;
           padding: 0.5rem 0;
           overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        .sidebar-logout-section {
+          padding: 0.75rem 0.75rem;
+          border-top: 1px solid #2d3748;
+          flex-shrink: 0;
+        }
+
+        .sidebar-logout-btn {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 0.5rem 0.75rem;
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          border-radius: 0.5rem;
+          color: #fc8181;
+          cursor: pointer;
+          font-size: 0.85rem;
+          font-weight: 500;
+          transition: all 250ms ease-in-out;
+          text-align: left;
+        }
+
+        .sidebar-logout-btn:hover {
+          background: rgba(239, 68, 68, 0.2);
+          border-color: rgba(239, 68, 68, 0.4);
+          color: #feb2b2;
+        }
+
+        .sidebar-logout-btn .nav-icon {
+          color: #fc8181;
         }
 
         .nav-section {

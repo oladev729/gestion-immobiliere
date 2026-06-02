@@ -164,6 +164,25 @@ const problemeController = {
                     [statut, id]
                 );
                 problemeMisAJour = updateResult.rows[0];
+                
+                // Notifier le locataire du changement de statut
+                try {
+                    await db.query(
+                        `INSERT INTO notification (id_utilisateur, titre, message, type, lu)
+                         SELECT l.id_utilisateur,
+                                'Statut du problème mis à jour',
+                                'Votre problème "' || p.titre || '" a été marqué comme ' || $2 || '.',
+                                'probleme',
+                                false
+                         FROM problemes p
+                         JOIN locataire l ON p.id_locataire = l.id_locataire
+                         WHERE p.id_probleme = $1`,
+                        [id, statut === 'resolu' ? 'résolu' : (statut === 'en_cours' ? 'en cours' : statut)]
+                    );
+                    console.log('✅ Notification de changement de statut envoyée au locataire.');
+                } catch (notifErr) {
+                    console.error('⚠️ Erreur lors de l\'envoi de la notification de statut:', notifErr);
+                }
             }
 
             let charge = null;

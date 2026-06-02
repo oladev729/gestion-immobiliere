@@ -169,15 +169,15 @@ const AlertesAvancees = () => {
       fetchAlertes();
       
       // Afficher un message de succès
-      alert('Alerte créée avec succès !');
+      alert('Annonce créée avec succès !');
       
     } catch (error) {
-      console.error('❌ Erreur lors de la création de l\'alerte:', error);
+      console.error('❌ Erreur lors de la création de l\'annonce:', error);
       console.error('❌ Détails de l\'erreur:', error.response?.data || error.message);
       
       // Afficher un message d'erreur plus détaillé
       const errorMessage = error.response?.data?.message || error.message || 'Erreur inconnue';
-      alert(`Erreur lors de la création de l'alerte: ${errorMessage}`);
+      alert(`Erreur lors de la création de l'annonce: ${errorMessage}`);
     }
   };
 
@@ -301,10 +301,13 @@ const AlertesAvancees = () => {
 
   const handleMarquerTraitee = async (id) => {
     try {
-      await api.put(`/alertes/${id}/traiter`);
+      console.log('🔧 Résolution de l\'annonce...');
+      await api.patch(`/alertes/${id}/marquer-traitee`);
+      alert('L\'annonce a été marquée comme résolue et le locataire a été notifié !');
       fetchAlertes();
     } catch (error) {
       console.error('Erreur lors du traitement de l\'alerte:', error);
+      alert('Erreur lors de la résolution de l\'annonce.');
     }
   };
 
@@ -395,7 +398,7 @@ const AlertesAvancees = () => {
           <div className="col-12">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h2 style={{ color: '#1e293b', fontWeight: '700' }}>
-                alertes avancées
+                annonces
               </h2>
               {activeTab === 'fiscales' && (
                 <button
@@ -403,7 +406,7 @@ const AlertesAvancees = () => {
                   onClick={() => setShowForm(true)}
                   style={{ borderRadius: '8px' }}
                 >
-                  + alerte
+                  + annonce
                 </button>
               )}
               {activeTab === 'charges' && (
@@ -434,7 +437,7 @@ const AlertesAvancees = () => {
                   onClick={() => setActiveTab('fiscales')}
                   style={{ border: 'none', background: 'none', color: activeTab === 'fiscales' ? '#3b82f6' : '#6b7280' }}
                 >
-                alertes
+                annonces
                 </button>
               </li>
               <li className="nav-item">
@@ -448,125 +451,64 @@ const AlertesAvancees = () => {
               </li>
             </ul>
 
-            {/* Formulaire d'ajout - seulement pour les alertes fiscales */}
+            {/* ── Formulaire Annonce compact (style messagerie/annonce officielle) ── */}
             {showForm && activeTab === 'fiscales' && (
-              <div className="card mb-4">
-                <div className="card-header">
-                  <h5 className="mb-0">créer un alerte pour locataires</h5>
-                </div>
-                <div className="card-body">
-                  <form onSubmit={handleSubmit}>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">type d'alerte</label>
-                        <select
-                          className="form-select"
-                          value={form.type_alerte}
-                          onChange={(e) => setForm({...form, type_alerte: e.target.value})}
-                        >
-                          <option value="fiscale">fiscalité</option>
-                          <option value="maintenance">information maintenance</option>
+              <div style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+                zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <div style={{
+                  background: '#fff', borderRadius: '14px', width: '100%', maxWidth: '480px',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.25)', overflow: 'hidden'
+                }}>
+                  {/* En-tête */}
+                  <div style={{ background: 'linear-gradient(135deg,#1e3a5f,#2563eb)', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <i className="bi bi-megaphone-fill" style={{ color: '#fff', fontSize: '1.2rem' }}></i>
+                      <span style={{ color: '#fff', fontWeight: 700, fontSize: '1rem' }}>Nouvelle annonce</span>
+                    </div>
+                    <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.3rem', cursor: 'pointer', lineHeight: 1 }}>×</button>
+                  </div>
+                  {/* Corps */}
+                  <form onSubmit={handleSubmit} style={{ padding: '18px 20px' }}>
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>Destinataire *</label>
+                      <select className="form-select form-select-sm" value={form.id_locataire} onChange={(e) => setForm({...form, id_locataire: e.target.value})} required>
+                        <option value="">— Sélectionner un locataire —</option>
+                        {locataires.map(l => (
+                          <option key={l.id_locataire} value={l.id_locataire}>
+                            {l.locataire_nom} {l.locataire_prenom} — {l.bien_titre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>Objet *</label>
+                      <input type="text" className="form-control form-control-sm" placeholder="Ex : Travaux prévus le 25 juin…" value={form.titre} onChange={(e) => setForm({...form, titre: e.target.value})} required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>Message *</label>
+                      <textarea className="form-control form-control-sm" rows={4} placeholder="Rédigez votre annonce ici…" value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} required />
+                    </div>
+                    <div className="row g-2 mb-3">
+                      <div className="col-6">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>Priorité</label>
+                        <select className="form-select form-select-sm" value={form.priorite} onChange={(e) => setForm({...form, priorite: e.target.value})}>
+                          <option value="basse">Basse</option>
+                          <option value="moyenne">Moyenne</option>
+                          <option value="haute">Haute</option>
+                          <option value="urgente">🔴 Urgente</option>
                         </select>
                       </div>
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">priorité</label>
-                        <select
-                          className="form-select"
-                          value={form.priorite}
-                          onChange={(e) => setForm({...form, priorite: e.target.value})}
-                        >
-                          <option value="basse">basse</option>
-                          <option value="moyenne">moyenne</option>
-                          <option value="haute">haute</option>
-                          <option value="urgente">urgente</option>
-                        </select>
-                      </div>
-                      <div className="col-12 mb-3">
-                        <label className="form-label">titre</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={form.titre}
-                          onChange={(e) => setForm({...form, titre: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="col-12 mb-3">
-                        <label className="form-label">description</label>
-                        <textarea
-                          className="form-control"
-                          rows={3}
-                          value={form.description}
-                          onChange={(e) => setForm({...form, description: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="col-md-4 mb-3">
-                        <label className="form-label">date d'échéance</label>
-                        <input
-                          type="date"
-                          className="form-control"
-                          value={form.date_echeance}
-                          onChange={(e) => setForm({...form, date_echeance: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="col-md-4 mb-3">
-                        <label className="form-label">locataire concerné</label>
-                        <select
-                          className="form-select"
-                          value={form.id_locataire}
-                          onChange={(e) => setForm({...form, id_locataire: e.target.value})}
-                          required
-                        >
-                          <option value="">sélectionner un locataire</option>
-                          {locataires.map(locataire => (
-                            <option key={locataire.id_locataire} value={locataire.id_locataire}>
-                              {locataire.locataire_nom} {locataire.locataire_prenom} - {locataire.bien_titre}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="col-md-4 mb-3">
-                        <label className="form-label">bien concerné</label>
-                        <select
-                          className="form-select"
-                          value={form.id_bien}
-                          onChange={(e) => setForm({...form, id_bien: e.target.value})}
-                        >
-                          <option value="">sélectionner un bien</option>
-                          {console.log('🏠 Biens dans le select:', biens) || biens.map(bien => (
-                            <option key={bien.id_bien} value={bien.id_bien}>
-                              {bien.titre}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="col-md-4 mb-3">
-                        <label className="form-label">périodicité</label>
-                        <select
-                          className="form-select"
-                          value={form.periodicite}
-                          onChange={(e) => setForm({...form, periodicite: e.target.value})}
-                        >
-                          <option value="ponctuelle">ponctuelle</option>
-                          <option value="mensuelle">mensuelle</option>
-                          <option value="trimestrielle">trimestrielle</option>
-                          <option value="semestrielle">semestrielle</option>
-                          <option value="annuelle">annuelle</option>
-                        </select>
+                      <div className="col-6">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>Date limite</label>
+                        <input type="date" className="form-control form-control-sm" value={form.date_echeance} onChange={(e) => setForm({...form, date_echeance: e.target.value})} required />
                       </div>
                     </div>
-                    <div className="d-flex gap-2">
-                      <button type="submit" className="btn btn-primary">
-                        créer l'alerte
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setShowForm(false)}
-                      >
-                        annuler
+                    <div className="d-flex justify-content-end gap-2">
+                      <button type="button" className="btn btn-sm btn-light" onClick={() => setShowForm(false)}>Annuler</button>
+                      <button type="submit" className="btn btn-sm btn-primary d-flex align-items-center gap-1">
+                        <i className="bi bi-send"></i> Envoyer l'annonce
                       </button>
                     </div>
                   </form>
@@ -574,101 +516,70 @@ const AlertesAvancees = () => {
               </div>
             )}
 
-            {/* Formulaire d'ajout - seulement pour les charges */}
+            {/* ── Formulaire Charges compact ── */}
             {showChargeForm && activeTab === 'charges' && (
-              <div className="card mb-4">
-                <div className="card-header">
-                  <h5 className="mb-0">ajouter une charge</h5>
-                </div>
-                <div className="card-body">
-                  <form onSubmit={handleCreateCharge}>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">titre de la charge</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={chargeForm.titre}
-                          onChange={(e) => setChargeForm({...chargeForm, titre: e.target.value})}
-                          required
-                        />
+              <div style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+                zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <div style={{
+                  background: '#fff', borderRadius: '14px', width: '100%', maxWidth: '440px',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.25)', overflow: 'hidden'
+                }}>
+                  <div style={{ background: 'linear-gradient(135deg,#065f46,#10b981)', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <i className="bi bi-receipt" style={{ color: '#fff', fontSize: '1.1rem' }}></i>
+                      <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem' }}>Ajouter une charge</span>
+                    </div>
+                    <button onClick={() => setShowChargeForm(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.3rem', cursor: 'pointer', lineHeight: 1 }}>×</button>
+                  </div>
+                  <form onSubmit={handleCreateCharge} style={{ padding: '16px 18px' }}>
+                    <div className="row g-2 mb-2">
+                      <div className="col-7">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.83rem' }}>Titre *</label>
+                        <input type="text" className="form-control form-control-sm" value={chargeForm.titre} onChange={(e) => setChargeForm({...chargeForm, titre: e.target.value})} required placeholder="Ex : Eau janvier" />
                       </div>
-                      <div className="mb-3">
-                        <label className="form-label">Montant (FCFA)</label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          name="montant"
-                          value={chargeForm.montant}
-                          onChange={handleChargeFormChange}
-                          required
-                          min="0"
-                          step="100"
-                        />
-                        {chargeForm.montant && chargeForm.montant < 0 && (
-                          <div className="text-danger small mt-1">Le montant doit être supérieur à 0</div>
-                        )}
-                      </div>
-                      <div className="col-12 mb-3">
-                        <label className="form-label">description</label>
-                        <textarea
-                          className="form-control"
-                          rows="3"
-                          value={chargeForm.description}
-                          onChange={(e) => setChargeForm({...chargeForm, description: e.target.value})}
-                        />
-                      </div>
-                      <div className="col-md-4 mb-3">
-                        <label className="form-label">type de charge</label>
-                        <select
-                          className="form-select"
-                          value={chargeForm.type}
-                          onChange={(e) => setChargeForm({...chargeForm, type: e.target.value})}
-                        >
-                          <option value="divers">divers</option>
-                          <option value="eau">eau</option>
-                          <option value="energie">énergie</option>
-                          <option value="chauffage">chauffage</option>
-                          <option value="copropriete">copropriété</option>
-                          <option value="entretien">entretien</option>
-                        </select>
-                      </div>
-                      <div className="col-md-4 mb-3">
-                        <label className="form-label">date d'échéance</label>
-                        <input
-                          type="date"
-                          className="form-control"
-                          value={chargeForm.date_echeance}
-                          onChange={(e) => setChargeForm({...chargeForm, date_echeance: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="col-md-4 mb-3">
-                        <label className="form-label">locataire concerné</label>
-                        <select
-                          className="form-select"
-                          value={chargeForm.id_locataire}
-                          onChange={(e) => setChargeForm({...chargeForm, id_locataire: e.target.value})}
-                        >
-                          <option value="">tous les locataires</option>
-                          {locataires.map(locataire => (
-                            <option key={locataire.id_locataire} value={locataire.id_locataire}>
-                              {locataire.locataire_nom} {locataire.locataire_prenom} - {locataire.bien_titre}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="col-5">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.83rem' }}>Montant (FCFA) *</label>
+                        <input type="number" className="form-control form-control-sm" name="montant" value={chargeForm.montant} onChange={handleChargeFormChange} required min="0" step="100" />
                       </div>
                     </div>
-                    <div className="d-flex gap-2">
-                      <button type="submit" className="btn btn-primary">
-                        créer la charge
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setShowChargeForm(false)}
-                      >
-                        annuler
+                    <div className="row g-2 mb-2">
+                      <div className="col-6">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.83rem' }}>Type</label>
+                        <select className="form-select form-select-sm" value={chargeForm.type} onChange={(e) => setChargeForm({...chargeForm, type: e.target.value})}>
+                          <option value="divers">Divers</option>
+                          <option value="eau">Eau</option>
+                          <option value="energie">Énergie</option>
+                          <option value="chauffage">Chauffage</option>
+                          <option value="copropriete">Copropriété</option>
+                          <option value="entretien">Entretien</option>
+                        </select>
+                      </div>
+                      <div className="col-6">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.83rem' }}>Échéance *</label>
+                        <input type="date" className="form-control form-control-sm" value={chargeForm.date_echeance} onChange={(e) => setChargeForm({...chargeForm, date_echeance: e.target.value})} required />
+                      </div>
+                    </div>
+                    <div className="mb-2">
+                      <label className="form-label fw-semibold" style={{ fontSize: '0.83rem' }}>Locataire</label>
+                      <select className="form-select form-select-sm" value={chargeForm.id_locataire} onChange={(e) => setChargeForm({...chargeForm, id_locataire: e.target.value})}>
+                        <option value="">Tous les locataires</option>
+                        {locataires.map(l => (
+                          <option key={l.id_locataire} value={l.id_locataire}>
+                            {l.locataire_nom} {l.locataire_prenom} — {l.bien_titre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mb-2">
+                      <label className="form-label fw-semibold" style={{ fontSize: '0.83rem' }}>Note (optionnel)</label>
+                      <textarea className="form-control form-control-sm" rows={2} value={chargeForm.description} onChange={(e) => setChargeForm({...chargeForm, description: e.target.value})} placeholder="Détails…" />
+                    </div>
+                    <div className="d-flex justify-content-end gap-2 mt-3">
+                      <button type="button" className="btn btn-sm btn-light" onClick={() => setShowChargeForm(false)}>Annuler</button>
+                      <button type="submit" className="btn btn-sm" style={{ background: '#0a0227ff', color: '#fff' }}>
+                        <i className="bi bi-plus-circle"></i> Créer la charge
                       </button>
                     </div>
                   </form>
@@ -725,49 +636,31 @@ const AlertesAvancees = () => {
                         };
 
                         return (
-                          <div key={alerte.id_alerte} style={{border: '2px solid #007bff', padding: '20px', margin: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'}}>
-                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
+                          <div key={alerte.id_alerte} style={{border: '2px solid #007bff', padding: '16px', margin: '10px 0', backgroundColor: '#f8f9fa', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.08)'}}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px'}}>
                               <div style={{flex: 1}}>
-                                <h4 style={{color: '#007bff', marginBottom: '10px'}}>{alerte.titre}</h4>
-                                <p style={{marginBottom: '15px', lineHeight: '1.5'}}>{alerte.description}</p>
-                                
-                                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '10px'}}>
-                                  <div>
-                                    <strong style={{color: '#495057'}}>Type:</strong> 
-                                    <span style={{marginLeft: '5px'}}>{alerte.type_alerte}</span>
-                                  </div>
-                                  <div>
-                                    <strong style={{color: '#495057'}}>Expediteur:</strong> 
-                                    <span style={{marginLeft: '5px', color: '#007bff'}}>{getExpediteurNom()}</span>
-                                  </div>
-                                  <div>
-                                    <strong style={{color: '#495057'}}>Bien:</strong> 
-                                    <span style={{marginLeft: '5px'}}>{alerte.bien_titre || 'Non spécifié'}</span>
-                                  </div>
-                                  <div>
-                                    <strong style={{color: '#495057'}}>Adresse:</strong> 
-                                    <span style={{marginLeft: '5px'}}>{alerte.bien_adresse || 'Non spécifiée'}</span>
-                                  </div>
+                                <h6 style={{color: '#007bff', marginBottom: '6px', fontWeight: '700'}}>{alerte.titre}</h6>
+                                <p style={{marginBottom: '10px', lineHeight: '1.5', fontSize: '0.9rem', color: '#444'}}>{alerte.description}</p>
+                                <div style={{display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.82rem', color: '#6b7280', marginBottom: '8px'}}>
+                                  <span><strong>Locataire :</strong> <span style={{color: '#007bff', fontWeight: '600'}}>{getExpediteurNom()}</span></span>
+                                  <span><strong>Bien :</strong> {alerte.bien_titre || '—'}</span>
+                                  {alerte.bien_adresse && <span><strong>Adresse :</strong> {alerte.bien_adresse}</span>}
+                                  <span><strong>Type :</strong> {alerte.type_alerte}</span>
                                 </div>
+                                {alerte.statut !== 'traitee' ? (
+                                  <button
+                                    onClick={() => handleMarquerTraitee(alerte.id_alerte)}
+                                    className="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                                    style={{ borderRadius: '6px', fontSize: '0.82rem' }}
+                                  >
+                                    <i className="bi bi-check-circle"></i> Résoudre
+                                  </button>
+                                ) : (
+                                  <span className="badge bg-success p-2 d-inline-flex align-items-center gap-1" style={{ fontSize: '0.78rem' }}>
+                                    <i className="bi bi-check-all"></i> Résolu
+                                  </span>
+                                )}
                               </div>
-                              <button 
-                                onClick={() => handleDelete(alerte.id_alerte)}
-                                style={{
-                                  backgroundColor: '#dc3545', 
-                                  color: 'white', 
-                                  border: 'none', 
-                                  borderRadius: '50%', 
-                                  width: '30px', 
-                                  height: '30px',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}
-                                title="Supprimer l'alerte"
-                              >
-                                ×
-                              </button>
                             </div>
                           </div>
                         );
@@ -778,19 +671,19 @@ const AlertesAvancees = () => {
               </div>
             )}
 
-            {/* Liste des alertes */}
+            {/* Liste des annonces */}
             {activeTab === 'fiscales' && (
               <div className="card">
                 <div className="card-header">
                   <h5 className="mb-0">
-                    alertes fiscales
+                    annonces
                     <span className="badge bg-primary ms-2">{alertesFiltrees.length}</span>
                   </h5>
                 </div>
                 <div className="card-body">
                   {alertesFiltrees.length === 0 ? (
                     <div className="text-center py-4">
-                      <p className="text-muted">aucune alerte trouvée</p>
+                      <p className="text-muted">aucune annonce trouvée</p>
                     </div>
                   ) : (
                     <div className="alert-list">
@@ -906,13 +799,6 @@ const AlertesAvancees = () => {
                   {charges.length === 0 ? (
                     <div className="text-center py-4">
                       <p className="text-muted">aucune charge trouvée</p>
-                      <button 
-                        className="btn btn-warning btn-sm mt-3"
-                        onClick={handleCreateChargesTable}
-                        title="Créer la table charges"
-                      >
-                        🔧 Créer la table charges
-                      </button>
                     </div>
                   ) : (
                     <div className="alert-list">

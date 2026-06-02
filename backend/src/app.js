@@ -99,6 +99,10 @@ app.use('/api/photos', photoRoutes);
 const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
 
+// ROUTES DES CHARGES
+const chargeRoutes = require('./routes/chargeRoutes');
+app.use('/api/charges', chargeRoutes);
+
 // ROUTES DES QUITTANCES
 const quittanceRoutes = require('./routes/quittanceRoutes');
 app.use('/api/quittances', quittanceRoutes);

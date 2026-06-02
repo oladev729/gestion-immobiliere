@@ -196,6 +196,7 @@ class Paiement {
         const {
             id_contact,
             id_loyer,
+            id_depot,
             montant,
             type_paiement,
             statut_paiement,
@@ -208,17 +209,19 @@ class Paiement {
             INSERT INTO payement (
                 id_contact,
                 id_loyer,
+                id_depot,
                 montant,
                 statut_paiement,
                 numero_transaction,
                 date_paiement
-            ) VALUES ($1, $2, $3, $4, $5, $6)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         `;
 
         const values = [
             id_contact,
             id_loyer || null,
+            id_depot || null,
             montant,
             statut_paiement || 'en_attente',
             numero_transaction || `FEDA-${Date.now()}`,

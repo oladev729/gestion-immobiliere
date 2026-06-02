@@ -351,7 +351,17 @@ const paiementController = {
         try {
             const result = await db.query(
                 `SELECT p.*, b.titre AS bien_titre,
-                        u.nom AS locataire_nom, u.prenoms AS locataire_prenom
+                        u.nom AS locataire_nom, u.prenoms AS locataire_prenom,
+                        CASE 
+                            WHEN p.id_loyer IS NOT NULL THEN 'loyer'
+                            WHEN p.id_depot IS NOT NULL THEN 'depot_garantie'
+                            ELSE 'autre'
+                        END as type_paiement,
+                        CASE 
+                            WHEN p.statut_paiement = 'valide' THEN 'payé'
+                            WHEN p.statut_paiement = 'echoue' THEN 'échoué'
+                            ELSE p.statut_paiement
+                        END as statut_paiement
                  FROM payement p
                  JOIN contact c ON c.id_contact = p.id_contact
                  JOIN bien b ON b.id_bien = c.id_bien
@@ -581,6 +591,19 @@ const paiementController = {
                 }
             }
             
+            // 1.8 Déterminer id_depot s'il s'agit d'un depot de garantie
+            let id_depot = null;
+            if (type_paiement === 'depot_garantie') {
+                const depotQuery = `
+                    INSERT INTO depotgarantie (id_contact, montant_depot_verse, date_versement, statut, mode_versement)
+                    VALUES ($1, $2, CURRENT_DATE, 'en_attente', 'fedapay')
+                    RETURNING id_depot
+                `;
+                const depotRes = await db.query(depotQuery, [id_contact, montant]);
+                id_depot = depotRes.rows[0].id_depot;
+                console.log('✅ Dépôt de garantie créé, id_depot:', id_depot);
+            }
+            
             // 2. Générer une référence unique pour le paiement
             const merchantReference = `FEDA_${Date.now()}_${id_contact}`;
             
@@ -588,6 +611,7 @@ const paiementController = {
             const paiement = await Paiement.create({
                 id_contact,
                 id_loyer,
+                id_depot,
                 montant,
                 type_paiement: 'fedapay',
                 statut_paiement: 'en_attente',
@@ -660,7 +684,7 @@ const paiementController = {
                     try {
                         console.log('🧾 Récupération des détails pour génération automatique de quittance FedaPay...');
                         const queryPaiement = `
-                            SELECT p.id_payment, p.montant, p.numero_transaction, p.date_paiement, p.id_loyer,
+                            SELECT p.id_payment, p.montant, p.numero_transaction, p.date_paiement, p.id_loyer, p.id_depot,
                                    lm.mois_concerne, lm.id_contact, 
                                    c.id_locataire, b.id_proprietaire, c.id_bien,
                                    l.id_utilisateur as locataire_id_utilisateur,
@@ -714,6 +738,39 @@ const paiementController = {
                                     console.log('✅ Quittance FedaPay générée avec succès:', quittance.id_quittance);
                                 } else {
                                     console.log('ℹ️ La quittance pour ce paiement existe déjà.');
+                                }
+                            } else if (paiement.id_depot) {
+                                // 1. Marquer le depot comme encaissé
+                                console.log('🔹 Passage du depotgarantie à statut = encaisse pour id_depot:', paiement.id_depot);
+                                await db.query(
+                                    'UPDATE depotgarantie SET statut = $2 WHERE id_depot = $1',
+                                    [paiement.id_depot, 'encaisse']
+                                );
+                                
+                                // 2. Vérifier si la quittance n'existe pas déjà
+                                const checkQuittance = await db.query(
+                                    'SELECT id_quittance FROM quittance WHERE id_paiement = $1',
+                                    [paiement.id_payment]
+                                );
+                                
+                                if (checkQuittance.rows.length === 0) {
+                                    // 3. Générer la quittance de dépôt
+                                    const quittanceData = {
+                                        id_paiement: paiement.id_payment,
+                                        id_locataire: paiement.locataire_id_utilisateur,
+                                        id_proprietaire: paiement.proprietaire_id_utilisateur,
+                                        id_bien: paiement.id_bien,
+                                        type_quittance: 'depot_garantie',
+                                        periode: null,
+                                        montant: paiement.montant,
+                                        date_paiement: paiement.date_paiement || new Date(),
+                                        reference_paiement: paiement.numero_transaction
+                                    };
+                                    
+                                    const quittance = await Quittance.create(quittanceData);
+                                    console.log('✅ Quittance FedaPay (Dépôt) générée avec succès:', quittance.id_quittance);
+                                } else {
+                                    console.log('ℹ️ La quittance (Dépôt) pour ce paiement existe déjà.');
                                 }
                             }
                         } else {

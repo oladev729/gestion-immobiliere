@@ -13,6 +13,7 @@ const RegisterFromInviteLocataire = () => {
     email: "",
     telephone: "",
     mot_de_passe: "",
+    piece_identite: "",
     code_invitation: code || "",
   });
 
@@ -158,6 +159,18 @@ const RegisterFromInviteLocataire = () => {
                 placeholder="Votre téléphone"
                 value={formData.telephone}
                 onChange={handleChange("telephone")}
+                required
+              />
+            </div>
+
+            <div className="mb-2">
+              <label className="form-label small fw-bold">N° Pièce d'identité</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="N° de CNI, Passeport..."
+                value={formData.piece_identite}
+                onChange={handleChange("piece_identite")}
                 required
               />
             </div>

@@ -165,7 +165,7 @@ export default function MaintenanceRecues() {
                           Bien : <strong>{p.bien_titre || p.id_bien}</strong>
                         </p>
                         <p className="text-muted small mb-1">
-                          Locataire : <strong>{p.locataire_nom || 'N/A'}</strong>
+                          Locataire : <strong>{p.locataire_prenoms ? `${p.locataire_prenoms} ${p.locataire_nom}` : (p.locataire_nom || 'N/A')}</strong>
                         </p>
                         {p.categorie && (
                           <p className="text-muted small mb-1">

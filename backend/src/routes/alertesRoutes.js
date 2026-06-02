@@ -41,11 +41,14 @@ router.get('/mes-alertes', authenticateToken, async (req, res) => {
       
       query = `
         SELECT a.*, b.titre as bien_titre, b.adresse as bien_adresse,
-               u_loc.nom as locataire_nom, u_loc.prenoms as locataire_prenoms, u_loc.email as locataire_email
+               COALESCE(u_loc.nom, u_loc_fallback.nom) as locataire_nom, 
+               COALESCE(u_loc.prenoms, u_loc_fallback.prenoms) as locataire_prenoms, 
+               COALESCE(u_loc.email, u_loc_fallback.email) as locataire_email
         FROM alertes a
         LEFT JOIN bien b ON a.id_bien = b.id_bien
         LEFT JOIN locataire l ON a.id_locataire = l.id_locataire
         LEFT JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
+        LEFT JOIN utilisateur u_loc_fallback ON a.id_locataire = u_loc_fallback.id_utilisateur
         WHERE a.id_proprietaire = $1
         ORDER BY a.date_creation DESC, a.priorite DESC
       `;
@@ -108,174 +111,192 @@ router.get('/mes-alertes', authenticateToken, async (req, res) => {
 // Créer une nouvelle alerte selon le type d'utilisateur
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    console.log('🔥 ROUTE POST APPELÉE');
-    console.log('🚀 Création d\'une nouvelle alerte');
-    console.log('👤 ID utilisateur:', req.user?.id);
-    console.log('👤 Type utilisateur:', req.user?.type);
-    console.log('📝 Données reçues:', req.body);
-    
     const { type_alerte, titre, description, date_echeance, priorite, id_bien, periodicite, id_locataire } = req.body;
-    
-    console.log('🔍 Validation des données requises:');
-    console.log('  - type_alerte:', type_alerte);
-    console.log('  - titre:', titre);
-    console.log('  - description:', description);
-    console.log('  - id_bien:', id_bien);
-    
+
+    // ── Sanitisation : convertir les chaînes vides en null pour les champs entiers ──
+    const id_bien_clean     = id_bien     && String(id_bien).trim()     !== '' ? parseInt(id_bien)     : null;
+    const id_locataire_clean= id_locataire&& String(id_locataire).trim()!== '' ? parseInt(id_locataire): null;
+
     let id_proprietaire;
     let id_locataire_final;
     let expediteur_type;
     let destinataire_type;
-    
+
     if (req.user.type === 'proprietaire') {
-      // Propriétaire : envoie une alerte fiscale à un locataire
-      console.log('🏠 Création d\'alerte fiscale par le propriétaire');
-      
-      if (!id_locataire) {
-        return res.status(400).json({ 
-          message: 'ID du locataire requis pour créer une alerte fiscale' 
-        });
+      if (!id_locataire_clean) {
+        return res.status(400).json({ message: 'Veuillez sélectionner un locataire destinataire.' });
       }
-      
-      // D'abord, trouver l'ID du propriétaire à partir de l'ID utilisateur
-      const proprietaireInfo = await db.query('SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1', [req.user.id]);
-      
-      if (proprietaireInfo.rows.length === 0) {
-        return res.status(400).json({ 
-          message: 'Vous n\'êtes pas enregistré comme propriétaire' 
-        });
+
+      // Récupérer l'id_proprietaire réel
+      const propInfo = await db.query(
+        'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
+        [req.user.id]
+      );
+      if (propInfo.rows.length === 0) {
+        return res.status(400).json({ message: 'Vous n\'êtes pas enregistré comme propriétaire' });
       }
-      
-      const id_proprietaire_actuel = proprietaireInfo.rows[0].id_proprietaire;
-      console.log('🔍 ID propriétaire actuel:', id_proprietaire_actuel);
-      
-      // Vérifier que le locataire existe et est bien locataire d'un bien du propriétaire
-      const locataireQuery = `
+      const id_proprietaire_actuel = propInfo.rows[0].id_proprietaire;
+
+      // Vérifier que le locataire est bien locataire d'un bien de ce propriétaire (via contrats actifs)
+      const locataireCheck = await db.query(`
         SELECT l.id_locataire, l.id_utilisateur, b.titre as bien_titre, b.id_bien
         FROM locataire l
-        JOIN locataire_bien lb ON l.id_locataire = lb.id_locataire
-        JOIN bien b ON lb.id_bien = b.id_bien
+        JOIN contact c ON c.id_locataire = l.id_locataire AND c.statut_contrat = 'actif'
+        JOIN bien b ON c.id_bien = b.id_bien
         WHERE l.id_locataire = $1 AND b.id_proprietaire = $2
-      `;
-      
-      const locataireResult = await db.query(locataireQuery, [id_locataire, id_proprietaire_actuel]);
-      
-      if (locataireResult.rows.length === 0) {
-        return res.status(400).json({ 
-          message: 'Le locataire spécifié n\'existe pas ou n\'est pas locataire de vos biens' 
-        });
+        LIMIT 1
+      `, [id_locataire_clean, id_proprietaire_actuel]);
+
+      if (locataireCheck.rows.length === 0) {
+        return res.status(400).json({ message: 'Ce locataire n\'est pas locataire d\'un de vos biens' });
       }
-      
-      id_proprietaire = id_proprietaire_actuel;
-      id_locataire_final = id_locataire;
-      expediteur_type = 'proprietaire';
+
+      id_proprietaire   = id_proprietaire_actuel;
+      id_locataire_final= id_locataire_clean;
+      expediteur_type   = 'proprietaire';
       destinataire_type = 'locataire';
-      
+
     } else if (req.user.type === 'locataire') {
-      // Locataire : signale un problème de maintenance
-      console.log('🏠 Création de signalement maintenance par le locataire');
-      
-      const proprietaireQuery = `
-        SELECT b.id_proprietaire, l.id_locataire, l.id_utilisateur
+      if (!id_bien_clean) {
+        return res.status(400).json({ message: 'Veuillez spécifier le bien concerné.' });
+      }
+
+      const proprietaireResult = await db.query(`
+        SELECT b.id_proprietaire, l.id_locataire
         FROM bien b
         JOIN contact c ON c.id_bien = b.id_bien AND c.statut_contrat = 'actif'
         JOIN locataire l ON l.id_locataire = c.id_locataire
         WHERE b.id_bien = $1 AND l.id_utilisateur = $2
-      `;
-      
-      const proprietaireResult = await db.query(proprietaireQuery, [id_bien, req.user.id]);
-      
+        LIMIT 1
+      `, [id_bien_clean, req.user.id]);
+
       if (proprietaireResult.rows.length === 0) {
-        return res.status(400).json({ 
-          message: 'Bien non trouvé ou vous n\'êtes pas locataire de ce bien' 
-        });
+        return res.status(400).json({ message: 'Bien non trouvé ou vous n\'êtes pas locataire de ce bien' });
       }
-      
+
       const bien = proprietaireResult.rows[0];
-      
-      id_proprietaire = bien.id_proprietaire;
-      id_locataire_final = req.user.id;
-      expediteur_type = 'locataire';
+      id_proprietaire   = bien.id_proprietaire;
+      id_locataire_final= bien.id_locataire;
+      expediteur_type   = 'locataire';
       destinataire_type = 'proprietaire';
-      
+
     } else {
-      return res.status(403).json({ 
-        message: 'Type d\'utilisateur non autorisé' 
-      });
+      return res.status(403).json({ message: 'Type d\'utilisateur non autorisé' });
     }
-    
-    console.log('🔍 Validation des données:');
-    console.log('  - type_alerte:', type_alerte);
-    console.log('  - titre:', titre);
-    console.log('  - description:', description);
-    console.log('  - date_echeance:', date_echeance);
-    console.log('  - priorite:', priorite);
-    console.log('  - id_bien:', id_bien);
-    console.log('  - periodicite:', periodicite);
-    console.log('  - id_proprietaire:', id_proprietaire);
-    console.log('  - id_locataire:', id_locataire_final);
-    console.log('  - expediteur_type:', expediteur_type);
-    console.log('  - destinataire_type:', destinataire_type);
-    
-    const query = `
-      INSERT INTO alertes (id_proprietaire, id_locataire, type_alerte, titre, description, date_echeance, priorite, id_bien, periodicite, statut, expediteur_type, destinataire_type)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+
+    const result = await db.query(`
+      INSERT INTO alertes
+        (id_proprietaire, id_locataire, type_alerte, titre, description, date_echeance, priorite, id_bien, periodicite, statut, expediteur_type, destinataire_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'en_attente', $10, $11)
       RETURNING *
-    `;
-    
-    const values = [id_proprietaire, id_locataire_final, type_alerte, titre, description, date_echeance, priorite, id_bien, periodicite, 'en_attente', expediteur_type, destinataire_type];
-    console.log('📋 Valeurs pour la requête:', values);
-    
-    console.log('🔨 Exécution de la requête...');
-    console.log('📋 Dernière vérification avant insertion:');
-    console.log('  - expediteur_type dans values:', values[10]);
-    console.log('  - destinataire_type dans values:', values[11]);
-    const result = await db.query(query, values);
-    
-    console.log('✅ Alerte créée avec succès:', result.rows[0]);
+    `, [
+      id_proprietaire,
+      id_locataire_final,
+      type_alerte || 'fiscale',
+      titre,
+      description,
+      date_echeance || null,
+      priorite || 'moyenne',
+      id_bien_clean,
+      periodicite || 'ponctuelle',
+      expediteur_type,
+      destinataire_type
+    ]);
+
+    console.log('✅ Alerte créée avec succès:', result.rows[0]?.id_alerte);
     res.status(201).json(result.rows[0]);
+
   } catch (error) {
-    console.error('❌ ERREUR DANS LA ROUTE POST:');
-    console.error('❌ Message d\'erreur:', error.message);
-    console.error('❌ Code d\'erreur:', error.code);
-    console.error('❌ Stack trace:', error.stack);
-    console.error('❌ Détails complets:', error);
-    res.status(500).json({ 
-      message: 'Erreur serveur', 
-      error: error.message 
-    });
+    console.error('❌ ERREUR POST /alertes:', error.message);
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
+
 });
 
-// Marquer une alerte comme traitée
+// Marquer une alerte comme traitée (résolue)
 router.patch('/:id/marquer-traitee', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Vérifier que l'alerte appartient au propriétaire
-    const checkQuery = `
-      SELECT id_alerte FROM alertes 
-      WHERE id_alerte = $1 AND id_proprietaire = $2
-    `;
-    
-    const checkResult = await db.query(checkQuery, [id, req.user.id]);
-    
-    if (checkResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Alerte non trouvée' });
+
+    // Étape 1 : récupérer l'id_proprietaire depuis la table proprietaire
+    const propResult = await db.query(
+      'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
+      [req.user.id]
+    );
+    if (propResult.rows.length === 0) {
+      return res.status(403).json({ message: 'Accès non autorisé - vous n\'êtes pas propriétaire' });
     }
-    
-    const updateQuery = `
-      UPDATE alertes 
-      SET statut = 'traitee', date_traitement = NOW()
-      WHERE id_alerte = $1
-      RETURNING *
-    `;
-    
-    const result = await db.query(updateQuery, [id]);
+    const id_proprietaire = propResult.rows[0].id_proprietaire;
+
+    // Étape 2 : vérifier que l'alerte appartient bien à ce propriétaire
+    const checkResult = await db.query(
+      'SELECT * FROM alertes WHERE id_alerte = $1 AND id_proprietaire = $2',
+      [id, id_proprietaire]
+    );
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Alerte non trouvée ou accès refusé' });
+    }
+    const alerteObj = checkResult.rows[0];
+
+    // Étape 3 : mettre à jour le statut (sans date_traitement si la colonne n'existe pas)
+    let result;
+    try {
+      result = await db.query(
+        `UPDATE alertes SET statut = 'traitee', date_traitement = NOW() WHERE id_alerte = $1 RETURNING *`,
+        [id]
+      );
+    } catch (updateErr) {
+      // Fallback sans date_traitement
+      result = await db.query(
+        `UPDATE alertes SET statut = 'traitee' WHERE id_alerte = $1 RETURNING *`,
+        [id]
+      );
+    }
+
+    // Étape 4 : notifier le locataire (best-effort, ne bloque pas la réponse)
+    try {
+      if (alerteObj.id_locataire) {
+        let idUtilisateurLocataire = null;
+
+        // Essai 1 : c'est un vrai id_locataire
+        const locInfo = await db.query(
+          'SELECT id_utilisateur FROM locataire WHERE id_locataire = $1',
+          [alerteObj.id_locataire]
+        );
+        if (locInfo.rows.length > 0) {
+          idUtilisateurLocataire = locInfo.rows[0].id_utilisateur;
+        } else {
+          // Essai 2 : c'est directement un id_utilisateur (anciens enregistrements)
+          const userCheck = await db.query(
+            'SELECT id_utilisateur FROM utilisateur WHERE id_utilisateur = $1',
+            [alerteObj.id_locataire]
+          );
+          if (userCheck.rows.length > 0) {
+            idUtilisateurLocataire = alerteObj.id_locataire;
+          }
+        }
+
+        if (idUtilisateurLocataire) {
+          await db.query(
+            `INSERT INTO notification (id_utilisateur, titre, message, type) VALUES ($1, $2, $3, $4)`,
+            [
+              idUtilisateurLocataire,
+              'Signalement résolu ✅',
+              `Votre signalement "${alerteObj.titre}" a été marqué comme résolu par le propriétaire.`,
+              'probleme'
+            ]
+          );
+          console.log('✅ Notification envoyée au locataire (résolution signalement).');
+        }
+      }
+    } catch (notifErr) {
+      console.error('⚠️ Notification non-bloquante échouée:', notifErr.message);
+    }
+
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Erreur lors du traitement de l\'alerte:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('❌ Erreur marquer-traitee:', error.message);
+    res.status(500).json({ message: 'Erreur serveur', detail: error.message });
   }
 });
 
@@ -284,10 +305,11 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Vérifier que l'alerte appartient au propriétaire
+    // Vérifier que l'alerte appartient au propriétaire (robuste)
     const checkQuery = `
-      SELECT id_alerte FROM alertes 
-      WHERE id_alerte = $1 AND id_proprietaire = $2
+      SELECT a.id_alerte FROM alertes a
+      LEFT JOIN proprietaire p ON a.id_proprietaire = p.id_proprietaire
+      WHERE a.id_alerte = $1 AND (a.id_proprietaire = $2 OR p.id_utilisateur = $2)
     `;
     
     const checkResult = await db.query(checkQuery, [id, req.user.id]);
@@ -526,10 +548,11 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     const alerteId = req.params.id;
 
-    // Vérifier que l'alerte existe et appartient à l'utilisateur
+    // Vérifier que l'alerte existe et appartient à l'utilisateur (robuste)
     const checkQuery = `
-      SELECT * FROM alertes 
-      WHERE id_alerte = $1 AND id_proprietaire = $2
+      SELECT a.* FROM alertes a
+      LEFT JOIN proprietaire p ON a.id_proprietaire = p.id_proprietaire
+      WHERE a.id_alerte = $1 AND (a.id_proprietaire = $2 OR p.id_utilisateur = $2)
     `;
     const checkResult = await db.query(checkQuery, [alerteId, req.user.id]);
 

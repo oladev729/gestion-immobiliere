@@ -7,82 +7,21 @@ import { useNavigate } from 'react-router-dom';
 const Entretien = () => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
-    const [charges, setCharges] = useState([]);
     const [alertes, setAlertes] = useState([]);
     const [invitations, setInvitations] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState('charges');
+    const [activeTab, setActiveTab] = useState('annonces');
     
-    // Statistiques pour les charges
-    const [stats, setStats] = useState({
-        totalCharges: 0,
-        chargesEnAttente: 0,
-        chargesPayees: 0,
-        moisEnCours: []
-    });
-
     useEffect(() => {
         fetchAllData();
     }, []);
-
-    const handlePayer = (charge) => {
-        // Stocker les informations de la charge pour le paiement
-        const chargeData = {
-            id_payment: charge.id_payment,
-            numero_transaction: charge.numero_transaction,
-            montant: charge.montant,
-            type_paiement: 'charge',
-            bien_titre: charge.bien_titre,
-            description: `Charge pour ${charge.bien_titre}`
-        };
-        
-        // Stocker dans sessionStorage pour la page de paiement
-        sessionStorage.setItem('chargeToPay', JSON.stringify(chargeData));
-        
-        // Naviguer vers la page de paiement
-        navigate('/tenant/payment', { state: { chargeData } });
-    };
 
     const fetchAllData = async () => {
         try {
             setLoading(true);
             setError('');
-            
-            // Récupérer les charges (endpoint qui existe)
-            try {
-                console.log('🔄 Récupération des charges...');
-                const chargesRes = await api.get('/paiements/mes-charges');
-                console.log('✅ Réponse charges:', chargesRes.data);
-                const chargesData = chargesRes.data.charges || [];
-                console.log('📊 Charges data:', chargesData);
-                setCharges(chargesData);
-                
-                const total = chargesData.reduce((sum, charge) => sum + parseFloat(charge.montant || 0), 0);
-                const enAttente = chargesData.filter(c => c.statut_paiement === 'en_attente').reduce((sum, charge) => sum + parseFloat(charge.montant || 0), 0);
-                const payees = chargesData.filter(c => c.statut_paiement === 'valide').reduce((sum, charge) => sum + parseFloat(charge.montant || 0), 0);
-                
-                setStats({
-                    totalCharges: total,
-                    chargesEnAttente: enAttente,
-                    chargesPayees: payees,
-                    moisEnCours: [...new Set(chargesData.map(c => {
-                        const date = new Date(c.date_paiement);
-                        return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-                    }))]
-                });
-            } catch (err) {
-                console.error('❌ Erreur chargement charges:', err);
-                console.error('❌ Détails erreur:', err.response?.data);
-                setCharges([]);
-                setStats({
-                    totalCharges: 0,
-                    chargesEnAttente: 0,
-                    chargesPayees: 0,
-                    moisEnCours: []
-                });
-            }
 
             // Récupérer les alertes (nouvelle API pour les communications du propriétaire)
             try {
@@ -277,40 +216,18 @@ const Entretien = () => {
 
                 {/* Statistiques globales */}
                 <div className="row mb-4">
-                    <div className="col-md-3">
-                        <div className="stat-card">
-                            <div className="d-flex align-items-center">
-                                <div className="flex-grow-1">
-                                    <h6 className="mb-1">Total Charges</h6>
-                                    <div className="amount">{stats.totalCharges.toLocaleString('fr-FR')} FCFA</div>
-                                </div>
-                                <i className="fas fa-receipt fa-2x opacity-75"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <div className="stat-card bg-warning">
-                            <div className="d-flex align-items-center">
-                                <div className="flex-grow-1">
-                                    <h6 className="mb-1">Charges En Attente</h6>
-                                    <div className="amount">{stats.chargesEnAttente.toLocaleString('fr-FR')} FCFA</div>
-                                </div>
-                                <i className="fas fa-clock fa-2x opacity-75"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
+                    <div className="col-md-6">
                         <div className="stat-card bg-info">
                             <div className="d-flex align-items-center">
                                 <div className="flex-grow-1">
-                                    <h6 className="mb-1">Alertes</h6>
+                                    <h6 className="mb-1">Annonces</h6>
                                     <div className="amount">{alertes.length}</div>
                                 </div>
                                 <i className="fas fa-bell fa-2x opacity-75"></i>
                             </div>
                         </div>
                     </div>
-                    <div className="col-md-3">
+                    <div className="col-md-6">
                         <div className="stat-card bg-success">
                             <div className="d-flex align-items-center">
                                 <div className="flex-grow-1">
@@ -327,20 +244,20 @@ const Entretien = () => {
                 <ul className="nav nav-tabs" role="tablist">
                     <li className="nav-item" role="presentation">
                         <button 
-                            className={`nav-link ${activeTab === 'charges' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('charges')}
+                            className={`nav-link ${activeTab === 'annonces' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('annonces')}
                         >
-                            <i className="fas fa-receipt me-2"></i>
-                            Charges ({charges.length})
+                            <i className="fas fa-bell me-2"></i>
+                            Annonces ({alertes.length})
                         </button>
                     </li>
                     <li className="nav-item" role="presentation">
                         <button 
-                            className={`nav-link ${activeTab === 'alertes' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('alertes')}
+                            className={`nav-link ${activeTab === 'charges' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('charges')}
                         >
-                            <i className="fas fa-bell me-2"></i>
-                            Alertes ({alertes.length})
+                            <i className="fas fa-receipt me-2"></i>
+                            Charges (0)
                         </button>
                     </li>
                     <li className="nav-item" role="presentation">
@@ -364,77 +281,14 @@ const Entretien = () => {
                 </ul>
 
                 <div className="tab-content">
-                    {/* Onglet Charges */}
-                    {activeTab === 'charges' && (
-                        <div className="row">
-                            {charges.length === 0 ? (
-                                <div className="col-12">
-                                    <div className="alert alert-info text-center">
-                                        <i className="fas fa-info-circle me-2"></i>
-                                        Aucune charge trouvée pour le moment.
-                                    </div>
-                                </div>
-                            ) : (
-                                charges.map((charge) => (
-                                    <div className="col-md-6 col-lg-4 mb-3" key={charge.id_payment}>
-                                        <div className="card card-custom">
-                                            <div className="card-body">
-                                                <div className="d-flex justify-content-between align-items-start mb-2">
-                                                    <h6 className="card-title mb-0">
-                                                        <i className="fas fa-file-invoice-dollar me-2 text-primary"></i>
-                                                        Charge
-                                                    </h6>
-                                                    <span className={`badge ${getStatutBadge(charge.statut_paiement)}`}>
-                                                        {getStatutLabel(charge.statut_paiement)}
-                                                    </span>
-                                                </div>
-                                                
-                                                <div className="mb-2">
-                                                    <small className="text-muted">Numéro:</small>
-                                                    <div className="fw-semibold">{charge.numero_transaction}</div>
-                                                </div>
-                                                
-                                                <div className="mb-2">
-                                                    <small className="text-muted">Montant:</small>
-                                                    <div className="amount text-primary">{parseFloat(charge.montant).toLocaleString('fr-FR')} FCFA</div>
-                                                </div>
-                                                
-                                                <div className="mb-2">
-                                                    <small className="text-muted">Date:</small>
-                                                    <div>{new Date(charge.date_paiement).toLocaleDateString('fr-FR')}</div>
-                                                </div>
-                                                
-                                                <div className="d-flex justify-content-between align-items-center mt-3">
-                                                    <small className="text-muted">
-                                                        <i className="fas fa-home me-1"></i>
-                                                        Bien: {charge.bien_titre || 'Non spécifié'}
-                                                    </small>
-                                                    {charge.statut_paiement === 'en_attente' && (
-                                                        <button 
-                                                            className="btn btn-sm btn-primary"
-                                                            onClick={() => handlePayer(charge)}
-                                                        >
-                                                            <i className="fas fa-credit-card me-1"></i>
-                                                            Payer
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    )}
-
-                    {/* Onglet Alertes - Communications du propriétaire */}
-                    {activeTab === 'alertes' && (
+                    {/* Onglet Annonces - Communications du propriétaire */}
+                    {activeTab === 'annonces' && (
                         <div className="row">
                             {alertes.length === 0 ? (
                                 <div className="col-12">
                                     <div className="alert alert-info text-center">
                                         <i className="fas fa-info-circle me-2"></i>
-                                        Aucune communication reçue pour le moment.
+                                        Aucune annonce reçue pour le moment.
                                     </div>
                                 </div>
                             ) : (
@@ -447,7 +301,7 @@ const Entretien = () => {
                                                         <i className={`fas me-2 ${
                                                             alerte.type_alerte === 'fiscale' ? 'fa-file-invoice-dollar text-warning' : 'fa-tools text-primary'
                                                         }`}></i>
-                                                        {alerte.type_alerte === 'fiscale' ? 'Communication fiscale' : 'Information maintenance'}
+                                                        {alerte.type_alerte === 'fiscale' ? 'Annonce générale' : 'Information maintenance'}
                                                     </h6>
                                                     <span className={`badge ${getStatutBadge(alerte.statut)}`}>
                                                         {getStatutLabel(alerte.statut)}
@@ -508,6 +362,18 @@ const Entretien = () => {
                                     </div>
                                 ))
                             )}
+                        </div>
+                    )}
+
+                    {/* Onglet Charges - Vide */}
+                    {activeTab === 'charges' && (
+                        <div className="row">
+                            <div className="col-12">
+                                <div className="alert alert-info text-center">
+                                    <i className="fas fa-info-circle me-2"></i>
+                                    Aucune charge trouvée pour le moment.
+                                </div>
+                            </div>
                         </div>
                     )}
 

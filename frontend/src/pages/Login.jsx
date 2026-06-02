@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import api from "../api/axios";
 import { AuthContext } from "../context/AuthContext";
 
@@ -15,6 +15,7 @@ const Login = () => {
 
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e, isConfirmed = false) => {
     if (e) e.preventDefault();
@@ -38,7 +39,17 @@ const Login = () => {
       } else {
         login(response.data.user, response.data.token);
 
-        if (response.data.user.type === "proprietaire" || response.data.user.type_utilisateur === "proprietaire") {
+        const stateData = location.state || {};
+        const { redirectTo, bienSelectionne, showVisiteForm } = stateData;
+
+        if (redirectTo) {
+          navigate(redirectTo, { 
+            state: { 
+              bienSelectionne, 
+              showVisiteForm 
+            } 
+          });
+        } else if (response.data.user.type === "proprietaire" || response.data.user.type_utilisateur === "proprietaire") {
           navigate("/owner-dashboard");
         } else {
           navigate("/tenant/properties");

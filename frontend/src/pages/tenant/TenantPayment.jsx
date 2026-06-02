@@ -7,7 +7,6 @@ export default function TenantPayment() {
   const location = useLocation();
   const [contrats, setContrats] = useState([]);
   const [paiements, setPaiements] = useState([]);
-  const [chargeData, setChargeData] = useState(null);
   const [loyersByContrat, setLoyersByContrat] = useState({});
   const [showFedaPay, setShowFedaPay] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -25,6 +24,7 @@ export default function TenantPayment() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [chargeData, setChargeData] = useState(null);
 
   const fetchLoyersForContrats = async (contratsList) => {
     const loyersData = {};
@@ -40,21 +40,6 @@ export default function TenantPayment() {
   };
 
   useEffect(() => {
-    // Vérifier si des données de charge ont été passées
-    const chargeFromStorage = sessionStorage.getItem('chargeToPay');
-    const chargeFromState = location.state?.chargeData;
-    
-    if (chargeFromStorage || chargeFromState) {
-      const charge = chargeFromState || JSON.parse(chargeFromStorage);
-      setChargeData(charge);
-      setForm({
-        id_contact: '', // Sera rempli automatiquement pour les charges
-        montant: charge.montant,
-        type_paiement: 'charge',
-        description: charge.description || `Charge pour ${charge.bien_titre}`
-      });
-    }
-    
     api.get('/contrats/mes-contrats-locataire').then(r => {
       setContrats(r.data);
       fetchLoyersForContrats(r.data);
@@ -65,10 +50,19 @@ export default function TenantPayment() {
 
   const handlePayer = async (e) => {
     e.preventDefault();
-    if (!form.id_contact || !form.montant) return;
+    if (!form.id_contact || !form.montant) {
+      setMessage('Veuillez sélectionner un contrat et saisir un montant.');
+      return;
+    }
     
     if (!phoneNumber) {
-      setMessage('Veuillez renseigner votre numéro de téléphone');
+      setMessage('Veuillez renseigner votre numéro de téléphone.');
+      return;
+    }
+
+    // Pour un loyer, le mois est obligatoire
+    if (form.type_paiement === 'loyer' && !form.mois_concerne) {
+      setMessage('Veuillez sélectionner le mois concerné.');
       return;
     }
 
@@ -76,25 +70,15 @@ export default function TenantPayment() {
     if (form.type_paiement === 'loyer' && form.mois_concerne) {
       const contratLoyers = loyersByContrat[form.id_contact] || [];
       const monthsMap = {
-        'janvier': '01',
-        'février': '02',
-        'mars': '03',
-        'avril': '04',
-        'mai': '05',
-        'juin': '06',
-        'juillet': '07',
-        'août': '08',
-        'septembre': '09',
-        'octobre': '10',
-        'novembre': '11',
-        'décembre': '12'
+        'janvier': '01', 'février': '02', 'mars': '03', 'avril': '04',
+        'mai': '05', 'juin': '06', 'juillet': '07', 'août': '08',
+        'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12'
       };
       const monthNum = monthsMap[form.mois_concerne.toLowerCase()];
       const targetMoisConcerne = `${form.annee}-${monthNum}`;
-      
       const existingLoyer = contratLoyers.find(l => l.mois_concerne === targetMoisConcerne);
       if (existingLoyer && existingLoyer.statut === 'paye') {
-        setMessage("⚠️ Cette échéance a déjà été payée ! Vous ne pouvez pas la payer à nouveau.");
+        setMessage('⚠️ Cette échéance a déjà été payée ! Vous ne pouvez pas la payer à nouveau.');
         return;
       }
     }
@@ -109,25 +93,25 @@ export default function TenantPayment() {
         paymentMode: 'mobile'
       };
       
-      console.log('Envoi du payload:', payload);
-      
       const res = await api.post('/paiements/fedapay/initier', payload);
       
       if (res.data.success) {
-        setMessage('Paiement initié avec succès. Redirection vers FedaPay...');
         if (res.data.paymentUrl) {
+          setMessage('✅ Paiement initié ! Redirection vers FedaPay en cours...');
           setTimeout(() => {
-            window.location.href = res.data.paymentUrl;
-          }, 1500);
+            window.open(res.data.paymentUrl, '_blank');
+          }, 800);
         } else {
+          setMessage('✅ Paiement initié avec succès. Vérification du statut...');
           setTimeout(() => checkFedaPayStatus(res.data.merchantReference, res.data.processingReference), 5000);
         }
       } else {
-        setMessage('Erreur lors de l\'initiation du paiement.');
+        setMessage('❌ Erreur lors de l\'initiation du paiement.');
       }
     } catch (err) {
       console.error('Erreur paiement:', err);
-      setMessage(err.response?.data?.message || 'Erreur lors de l\'initiation du paiement.');
+      const errMsg = err.response?.data?.message || err.message || 'Erreur lors de l\'initiation du paiement.';
+      setMessage('❌ ' + errMsg);
     } finally {
       setLoading(false);
     }
@@ -295,7 +279,7 @@ export default function TenantPayment() {
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                               <div style={{ fontWeight: 'bold', color: '#111827' }}>
-                                {Number(Number(loyer.montant_loyer) + Number(loyer.montant_charge)).toLocaleString('fr-FR')} FCFA
+                                {Number(loyer.montant_loyer).toLocaleString('fr-FR')} FCFA
                               </div>
                               
                               {/* Affichage du badge et du bouton */}
@@ -327,7 +311,7 @@ export default function TenantPayment() {
                                       const rawMoisFr = dateObj.toLocaleDateString('fr-FR', { month: 'long' });
                                       setForm({
                                         id_contact: contrat.id_contact,
-                                        montant: Number(loyer.montant_loyer) + Number(loyer.montant_charge),
+                                        montant: Number(loyer.montant_loyer),
                                         type_paiement: 'loyer',
                                         mois_concerne: rawMoisFr,
                                         annee: year
@@ -365,7 +349,7 @@ export default function TenantPayment() {
                                       const rawMoisFr = dateObj.toLocaleDateString('fr-FR', { month: 'long' });
                                       setForm({
                                         id_contact: contrat.id_contact,
-                                        montant: Number(loyer.montant_loyer) + Number(loyer.montant_charge),
+                                        montant: Number(loyer.montant_loyer),
                                         type_paiement: 'loyer',
                                         mois_concerne: rawMoisFr,
                                         annee: year
@@ -400,65 +384,33 @@ export default function TenantPayment() {
         )}
       </div>
 
-      {/* Affichage des informations de la charge si présentes */}
-      {chargeData && (
-        <div style={{
-          ...cardStyle,
-          background: '#f0f9ff',
-          borderColor: '#0ea5e9',
-          marginBottom: 16
-        }}>
-          <h4 style={{ marginBottom: 12, color: '#0c4a6e' }}>Détails de la charge</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <strong>Numéro:</strong> {chargeData.numero_transaction}
-            </div>
-            <div>
-              <strong>Montant:</strong> {Number(chargeData.montant).toLocaleString('fr-FR')} FCFA
-            </div>
-            <div>
-              <strong>Bien:</strong> {chargeData.bien_titre}
-            </div>
-            <div>
-              <strong>Type:</strong> Charge
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Formulaire paiement */}
       <div style={cardStyle}>
         <h4 style={{ marginBottom: 16 }}>Nouveau paiement</h4>
         <form onSubmit={handlePayer}>
-          {!chargeData && (
-            <>
-              <label style={{ display: 'block', marginBottom: 4, opacity: 0.8 }}>Contrat / Bien</label>
-              <select
-                style={inputStyle}
-                value={form.id_contact}
-                onChange={e => setForm({ ...form, id_contact: e.target.value })}
-                required
-              >
-                <option value="">-- Sélectionner un contrat --</option>
-                {contrats.map(c => (
-                  <option key={c.id_contact} value={c.id_contact}>
-                    {c.bien_titre || c.adresse} — {Number(c.loyer_mensuel).toLocaleString('fr-FR')} FCFA/mois
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
+          <label style={{ display: 'block', marginBottom: 4, opacity: 0.8 }}>Contrat / Bien</label>
+          <select
+            style={inputStyle}
+            value={form.id_contact}
+            onChange={e => setForm({ ...form, id_contact: e.target.value })}
+            required
+          >
+            <option value="">-- Sélectionner un contrat --</option>
+            {contrats.map(c => (
+              <option key={c.id_contact} value={c.id_contact}>
+                {c.bien_titre || c.adresse} — {Number(c.loyer_mensuel).toLocaleString('fr-FR')} FCFA/mois
+              </option>
+            ))}
+          </select>
 
           <label style={{ display: 'block', marginBottom: 4, opacity: 0.8 }}>Type de paiement</label>
           <select
             style={inputStyle}
             value={form.type_paiement}
             onChange={e => setForm({ ...form, type_paiement: e.target.value })}
-            disabled={chargeData !== null} // Désactiver si c'est une charge
           >
             <option value="loyer">Loyer mensuel</option>
             <option value="depot_garantie">Dépôt de garantie</option>
-            <option value="charge">Charges</option>
           </select>
 
           <label style={{ display: 'block', marginBottom: 4, opacity: 0.8 }}>Montant (FCFA)</label>
@@ -469,48 +421,50 @@ export default function TenantPayment() {
             placeholder="Ex: 75000"
             value={form.montant}
             onChange={e => setForm({ ...form, montant: e.target.value })}
-            disabled={chargeData !== null}
             required
           />
 
-          <label style={{ display: 'block', marginBottom: 4, opacity: 0.8 }}>Mois concerné</label>
-          <select
-            style={inputStyle}
-            value={form.mois_concerne || ''}
-            onChange={e => setForm({ ...form, mois_concerne: e.target.value })}
-            required
-          >
-            <option value="">-- Sélectionner un mois --</option>
-            <option value="janvier">Janvier</option>
-            <option value="février">Février</option>
-            <option value="mars">Mars</option>
-            <option value="avril">Avril</option>
-            <option value="mai">Mai</option>
-            <option value="juin">Juin</option>
-            <option value="juillet">Juillet</option>
-            <option value="août">Août</option>
-            <option value="septembre">Septembre</option>
-            <option value="octobre">Octobre</option>
-            <option value="novembre">Novembre</option>
-            <option value="décembre">Décembre</option>
-          </select>
+          {/* Mois / Année : uniquement pour les loyers */}
+          {form.type_paiement === 'loyer' && (
+            <>
+              <label style={{ display: 'block', marginBottom: 4, opacity: 0.8 }}>Mois concerné</label>
+              <select
+                style={inputStyle}
+                value={form.mois_concerne || ''}
+                onChange={e => setForm({ ...form, mois_concerne: e.target.value })}
+              >
+                <option value="">-- Sélectionner un mois --</option>
+                <option value="janvier">Janvier</option>
+                <option value="février">Février</option>
+                <option value="mars">Mars</option>
+                <option value="avril">Avril</option>
+                <option value="mai">Mai</option>
+                <option value="juin">Juin</option>
+                <option value="juillet">Juillet</option>
+                <option value="août">Août</option>
+                <option value="septembre">Septembre</option>
+                <option value="octobre">Octobre</option>
+                <option value="novembre">Novembre</option>
+                <option value="décembre">Décembre</option>
+              </select>
 
-          <label style={{ display: 'block', marginBottom: 4, opacity: 0.8 }}>Année</label>
-          <select
-            style={inputStyle}
-            value={form.annee || new Date().getFullYear().toString()}
-            onChange={e => setForm({ ...form, annee: e.target.value })}
-            required
-          >
-            {Array.from({ length: 3 }, (_, i) => {
-              const year = new Date().getFullYear() + i - 1;
-              return (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              );
-            })}
-          </select>
+              <label style={{ display: 'block', marginBottom: 4, opacity: 0.8 }}>Année</label>
+              <select
+                style={inputStyle}
+                value={form.annee || new Date().getFullYear().toString()}
+                onChange={e => setForm({ ...form, annee: e.target.value })}
+              >
+                {Array.from({ length: 3 }, (_, i) => {
+                  const year = new Date().getFullYear() + i - 1;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+            </>
+          )}
 
           <label style={{ display: 'block', marginTop: 12, marginBottom: 4, opacity: 0.8 }}>
             Numéro de téléphone
@@ -529,9 +483,11 @@ export default function TenantPayment() {
               marginTop: 16,
               padding: 12,
               borderRadius: 8,
-              background: message.includes('redirection') || message.includes('succès') ? '#dcfce7' : '#fef3c7',
-              border: `1px solid ${message.includes('redirection') || message.includes('succès') ? '#16a34a' : '#f59e0b'}`,
-              color: message.includes('redirection') || message.includes('succès') ? '#166534' : '#92400e'
+              background: message.startsWith('✅') ? '#dcfce7' : message.startsWith('❌') ? '#fee2e2' : '#fef3c7',
+              border: `1px solid ${message.startsWith('✅') ? '#16a34a' : message.startsWith('❌') ? '#dc2626' : '#f59e0b'}`,
+              color: message.startsWith('✅') ? '#166534' : message.startsWith('❌') ? '#991b1b' : '#92400e',
+              fontSize: 14,
+              fontWeight: 500
             }}>
               {message}
             </div>

@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { getImageUrl, IMAGE_FALLBACK } from "../utils/imageConfig";
+import { AuthContext } from "../context/AuthContext";
 
 const HomePage = () => {
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [biens, setBiens] = useState([]);
   const [filtres, setFiltres] = useState({
     ville: "",
@@ -15,6 +18,7 @@ const HomePage = () => {
   const [showModal, setShowModal] = useState(false);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [errorModal, setErrorModal] = useState("");
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   const fetchBiens = async () => {
     try {
@@ -47,6 +51,7 @@ const HomePage = () => {
     setLoadingPhotos(true);
     setErrorModal("");
     setShowModal(true);
+    setCurrentPhotoIndex(0);
     try {
       const res = await api.get(`/biens/${bienId}`);
       setSelectedBien(res.data);
@@ -55,6 +60,35 @@ const HomePage = () => {
       setErrorModal("Impossible de charger les détails du logement. Veuillez réessayer.");
     } finally {
       setLoadingPhotos(false);
+    }
+  };
+
+  const getModalPhotos = (bien) => {
+    if (!bien?.photos || bien.photos.length === 0) return [];
+    const cover = bien.photos.find(p => p.est_principale) || bien.photos[0];
+    const rest = bien.photos.filter(p => p !== cover);
+    return [cover, ...rest];
+  };
+
+  const handleDemanderVisiteClick = () => {
+    if (!selectedBien) return;
+    if (!user) {
+      // Rediriger vers la page de connexion
+      navigate("/login", { 
+        state: { 
+          redirectTo: "/tenant/properties",
+          bienSelectionne: selectedBien,
+          showVisiteForm: true
+        } 
+      });
+    } else {
+      // Rediriger vers l'espace locataire avec le formulaire de visite déjà ouvert
+      navigate("/tenant/properties", { 
+        state: { 
+          bienSelectionne: selectedBien,
+          showVisiteForm: true 
+        } 
+      });
     }
   };
 
@@ -223,98 +257,58 @@ const HomePage = () => {
                         borderRadius: 16,
                         overflow: "hidden",
                         boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+                        display: "flex",
+                        flexDirection: "column",
                       }}
                     >
+                      {/* Photo de couverture uniquement */}
                       {bien.photo_principale ? (
                         <img
                           src={getImageUrl(bien.photo_principale)}
                           alt={bien.titre}
-                          style={{
-                            width: "100%",
-                            height: 200,
-                            objectFit: "cover",
-                          }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = IMAGE_FALLBACK;
-                          }}
+                          style={{ width: "100%", height: 200, objectFit: "cover" }}
+                          onError={(e) => { e.target.onerror = null; e.target.src = IMAGE_FALLBACK; }}
                         />
                       ) : (
-                        <div
-                          className="d-flex align-items-center justify-content-center"
-                          style={{
-                            height: 200,
-                            background: "rgba(255,255,255,0.08)",
-                          }}
+                        <div className="d-flex align-items-center justify-content-center"
+                          style={{ height: 200, background: "rgba(255,255,255,0.08)" }}
                         >
-                          <span className="text-white opacity-50">
-                            Pas de photo
-                          </span>
+                          <i className="bi bi-image text-white opacity-30" style={{ fontSize: '3rem' }}></i>
                         </div>
                       )}
-                      <div className="p-3">
+
+                      <div className="p-3" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                        {/* Badge Disponible */}
                         <div className="d-flex justify-content-between align-items-start mb-2">
-                          <h5 className="mb-0 text-white fw-bold">
+                          <h5 className="mb-0 text-white fw-bold" style={{ fontSize: '1rem', flex: 1, paddingRight: '0.5rem' }}>
                             {bien.titre}
                           </h5>
                           <span className="badge bg-success">Disponible</span>
                         </div>
-                        <p
-                          className="small mb-1"
-                          style={{ color: "rgba(255,255,255,0.7)" }}
-                        >
+
+                        {/* Loyer mensuel */}
+                        <p className="fw-bold fs-5 mb-1" style={{ color: "#7ee8a2", margin: 0 }}>
+                          {Number(bien.loyer_mensuel).toLocaleString("fr-FR")} FCFA
+                          <span className="fs-6" style={{ color: "rgba(255,255,255,0.5)", fontWeight: 400 }}> /mois</span>
+                        </p>
+
+                        {/* Localisation */}
+                        <p className="small mb-1" style={{ color: "rgba(255,255,255,0.6)" }}>
                           📍 {bien.adresse}, {bien.ville}
                         </p>
-                        <p
-                          className="small mb-2"
-                          style={{ color: "rgba(255,255,255,0.6)" }}
-                        >
-                          {bien.superficie && `${bien.superficie} m²`}
-                          {bien.nombre_pieces &&
-                            ` · ${bien.nombre_pieces} pièces`}
-                          {bien.meuble ? " · Meublé" : ""}
-                        </p>
-                        <p
-                          className="fw-bold fs-5 mb-0"
-                          style={{ color: "#7ee8a2" }}
-                        >
-                          {Number(bien.loyer_mensuel).toLocaleString("fr-FR")}{" "}
-                          FCFA
-                          <span
-                            className="fs-6"
-                            style={{ color: "rgba(255,255,255,0.5)" }}
-                          >
-                            {" "}
-                            /mois
-                          </span>
-                        </p>
-                        <div className="d-flex gap-2 mt-2 flex-wrap">
-                          <span
-                            className="badge"
-                            style={{
-                              background: "rgba(255,255,255,0.15)",
-                              color: "#fff",
-                            }}
-                          >
-                            {bien.type_bien}
-                          </span>
-                          {bien.proprietaire_nom && (
-                            <span
-                              className="badge"
-                              style={{
-                                background: "rgba(255,255,255,0.15)",
-                                color: "#fff",
-                              }}
-                            >
-                              {bien.proprietaire_prenoms}{" "}
-                              {bien.proprietaire_nom}
-                            </span>
-                          )}
-                        </div>
+
+                        {/* Propriétaire */}
+                        {bien.proprietaire_nom && (
+                          <p className="small mb-0" style={{ color: "rgba(255,255,255,0.6)" }}>
+                            <i className="bi bi-person me-1"></i>
+                            {bien.proprietaire_prenoms} {bien.proprietaire_nom}
+                          </p>
+                        )}
+
                         <button
                           onClick={() => handleVoirPlus(bien.id_bien)}
-                          className="btn btn-primary w-100 mt-3 fw-bold"
-                          style={{ borderRadius: "12px", padding: "10px" }}
+                          className="btn btn-primary w-100 mt-auto fw-bold"
+                          style={{ borderRadius: "12px", padding: "10px", marginTop: "1rem" }}
                         >
                           Voir plus
                         </button>
@@ -468,26 +462,28 @@ const HomePage = () => {
         </footer>
       </div>
       
-      {/* MODALE DE DÉTAILS DU BIEN */}
+      {/* MODALE DE DÉTAILS DU BIEN - CARROUSEL */}
       {showModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: '20px'
-        }}>
+          zIndex: 9999, padding: '16px'
+        }} onClick={(e) => { if (e.target === e.currentTarget) { setShowModal(false); setSelectedBien(null); } }}>
           <div style={{
-            backgroundColor: '#111827', width: '100%', maxWidth: '900px',
-            maxHeight: '90vh', borderRadius: '24px', overflowY: 'auto',
-            border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-            position: 'relative', animation: 'fadeInUp 0.4s ease'
+            backgroundColor: '#0f172a', width: '100%', maxWidth: '820px',
+            maxHeight: '92vh', borderRadius: '24px', overflowY: 'auto',
+            border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 30px 60px rgba(0,0,0,0.7)',
+            position: 'relative', animation: 'fadeInUp 0.35s ease'
           }}>
-            <button 
+            {/* Bouton fermer */}
+            <button
               onClick={() => { setShowModal(false); setSelectedBien(null); }}
               style={{
-                position: 'absolute', top: '20px', right: '20px', zIndex: 10,
-                background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
-                width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer'
+                position: 'absolute', top: '16px', right: '16px', zIndex: 20,
+                background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff', width: '38px', height: '38px', borderRadius: '50%',
+                cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}
             >✕</button>
 
@@ -503,73 +499,173 @@ const HomePage = () => {
                 <p className="text-light opacity-75">{errorModal}</p>
                 <button className="btn btn-outline-light mt-3" onClick={() => handleVoirPlus(selectedBien?.id_bien)}>Réessayer</button>
               </div>
-            ) : selectedBien && (
-              <div style={{ color: '#fff' }}>
-                {/* Galerie Photo simple (Grille) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '8px', padding: '8px', background: '#000' }}>
-                  {selectedBien.photos && selectedBien.photos.length > 0 ? (
-                    selectedBien.photos.map((p, idx) => (
-                      <img 
-                        key={idx} 
-                        src={`${api.defaults.baseURL.replace('/api', '')}${p.url_photobien}`} 
-                        alt={`Photo ${idx}`} 
-                        style={{ width: '100%', height: '300px', objectFit: 'cover', cursor: 'zoom-in' }}
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "https://images.unsplash.com/photo-1582408921715-18e7806365c1?w=400&q=80";
-                        }}
-                      />
-                    ))
-                  ) : (
-                    <div style={{ height: '300px', gridColumn: '1/-1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1f2937' }}>
-                      Pas de photos supplémentaires
-                    </div>
-                  )}
-                </div>
+            ) : selectedBien && (() => {
+              const allPhotos = getModalPhotos(selectedBien);
+              const totalPhotos = allPhotos.length;
+              const currentPhoto = allPhotos[currentPhotoIndex];
+              return (
+                <div style={{ color: '#fff' }}>
 
-                <div style={{ padding: '2.5rem' }}>
-                  <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                      <h2 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '0.5rem' }}>{selectedBien.titre}</h2>
-                      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.1rem' }}>📍 {selectedBien.adresse}, {selectedBien.ville}</p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: '1.8rem', fontWeight: '800', color: '#7ee8a2', margin: 0 }}>{Number(selectedBien.loyer_mensuel).toLocaleString()} FCFA</p>
-                      <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>Loyer mensuel</p>
-                    </div>
+                  {/* ===== CARROUSEL PHOTOS ===== */}
+                  <div style={{ position: 'relative', height: '420px', overflow: 'hidden', borderRadius: '24px 24px 0 0', background: '#1e293b' }}>
+                    {currentPhoto ? (
+                      <img
+                        key={currentPhotoIndex}
+                        src={getImageUrl(currentPhoto.url_photobien)}
+                        alt={`Photo ${currentPhotoIndex + 1}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', animation: 'fadeInPhoto 0.3s ease' }}
+                        onError={(e) => { e.target.onerror = null; e.target.src = IMAGE_FALLBACK; }}
+                      />
+                    ) : (
+                      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <i className="bi bi-image" style={{ fontSize: '4rem', color: 'rgba(255,255,255,0.2)' }}></i>
+                      </div>
+                    )}
+
+
+                    {/* Bouton précédent */}
+                    {totalPhotos > 1 && currentPhotoIndex > 0 && (
+                      <button
+                        onClick={() => setCurrentPhotoIndex(i => i - 1)}
+                        style={{
+                          position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)',
+                          background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.25)',
+                          color: '#fff', width: '44px', height: '44px', borderRadius: '50%',
+                          cursor: 'pointer', fontSize: '1.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'background 0.2s', zIndex: 10
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.8)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.55)'}
+                      >‹</button>
+                    )}
+
+                    {/* Bouton suivant */}
+                    {totalPhotos > 1 && currentPhotoIndex < totalPhotos - 1 && (
+                      <button
+                        onClick={() => setCurrentPhotoIndex(i => i + 1)}
+                        style={{
+                          position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)',
+                          background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.25)',
+                          color: '#fff', width: '44px', height: '44px', borderRadius: '50%',
+                          cursor: 'pointer', fontSize: '1.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'background 0.2s', zIndex: 10
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.8)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.55)'}
+                      >›</button>
+                    )}
+
+                    {/* Compteur photos */}
+                    {totalPhotos > 1 && (
+                      <div style={{
+                        position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)',
+                        background: 'rgba(0,0,0,0.6)', borderRadius: '20px', padding: '4px 14px',
+                        fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', zIndex: 10
+                      }}>
+                        {currentPhotoIndex + 1} / {totalPhotos}
+                      </div>
+                    )}
+
+                    {/* Points de navigation */}
+                    {totalPhotos > 1 && totalPhotos <= 10 && (
+                      <div style={{
+                        position: 'absolute', bottom: '14px', right: '20px',
+                        display: 'flex', gap: '6px', zIndex: 10
+                      }}>
+                        {allPhotos.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setCurrentPhotoIndex(idx)}
+                            style={{
+                              width: idx === currentPhotoIndex ? '20px' : '8px',
+                              height: '8px',
+                              borderRadius: '4px',
+                              background: idx === currentPhotoIndex ? '#3b82f6' : 'rgba(255,255,255,0.4)',
+                              border: 'none', cursor: 'pointer',
+                              transition: 'all 0.25s ease', padding: 0
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  <hr style={{ borderColor: 'rgba(255,255,255,0.1)', margin: '2rem 0' }} />
-
-                  <div className="row g-4">
-                    <div className="col-md-8">
-                      <h4 style={{ fontWeight: '700', marginBottom: '1.2rem' }}>Description du bien</h4>
-                      <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.8', fontSize: '1.1rem', whiteSpace: 'pre-line' }}>
-                        {selectedBien.description || "Aucune description fournie pour ce bien."}
+                  {/* ===== INFOS SOUS LE CARROUSEL ===== */}
+                  <div style={{ padding: '2rem' }}>
+                    {/* Titre + Loyer */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <h2 style={{ fontSize: '1.7rem', fontWeight: '800', marginBottom: '0.3rem', lineHeight: 1.2 }}>
+                        {selectedBien.titre}
+                      </h2>
+                      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                        📍 {selectedBien.adresse}, {selectedBien.ville}
+                      </p>
+                      <p style={{ fontSize: '1.5rem', fontWeight: '800', color: '#7ee8a2', margin: 0 }}>
+                        {Number(selectedBien.loyer_mensuel).toLocaleString('fr-FR')} FCFA
+                        <span style={{ fontSize: '1rem', fontWeight: 400, color: 'rgba(255,255,255,0.45)' }}> / mois</span>
                       </p>
                     </div>
-                    <div className="col-md-4">
-                      <div style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <h5 style={{ fontWeight: '700', marginBottom: '1rem' }}>Caractéristiques</h5>
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
-                          <li><i className="bi bi-arrows-fullscreen me-2"></i> {selectedBien.superficie} m²</li>
-                          <li><i className="bi bi-door-open me-2"></i> {selectedBien.nombre_pieces} pièces</li>
-                          <li><i className="bi bi-house-check me-2"></i> {selectedBien.type_bien}</li>
-                          {selectedBien.meuble && <li><i className="bi bi-check-circle me-2"></i> Meublé</li>}
+
+                    <hr style={{ borderColor: 'rgba(255,255,255,0.08)', margin: '1.2rem 0' }} />
+
+                    {/* Layout 2 colonnes : Description gauche | Caractéristiques droite */}
+                    <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+
+                      {/* Colonne gauche : Description */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h5 style={{ fontWeight: '700', marginBottom: '0.75rem', color: '#e2e8f0', fontSize: '1rem' }}>
+                          Description du bien
+                        </h5>
+                        <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: '1.8', fontSize: '0.92rem', whiteSpace: 'pre-line', margin: 0 }}>
+                          {selectedBien.description || 'Aucune description fournie pour ce bien.'}
+                        </p>
+                      </div>
+
+                      {/* Colonne droite : Caractéristiques */}
+                      <div style={{ width: '200px', flexShrink: 0 }}>
+                        <h5 style={{ fontWeight: '700', marginBottom: '1rem', color: '#e2e8f0', fontSize: '1rem' }}>
+                          Caractéristiques
+                        </h5>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                          {selectedBien.superficie && (
+                            <li style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <i className="bi bi-arrows-fullscreen" style={{ color: '#93c5fd', width: '16px' }}></i>
+                              {selectedBien.superficie} m²
+                            </li>
+                          )}
+                          {selectedBien.nombre_pieces && (
+                            <li style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <i className="bi bi-door-open" style={{ color: '#93c5fd', width: '16px' }}></i>
+                              {selectedBien.nombre_pieces} pièces
+                            </li>
+                          )}
+                          {selectedBien.type_bien && (
+                            <li style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <i className="bi bi-house-check" style={{ color: '#93c5fd', width: '16px' }}></i>
+                              {selectedBien.type_bien}
+                            </li>
+                          )}
+                          {selectedBien.meuble && (
+                            <li style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <i className="bi bi-check-circle" style={{ color: '#7ee8a2', width: '16px' }}></i>
+                              Meublé
+                            </li>
+                          )}
                         </ul>
-                        
-                        <Link to="/register-step-role" state={{ 
-                          redirectTo: '/tenant/properties', 
-                          bienSelectionne: selectedBien 
-                        }} className="btn btn-primary w-100 mt-4 fw-bold p-3" style={{ borderRadius: '12px' }}>
-                          Demander une visite
-                        </Link>
+
+                        <button
+                          onClick={handleDemanderVisiteClick}
+                          className="btn btn-primary fw-bold"
+                          style={{ width: '100%', borderRadius: '12px', padding: '12px', fontSize: '0.9rem', marginTop: '1.5rem' }}
+                        >
+                          <i className="bi bi-calendar-check me-2"></i>Demander une visite
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       )}
@@ -578,6 +674,11 @@ const HomePage = () => {
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInPhoto {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         
         .signin-btn {

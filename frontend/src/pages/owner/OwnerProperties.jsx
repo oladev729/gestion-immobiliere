@@ -43,7 +43,7 @@ const OwnerProperties = () => {
 
     useEffect(() => { fetchBiens(); }, []);
 
-    const biensFiltres = biens.filter(b => 
+    const biensFiltres = biens.filter(b =>
         b.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.ville.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.adresse.toLowerCase().includes(searchTerm.toLowerCase())
@@ -91,7 +91,7 @@ const OwnerProperties = () => {
             } else {
                 res = await api.post('/biens', form);
             }
-            
+
             const id_bien = isEditing ? currentBienId : res.data.bien.id_bien;
 
             if (photoPrincipale || photosDetails.length > 0) {
@@ -197,7 +197,7 @@ const OwnerProperties = () => {
                                                 <option value="appartement">Appartement</option>
                                                 <option value="maison">Maison</option>
                                                 <option value="studio">Studio</option>
-                                                <option value="bureau">Bureau</option>
+                                                <option value="villa">Villa</option>
                                             </select>
                                         </div>
                                         <div>
@@ -216,14 +216,36 @@ const OwnerProperties = () => {
                                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#1e293b' }}>
                                                 Photo de couverture {isEditing && "(Laissez vide pour conserver l'actuelle)"}
                                             </label>
-                                            <input 
-                                                style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', marginBottom: '1rem' }} 
+                                            <input
+                                                style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', marginBottom: '1rem' }}
                                                 type="file" accept="image/*"
-                                                onChange={e => setPhotoPrincipale(e.target.files[0])} 
+                                                onChange={e => setPhotoPrincipale(e.target.files[0])}
                                             />
                                             {photoPrincipale && (
                                                 <div style={{ marginBottom: '1.5rem' }}>
                                                     <img src={URL.createObjectURL(photoPrincipale)} alt="preview principale" style={{ width: '120px', height: '80px', borderRadius: '0.5rem', objectFit: 'cover', border: '2px solid #2563eb' }} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div style={{ gridColumn: 'span 2' }}>
+                                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', color: '#1e293b' }}>
+                                                Photos supplémentaires du bien (Détails)
+                                            </label>
+                                            <input 
+                                                style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', marginBottom: '1rem' }} 
+                                                type="file" accept="image/*" multiple
+                                                onChange={e => setPhotosDetails(Array.from(e.target.files))} 
+                                            />
+                                            {photosDetails.length > 0 && (
+                                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                                                    {photosDetails.map((photo, index) => (
+                                                        <img 
+                                                            key={index} 
+                                                            src={URL.createObjectURL(photo)} 
+                                                            alt={`preview detail ${index}`} 
+                                                            style={{ width: '80px', height: '60px', borderRadius: '0.5rem', objectFit: 'cover', border: '1px solid #d1d5db' }} 
+                                                        />
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
@@ -294,10 +316,10 @@ const OwnerProperties = () => {
                             <div key={bien.id_bien} style={{ backgroundColor: '#ffffff', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'transform 0.2s' }}>
                                 <div style={{ position: 'relative', height: '140px' }}>
                                     {bien.photos?.[0] ? (
-                                        <img 
-                                            src={getImageUrl(bien.photos[0].url_photobien)} 
-                                            alt={bien.titre} 
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                        <img
+                                            src={getImageUrl(bien.photos[0].url_photobien)}
+                                            alt={bien.titre}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             onError={(e) => {
                                                 e.target.onerror = null;
                                                 e.target.src = IMAGE_FALLBACK;
@@ -331,14 +353,14 @@ const OwnerProperties = () => {
                                     </div>
                                 </div>
                                 <div style={{ padding: '0.5rem 0.75rem', backgroundColor: '#f8fafc', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '0.4rem' }}>
-                                    <button 
+                                    <button
                                         onClick={() => handleEdit(bien)}
                                         style={{ flex: 1, padding: '0.35rem', borderRadius: '0.4rem', border: '1px solid #dbeafe', backgroundColor: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', textDecoration: 'none' }}
                                     >
                                         Modifier
                                     </button>
-                                    <button 
-                                        onClick={() => handleDelete(bien.id_bien)} 
+                                    <button
+                                        onClick={() => handleDelete(bien.id_bien)}
                                         style={{ padding: '0.35rem 0.6rem', borderRadius: '0.4rem', border: '1px solid #fee2e2', backgroundColor: '#fff', color: '#ef4444', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '600', textDecoration: 'none' }}
                                         title="Supprimer"
                                     >

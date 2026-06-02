@@ -18,6 +18,7 @@ const Register = () => {
     mot_de_passe: "",
     confirmer_mot_de_passe: "",
     adresse_fiscale: "",
+    piece_identite: "",
   });
 
   const handleChange = (field) => (e) =>
@@ -218,6 +219,19 @@ const Register = () => {
                   placeholder="Adresse fiscale"
                   value={formData.adresse_fiscale}
                   onChange={handleChange("adresse_fiscale")}
+                  required
+                />
+              </div>
+            )}
+
+            {typeFromStep === "locataire" && (
+              <div className="mb-3">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="N° Pièce d'identité"
+                  value={formData.piece_identite}
+                  onChange={handleChange("piece_identite")}
                   required
                 />
               </div>

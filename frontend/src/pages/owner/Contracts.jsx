@@ -121,6 +121,16 @@ const Contracts = () => {
             montant_depot_guarantie_attendu: '', date_signature: new Date().toISOString().split('T')[0]
         });
 
+        useEffect(() => {
+            if (successMsg || errorMsg) {
+                const timer = setTimeout(() => {
+                    setSuccessMsg('');
+                    setErrorMsg('');
+                }, 3000);
+                return () => clearTimeout(timer);
+            }
+        }, [successMsg, errorMsg]);
+
     const fetchContrats = async () => {
         try {
             const res = await api.get('/contrats/mes-contrats');
@@ -223,84 +233,146 @@ const Contracts = () => {
         setFormStep(1);
     };
 
-    const handlePrint = (c) => {
+    const openContratView = (c) => {
+        const locataire = locataires.find(l => l.id_locataire === c.id_locataire) || {};
+        const bien = biens.find(b => b.id_bien == c.id_bien) || {};
+        
+        const bailleurNom = c.proprietaire_nom ? `${c.proprietaire_prenoms || ''} ${c.proprietaire_nom}`.trim() : user?.nom || 'Propriétaire';
+        const bailleurTel = user?.telephone || '';
+        const bailleurAdresse = user?.roleInfo?.adresse_fiscale || '..................................................';
+        
+        const locataireNom = c.locataire_nom ? `${c.locataire_prenoms || ''} ${c.locataire_nom}`.trim() : '';
+        const locataireTel = locataire.telephone || '';
+        const locatairePiece = locataire.piece_identite || '..................................................';
+        
+        const bienAdresse = bien.adresse || c.bien_titre || '..................................................';
+        const bienPieces = bien.nombre_pieces || '...................................';
+        
+        const typeBien = bien.type_bien || '........................';
+        
+        const dateDebut = c.date_debut ? new Date(c.date_debut).toLocaleDateString('fr-FR') : '';
+        const dateFin = c.date_fin ? new Date(c.date_fin).toLocaleDateString('fr-FR') : '';
+        const dateSignature = c.date_signature ? new Date(c.date_signature).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
+        const loyer = Number(c.loyer_mensuel).toLocaleString('fr-FR');
+        const caution = Number(c.montant_depot_guarantie_attendu).toLocaleString('fr-FR');
+        const nbMois = c.nb_mois_depot_guarantie || 1;
+
         const printWindow = window.open('', '_blank');
-        const dateSignature = new Date(c.date_signature).toLocaleDateString('fr-FR');
-        const dateDebut = new Date(c.date_debut).toLocaleDateString('fr-FR');
-        const dateFin = new Date(c.date_fin).toLocaleDateString('fr-FR');
-
         printWindow.document.write(`
-            <html>
-                <head>
-                    <title>CONTRAT DE BAIL - ${c.numero_contrat}</title>
-                    <style>
-                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; padding: 40px; max-width: 800px; margin: auto; }
-                        .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
-                        .header h1 { color: #2563eb; margin: 0; text-transform: uppercase; font-size: 24px; }
-                        .section { margin-bottom: 25px; }
-                        .section-title { font-weight: bold; text-decoration: underline; text-transform: uppercase; margin-bottom: 10px; color: #1e40af; }
-                        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-                        .footer { margin-top: 50px; display: flex; justify-content: space-between; }
-                        .signature-box { border: 1px solid #ccc; width: 250px; height: 120px; padding: 10px; font-size: 12px; }
-                        @media print { .no-print { display: none; } }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>Contrat de Bail d'Habitation</h1>
-                        <p>Référence : <strong>${c.numero_contrat}</strong></p>
-                    </div>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>CONTRAT DE BAIL - ${c.numero_contrat}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 14px; line-height: 1.6; color: #000; padding: 60px; max-width: 850px; margin: auto; background: #fff; text-align: justify; }
+        h1.title { text-align: center; font-size: 20px; font-weight: bold; text-decoration: underline; text-transform: uppercase; margin-bottom: 30px; }
+        .section-title { font-weight: bold; font-size: 15px; margin-top: 25px; margin-bottom: 10px; }
+        .article-title { font-weight: bold; text-decoration: underline; margin-right: 5px; }
+        p { margin-bottom: 10px; }
+        .indent { padding-left: 30px; }
+        .uppercase { text-transform: uppercase; font-weight: bold; }
+        .signature-grid { display: grid; grid-template-columns: 1fr 1fr; margin-top: 50px; }
+        .signature-box { text-align: center; }
+        .no-print { display: block; }
+        @media print {
+            body { padding: 30px; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body contenteditable="true">
 
-                    <div class="section">
-                        <div class="section-title">1. LES PARTIES</div>
-                        <p><strong>LE BAILLEUR :</strong> M./Mme ${c.proprietaire_prenoms || ''} ${c.proprietaire_nom || 'Propriétaire'}, demeurant à l'adresse indiquée au dossier.</p>
-                        <p><strong>LE PRENEUR :</strong> M./Mme ${c.locataire_prenoms} ${c.locataire_nom}, demeurant à l'adresse indiquée au dossier.</p>
-                    </div>
+<div class="no-print" style="text-align:center; margin-bottom:20px;" contenteditable="false">
+    <button onclick="window.print()" style="padding:10px 20px; background:#1e3a8a; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Imprimer le contrat</button>
+</div>
 
-                    <div class="section">
-                        <div class="section-title">2. DÉSIGNATION DU BIEN</div>
-                        <p>Le bailleur donne en location au preneur le bien désigné ci-après :<br/>
-                        <strong>Titre :</strong> ${c.bien_titre}<br/>
-                        <strong>Type :</strong> Habitation principale</p>
-                    </div>
+<h1 class="title">CONTRAT DE BAIL</h1>
+<p style="text-align: right; font-size: 12px; color: #555;">Référence : <strong>${c.numero_contrat}</strong></p>
 
-                    <div class="section">
-                        <div class="section-title">3. DURÉE DU CONTRAT</div>
-                        <p>Le présent bail est consenti pour une durée déterminée :<br/>
-                        <strong>Prise d'effet :</strong> ${dateDebut}<br/>
-                        <strong>Échéance :</strong> ${dateFin}</p>
-                    </div>
+<p class="uppercase">ENTRE :</p>
 
-                    <div class="section">
-                        <div class="section-title">4. CONDITIONS FINANCIÈRES</div>
-                        <p>Le loyer mensuel est fixé à : <strong>${Number(c.loyer_mensuel).toLocaleString()} FCFA</strong><br/>
-                        Les charges sont gérées directement par le locataire.</p>
-                        <p>Dépôt de garantie : <strong>${Number(c.montant_depot_guarantie_attendu).toLocaleString()} FCFA</strong> (${c.nb_mois_depot_guarantie} mois de loyer).</p>
-                    </div>
+<p class="indent">
+    1. <strong>${bailleurNom}</strong>, résidant au ${bailleurAdresse}, joignable au ${bailleurTel || '........................'}, 
+</p>
+<p>Ci-après dénommé « <strong>Bailleur</strong> », d'une part ;</p>
 
-                    <div class="section">
-                        <div class="section-title">5. ENGAGEMENTS</div>
-                        <p style="font-size: 13px; font-style: italic;">Le preneur s'engage à user paisiblement des locaux loués suivant la destination prévue au contrat et à répondre des dégradations et pertes qui surviennent pendant la durée du contrat dans les locaux dont il a la jouissance exclusive.</p>
-                    </div>
+<p class="uppercase" style="margin-top: 15px;">ET</p>
 
-                    <div class="footer">
-                        <div>
-                            <p>Fait à .....................................</p>
-                            <p>Le <strong>${dateSignature}</strong></p>
-                        </div>
-                    </div>
+<p class="indent">
+    2. <strong>${locataireNom}</strong>, joignable au ${locataireTel || '........................'}, détenteur de la pièce d'identité N° <strong>${locatairePiece}</strong>,
+</p>
+<p>Ci-après dénommé « <strong>Locataire</strong> », d'autre part ;</p>
 
-                    <div class="footer">
-                        <div class="signature-box">Signature du Bailleur<br/>(Précédée de "Lu et approuvé")</div>
-                        <div class="signature-box">Signature du Preneur<br/>(Précédée de "Lu et approuvé")</div>
-                    </div>
+<p class="uppercase" style="text-align: center; text-decoration: underline; margin-top: 30px; margin-bottom: 25px;">
+    IL A ETE CONVENU ET ARRETE CE QUI SUIT :
+</p>
 
-                    <div style="margin-top: 30px; text-align: center;" class="no-print">
-                        <button onclick="window.print()" style="padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer;">Lancer l'impression</button>
-                    </div>
-                </body>
-            </html>
-        `);
+<div class="section">
+    <p><span class="article-title">Article 1 : Description du bien</span></p>
+    <p>Le bailleur donne en location au locataire, qui accepte, sous les conditions ci-dessous stipulées, un bien immobilier à usage d'habitation de type <strong>${typeBien}</strong> situé à <strong>${bienAdresse}</strong>. Il comprend <strong>${bienPieces}</strong> pièces.</p>
+</div>
+
+<div class="section">
+    <p><span class="article-title">Article 2 : Destination des lieux et aménagements</span></p>
+    <p>Les lieux sont loués à usage exclusivement résidentiel. Le locataire ne pourra, en aucun cas, utiliser les lieux en tout ou partie pour une destination autre que celle prévue aux présentes.</p>
+</div>
+
+<div class="section">
+    <p><span class="article-title">Article 3 : Durée du bail</span></p>
+    <p>Le présent bail est consenti pour une durée de <strong>1 an</strong>, à compter du <strong>${dateDebut}</strong> jusqu'au <strong>${dateFin}</strong>, renouvelable.</p>
+    <p>L'absence de notification écrite par une des parties du souhait de résiliation de ce présent contrat traduirait sa reconduction tacite et automatique pour une nouvelle période d'une année.</p>
+</div>
+
+<div class="section">
+    <p><span class="article-title">Article 4 : Loyer et Charges</span></p>
+    <p>Le loyer mensuel est fixé à la somme de <strong>${loyer} FCFA</strong>. Les charges locatives courantes sont à la charge du locataire.</p>
+    <p>Le loyer doit être payé au plus tard le <strong>5</strong> de chaque mois.</p>
+</div>
+
+<div class="section">
+    <p><span class="article-title">Article 5 : Caution (Dépôt de Garantie)</span></p>
+    <p>A titre de garantie de l'exécution de ses obligations, le locataire verse une caution d'un montant de <strong>${caution} FCFA</strong> (soit ${nbMois} mois de loyer).</p>
+    <p>Cette caution est remboursable à la fin du bail à la restitution des clés, après déduction des sommes dues au titre des éventuels dégâts locatifs ou arriérés de paiement.</p>
+</div>
+
+<div class="section">
+    <p><span class="article-title">Article 6 : Obligations du Locataire</span></p>
+    <p>Le locataire s'engage notamment à payer le loyer à temps, à entretenir le logement en bon père de famille, à ne pas sous-louer sans autorisation écrite préalable, à respecter la tranquillité du voisinage et à restituer le bien dans son état initial.</p>
+</div>
+
+<div class="section">
+    <p><span class="article-title">Article 7 : Obligations du Bailleur</span></p>
+    <p>Le bailleur s'engage à délivrer un logement décent en bon état d'usage, à assurer la jouissance paisible du bien au locataire et à effectuer les grosses réparations qui lui incombent légalement.</p>
+</div>
+
+<div class="section">
+    <p><span class="article-title">Article 8 : Résiliation du Contrat</span></p>
+    <p>Le contrat peut être résilié par le locataire avec un préavis d'un (1) mois. Il peut être résilié de plein droit par le bailleur en cas de non-paiement du loyer, de dégradation significative du bien ou de non-respect des clauses du présent contrat.</p>
+</div>
+
+<div class="section">
+    <p><span class="article-title">Article 9 : État des Lieux</span></p>
+    <p>Un état des lieux contradictoire est réalisé obligatoirement à l'entrée dans les lieux, ainsi qu'à la sortie lors de la remise des clés.</p>
+</div>
+
+<div class="section signature-section">
+    <p style="margin-top: 40px; text-align: right;">Fait à ..................................., le <strong>${dateSignature}</strong></p>
+    <div class="signature-grid">
+        <div class="signature-box">
+            <p><strong>Le Bailleur</strong></p>
+            <p style="font-size:11px; margin-bottom: 60px;">(Faire précéder de la mention « Lu et approuvé »)</p>
+        </div>
+        <div class="signature-box">
+            <p><strong>Le Locataire</strong></p>
+            <p style="font-size:11px; margin-bottom: 60px;">(Faire précéder de la mention « Lu et approuvé »)</p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>`);
         printWindow.document.close();
     };
 
@@ -412,7 +484,7 @@ const Contracts = () => {
                                         <select className="form-select" style={{ borderRadius: '0.5rem', padding: '0.625rem' }} value={form.id_bien}
                                             onChange={e => setForm({ ...form, id_bien: e.target.value })}>
                                             <option value="">Choisir un bien disponible...</option>
-                                            {biens.filter(b => b.statut === 'disponible').map(b => (
+                                            {biens.filter(b => b.statut === 'disponible' || b.id_bien == form.id_bien).map(b => (
                                                 <option key={b.id_bien} value={b.id_bien}>
                                                     {b.titre} — {b.ville} ({Number(b.loyer_mensuel).toLocaleString()} FCFA)
                                                 </option>
@@ -589,14 +661,14 @@ const Contracts = () => {
                                         </td>
                                         <td style={{ padding: '0.5rem 0.75rem' }}>
                                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                                <button className="btn btn-sm btn-outline-primary" onClick={() => handlePrint(c)}>Voir</button>
+                                                <button
+                                                    className="btn btn-sm btn-outline-primary"
+                                                    onClick={() => openContratView(c)}
+                                                    title="Générer et voir le contrat"
+                                                >
+                                                    <i className="bi bi-file-earmark-text me-1"></i>Contrat
+                                                </button>
                                                 <button className="btn btn-sm btn-outline-warning" onClick={() => handleEditContrat(c)}>Modifier</button>
-                                                <ContratGenerator 
-                                                    contrat={c}
-                                                    bien={biens.find(b => b.id_bien === c.id_bien)}
-                                                    proprietaire={user}
-                                                    locataire={locataires.find(l => l.id_locataire === c.id_locataire)}
-                                                />
                                             </div>
                                         </td>
                                     </tr>
@@ -610,6 +682,8 @@ const Contracts = () => {
                 </div>
             )}
             </div>
+
+
 
             <style>{`
                 @keyframes fadeIn {

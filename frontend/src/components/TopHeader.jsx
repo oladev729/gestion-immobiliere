@@ -92,15 +92,6 @@ const TopHeader = ({ user: propUser, onSearch }) => {
 
   return (
     <header className="top-header">
-      {/* Barre de recherche */}
-      <div className="search-bar">
-        <input 
-          type="text" 
-          className="search-input" 
-          placeholder="Rechercher..."
-          onChange={(e) => onSearch && onSearch(e.target.value)}
-        />
-      </div>
 
       {/* Menu utilisateur */}
       <div className="user-menu">
@@ -169,8 +160,7 @@ const TopHeader = ({ user: propUser, onSearch }) => {
                     <h4>Mon profil</h4>
                     <p>{user?.email}</p>
                 </div>
-                
-                <form onSubmit={handleUpdateProfile} className="profile-form">
+                          <form onSubmit={handleUpdateProfile} className="profile-form">
                     <div className="form-group-sm">
                         <label>Prénoms</label>
                         <input type="text" value={profileForm.prenoms} onChange={e => setProfileForm({...profileForm, prenoms: e.target.value})} required />
@@ -190,12 +180,6 @@ const TopHeader = ({ user: propUser, onSearch }) => {
                         {saving ? 'Enregistrement...' : 'Enregistrer'}
                     </button>
                 </form>
-
-                <div className="dropdown-divider"></div>
-                
-                 <button onClick={contextLogout} className="logout-dropdown-btn">
-                     Se déconnecter
-                 </button>
             </div>
           )}
         </div>
@@ -208,7 +192,7 @@ const TopHeader = ({ user: propUser, onSearch }) => {
           padding: 0.25rem 1rem;
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: flex-end;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
           position: sticky;
           top: 0;

@@ -159,11 +159,12 @@ const AvailableProperties = () => {
                                         onClick={() => {
                                             // Vérifier si l'utilisateur est connecté
                                             if (!user) {
-                                                // Rediriger vers l'inscription locataire
-                                                navigate('/register-step-role', { 
+                                                // Rediriger vers la page de connexion
+                                                navigate('/login', { 
                                                     state: { 
                                                         redirectTo: '/tenant/properties',
-                                                        bienSelectionne: bien 
+                                                        bienSelectionne: bien,
+                                                        showVisiteForm: true
                                                     } 
                                                 });
                                             } else {
