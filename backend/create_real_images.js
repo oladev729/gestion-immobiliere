@@ -32,6 +32,12 @@ const createAllPlaceholders = () => {
     createSVGPlaceholder('villa.jpg', 'Villa', '#f39c12');
     createSVGPlaceholder('default.jpg', 'Bien Immobilier', '#9b59b6');
     
+    createSVGPlaceholder('appartement.svg', 'Appartement', '#3498db');
+    createSVGPlaceholder('maison.svg', 'Maison', '#2ecc71');
+    createSVGPlaceholder('studio.svg', 'Studio', '#e74c3c');
+    createSVGPlaceholder('villa.svg', 'Villa', '#f39c12');
+    createSVGPlaceholder('default.svg', 'Bien Immobilier', '#9b59b6');
+    
     console.log('📁 Placeholders SVG créés dans:', placeholdersDir);
 };
 
