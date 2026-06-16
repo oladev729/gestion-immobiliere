@@ -37,19 +37,23 @@ const Entretien = () => {
 
             // Récupérer les invitations (endpoint qui existe)
             try {
+                console.log('🔄 Récupération des invitations...');
                 const invitationsRes = await api.get('/invitations/reçues');
+                console.log('✅ Réponse invitations:', invitationsRes.data);
                 setInvitations(invitationsRes.data.invitations || []);
             } catch (err) {
-                console.error('Erreur chargement invitations:', err);
+                console.error('❌ Erreur chargement invitations:', err);
                 setInvitations([]);
             }
 
             // Récupérer les notifications (endpoint qui existe)
             try {
+                console.log('🔄 Récupération des notifications...');
                 const notificationsRes = await api.get('/paiements/mes-notifications');
+                console.log('✅ Réponse notifications:', notificationsRes.data);
                 setNotifications(notificationsRes.data.notifications || []);
             } catch (err) {
-                console.error('Erreur chargement notifications:', err);
+                console.error('❌ Erreur chargement notifications:', err);
                 setNotifications([]);
             }
             

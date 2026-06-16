@@ -19,10 +19,13 @@ export default function TenantRentals() {
   const fetchContrats = async () => {
     try {
       setLoading(true);
+      console.log('Fetching tenant contracts...');
       const res = await api.get('/contrats/mes-contrats-locataire');
+      console.log('Tenant contracts response:', res.data);
       const data = res.data;
       setContrats(data);
     } catch (err) {
+      console.error('Error fetching tenant contracts:', err);
       setError('Impossible de charger vos locations.');
     } finally {
       setLoading(false);

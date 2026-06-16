@@ -44,13 +44,8 @@ class Contrat {
                 nb_mois_depot_guarantie,
                 montant_depot_guarantie_attendu,
                 date_signature,
-                statut_contrat,
-                texte_contrat,
-                clauses_personnalisees,
-                texte_personnalise,
-                version_contrat,
-                date_modification_texte
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                statut_contrat
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING *
         `;
 
@@ -65,12 +60,7 @@ class Contrat {
             nb_mois_depot_guarantie || 1,
             montant_depot_guarantie_attendu,
             date_signature || new Date(),
-            'actif',
-            contratData.texte_contrat || null,
-            contratData.clauses_personnalisees || null,
-            contratData.texte_personnalise || false,
-            contratData.version_contrat || 1,
-            contratData.date_modification_texte || null
+            'actif'
         ];
 
         const result = await db.query(query, values);
@@ -109,8 +99,8 @@ class Contrat {
             JOIN bien b ON c.id_bien = b.id_bien
             JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
             JOIN utilisateur u_prop ON p.id_utilisateur = u_prop.id_utilisateur
-            JOIN locataire l ON c.id_locataire = l.id_locataire
-            JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
+            LEFT JOIN locataire l ON c.id_locataire = l.id_locataire
+            LEFT JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
             WHERE c.id_locataire = $1
             ORDER BY c.date_creation DESC
         `;
@@ -147,8 +137,8 @@ class Contrat {
             JOIN bien b ON c.id_bien = b.id_bien
             JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
             JOIN utilisateur u_prop ON p.id_utilisateur = u_prop.id_utilisateur
-            JOIN locataire l ON c.id_locataire = l.id_locataire
-            JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
+            LEFT LEFT JOIN locataire l ON c.id_locataire = l.id_locataire
+            LEFT LEFT JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
             WHERE b.id_proprietaire = $1
             ORDER BY c.date_creation DESC
         `;
@@ -176,8 +166,8 @@ class Contrat {
             JOIN bien b ON c.id_bien = b.id_bien
             JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
             JOIN utilisateur u_prop ON p.id_utilisateur = u_prop.id_utilisateur
-            JOIN locataire l ON c.id_locataire = l.id_locataire
-            JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
+            LEFT JOIN locataire l ON c.id_locataire = l.id_locataire
+            LEFT JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
             WHERE c.id_contact = $1
         `;
         const result = await db.query(query, [id_contrat]);
@@ -337,7 +327,7 @@ class Contrat {
                    u.prenoms as locataire_prenoms
             FROM contact c
             JOIN bien b ON c.id_bien = b.id_bien
-            JOIN locataire l ON c.id_locataire = l.id_locataire
+            LEFT JOIN locataire l ON c.id_locataire = l.id_locataire
             JOIN utilisateur u ON l.id_utilisateur = u.id_utilisateur
             WHERE c.statut_contrat = 'actif'
             ORDER BY c.date_creation DESC
@@ -356,7 +346,7 @@ class Contrat {
                    u.email as locataire_email
             FROM contact c
             JOIN bien b ON c.id_bien = b.id_bien
-            JOIN locataire l ON c.id_locataire = l.id_locataire
+            LEFT JOIN locataire l ON c.id_locataire = l.id_locataire
             JOIN utilisateur u ON l.id_utilisateur = u.id_utilisateur
             WHERE c.statut_contrat = 'actif'
               AND c.date_fin BETWEEN CURRENT_DATE AND CURRENT_DATE + $1::integer

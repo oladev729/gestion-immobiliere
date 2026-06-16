@@ -13,6 +13,17 @@ const authController = {
         try {
             const { nom, prenoms, email, telephone, mot_de_passe, type_utilisateur } = req.body;
 
+            // Validation de la longueur du mot de passe
+            if (mot_de_passe.length < 6 || mot_de_passe.length > 8) {
+                return res.status(400).json({ message: 'Le mot de passe doit contenir entre 6 et 8 caractères' });
+            }
+
+            // Validation des caractères acceptés (chiffres, alphabets, caractères spéciaux)
+            const passwordRegex = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]+$/;
+            if (!passwordRegex.test(mot_de_passe)) {
+                return res.status(400).json({ message: 'Le mot de passe ne doit contenir que des chiffres, des lettres et des caractères spéciaux' });
+            }
+
             const existingUser = await Utilisateur.findByEmail(email);
             if (existingUser) {
                 return res.status(400).json({ message: 'Un utilisateur avec cet email existe déjà' });

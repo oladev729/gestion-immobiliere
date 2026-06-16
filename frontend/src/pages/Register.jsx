@@ -33,6 +33,19 @@ const Register = () => {
       return;
     }
     
+    // Validation de la longueur du mot de passe
+    if (formData.mot_de_passe.length < 6 || formData.mot_de_passe.length > 8) {
+      alert("Le mot de passe doit contenir entre 6 et 8 caractères !");
+      return;
+    }
+    
+    // Validation des caractères acceptés (chiffres, alphabets, caractères spéciaux)
+    const passwordRegex = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]+$/;
+    if (!passwordRegex.test(formData.mot_de_passe)) {
+      alert("Le mot de passe ne doit contenir que des chiffres, des lettres et des caractères spéciaux !");
+      return;
+    }
+    
     setLoading(true);
     try {
       const payload = { ...formData, type_utilisateur: typeFromStep };

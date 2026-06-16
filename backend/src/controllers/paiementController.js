@@ -366,8 +366,8 @@ const paiementController = {
                  JOIN contact c ON c.id_contact = p.id_contact
                  JOIN bien b ON b.id_bien = c.id_bien
                  JOIN proprietaire pr ON pr.id_proprietaire = b.id_proprietaire
-                 JOIN locataire l ON l.id_locataire = c.id_locataire
-                 JOIN utilisateur u ON u.id_utilisateur = l.id_utilisateur
+                 LEFT JOIN locataire l ON l.id_locataire = c.id_locataire
+                 LEFT JOIN utilisateur u ON u.id_utilisateur = l.id_utilisateur
                  WHERE pr.id_utilisateur = $1
                  ORDER BY p.date_paiement DESC`,
                 [req.user.id]

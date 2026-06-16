@@ -32,22 +32,35 @@ const OwnerProperties = () => {
     const fetchBiens = async () => {
         setLoading(true);
         try {
+            console.log('Fetching biens...');
             const res = await api.get(`/biens/mes-biens?t=${Date.now()}`);
+            console.log('Response:', res.data);
             setBiens(res.data);
         } catch (err) {
-            console.error(err);
+            console.error('Error fetching biens:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { fetchBiens(); }, []);
+    useEffect(() => {
+        console.log('Component mounted, fetching biens...');
+        fetchBiens();
+    }, []);
+
+    useEffect(() => {
+        console.log('Biens state updated:', biens);
+    }, [biens]);
 
     const biensFiltres = biens.filter(b =>
         b.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.ville.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.adresse.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    console.log('Form step:', formStep);
+    console.log('Biens filtered:', biensFiltres);
+    console.log('Search term:', searchTerm);
 
     const openCreateForm = () => {
         setIsEditing(false);

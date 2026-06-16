@@ -40,12 +40,21 @@ export default function TenantPayment() {
   };
 
   useEffect(() => {
+    console.log('Fetching tenant contracts and payments...');
     api.get('/contrats/mes-contrats-locataire').then(r => {
+      console.log('Tenant contracts response:', r.data);
       setContrats(r.data);
       fetchLoyersForContrats(r.data);
-    }).catch(() => {});
-    
-    api.get('/paiements/mes-paiements').then(r => setPaiements(r.data)).catch(() => {});
+    }).catch(err => {
+      console.error('Error fetching tenant contracts:', err);
+    });
+
+    api.get('/paiements/mes-paiements').then(r => {
+      console.log('Tenant payments response:', r.data);
+      setPaiements(r.data);
+    }).catch(err => {
+      console.error('Error fetching tenant payments:', err);
+    });
   }, [location.state]);
 
   const handlePayer = async (e) => {
