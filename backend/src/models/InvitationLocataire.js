@@ -35,6 +35,25 @@ class InvitationLocataire {
     }
 
     // ============================================================
+    // CRÉER UNE INVITATION DE CONTRAT (pour locataire existant)
+    // ============================================================
+    static async createContractInvitation(invitationData) {
+        const { id_locataire, id_proprietaire, id_contact, id_bien } = invitationData;
+        const token = this.generateToken();
+
+        const query = `
+            INSERT INTO invitation_locataire (id_locataire, id_proprietaire, id_contact, id_bien, token, statut, date_invitation)
+            VALUES ($1, $2, $3, $4, $5, 'envoyee', CURRENT_TIMESTAMP)
+            RETURNING *
+        `;
+
+        const values = [id_locataire, id_proprietaire, id_contact, id_bien, token];
+        const result = await db.query(query, values);
+
+        return result.rows[0];
+    }
+
+    // ============================================================
     // RÉCUPÉRER UNE INVITATION PAR TOKEN
     // ============================================================
     static async findByToken(token) {

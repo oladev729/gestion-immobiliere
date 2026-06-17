@@ -111,6 +111,10 @@ app.use('/api/visiteurs', visiteurRoutes);
 const messageRoutes = require('./routes/messageRoutes');
 app.use('/api/messages', messageRoutes);
 
+// ROUTES DES INVITATIONS DE CONTRAT
+const contractInvitationRoutes = require('./routes/contractInvitationRoutes');
+app.use('/api/invitations', contractInvitationRoutes);
+
 // ROUTES PROPRIÉTAIRES
 const proprietaireRoutes = require('./routes/proprietaireRoutes');
 app.use('/api/proprietaires', proprietaireRoutes);

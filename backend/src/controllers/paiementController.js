@@ -480,9 +480,155 @@ const paiementController = {
                 message: 'Échéances générées avec succès',
                 loyers
             });
-
         } catch (error) {
             console.error('Erreur génération échéances:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // GÉNÉRER LES ÉCHÉANCES MENSUELLES POUR TOUS LES CONTRATS ACTIFS
+    // ============================================================
+    async genererEcheancesMensuelles(req, res) {
+        try {
+            const echeances = await LoyerMensuel.genererEcheancesMensuelles();
+            res.json({
+                message: 'Échéances mensuelles générées avec succès',
+                echeances_creees: echeances.length,
+                echeances
+            });
+        } catch (error) {
+            console.error('Erreur génération échéances mensuelles:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // RÉCUPÉRER LES ÉCHÉANCES IMPAYÉES POUR UN PROPRIÉTAIRE
+    // ============================================================
+    async getImpayesProprietaire(req, res) {
+        try {
+            const proprietaire = await db.query(
+                'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
+                [req.user.id]
+            );
+
+            if (proprietaire.rows.length === 0) {
+                return res.status(404).json({ message: 'Propriétaire non trouvé' });
+            }
+
+            const impayes = await LoyerMensuel.findImpayesByProprietaire(proprietaire.rows[0].id_proprietaire);
+            res.json(impayes);
+        } catch (error) {
+            console.error('Erreur récupération impayés propriétaire:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // RÉCUPÉRER LES ÉCHÉANCES APPROCHANTES POUR UN LOCATAIRE
+    // ============================================================
+    async getEcheancesProches(req, res) {
+        try {
+            const locataire = await db.query(
+                'SELECT id_locataire FROM locataire WHERE id_utilisateur = $1',
+                [req.user.id]
+            );
+
+            if (locataire.rows.length === 0) {
+                return res.status(404).json({ message: 'Locataire non trouvé' });
+            }
+
+            const echeances = await LoyerMensuel.findEcheancesProches(locataire.rows[0].id_locataire);
+            res.json(echeances);
+        } catch (error) {
+            console.error('Erreur récupération échéances proches:', error);
+            res.status(500).json({ message: 'Erreur serveur' });
+        }
+    },
+
+    // ============================================================
+    // GÉNÉRER DES NOTIFICATIONS POUR LES ÉCHÉANCES APPROCHANTES
+    // ============================================================
+    async genererNotificationsEcheances(req, res) {
+        try {
+            // Récupérer toutes les échéances qui arrivent à échéance dans les 7 prochains jours
+            const echeancesProches = await db.query(`
+                SELECT l.*,
+                       c.id_locataire,
+                       c.id_bien,
+                       b.titre as bien_titre,
+                       u.id_utilisateur,
+                       u.email
+                FROM loyermensuel l
+                JOIN contact c ON l.id_contact = c.id_contact
+                JOIN bien b ON c.id_bien = b.id_bien
+                JOIN locataire lc ON c.id_locataire = lc.id_locataire
+                LEFT JOIN utilisateur u ON lc.id_utilisateur = u.id_utilisateur
+                WHERE l.statut IN ('en_attente', 'impaye')
+                AND l.date_echeance BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+                AND l.date_echeance > CURRENT_DATE
+            `);
+
+            const notificationsCreees = [];
+
+            for (const echeance of echeancesProches.rows) {
+                if (!echeance.id_utilisateur) continue;
+
+                // Vérifier si une notification existe déjà pour cette échéance
+                const existingNotification = await db.query(`
+                    SELECT * FROM notification
+                    WHERE id_utilisateur = $1
+                    AND titre LIKE '%loyer%'
+                    AND message LIKE '%' || $2 || '%'
+                    AND created_at > CURRENT_DATE - INTERVAL '7 days'
+                `, [echeance.id_utilisateur, echeance.mois_concerne]);
+
+                if (existingNotification.rows.length === 0) {
+                    // Créer la notification
+                    const joursRestants = Math.ceil((new Date(echeance.date_echeance) - new Date()) / (1000 * 60 * 60 * 24));
+                    const message = `Rappel: Votre loyer de ${echeance.montant_loyer} FCFA pour ${echeance.bien_titre} est dû dans ${joursRestants} jour(s). Échéance: ${new Date(echeance.date_echeance).toLocaleDateString('fr-FR')}`;
+
+                    await db.query(`
+                        INSERT INTO notification (id_utilisateur, titre, message, type, est_lu)
+                        VALUES ($1, $2, $3, $4, false)
+                    `, [echeance.id_utilisateur, 'Rappel de loyer', message, 'paiement']);
+
+                    // Créer aussi une alerte
+                    await db.query(`
+                        INSERT INTO alertes (id_proprietaire, id_locataire, id_bien, type_alerte, titre, description, date_echeance, priorite, statut, expediteur_type, destinataire_type)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                    `, [
+                        echeance.id_proprietaire || null,
+                        echeance.id_locataire,
+                        echeance.id_bien,
+                        'paiement',
+                        `Loyer en attente - ${echeance.bien_titre}`,
+                        message,
+                        echeance.date_echeance,
+                        'moyenne',
+                        'en_attente',
+                        'systeme',
+                        'locataire'
+                    ]);
+
+                    notificationsCreees.push({
+                        id_utilisateur: echeance.id_utilisateur,
+                        email: echeance.email,
+                        echeance: echeance.mois_concerne
+                    });
+
+                    console.log(`✅ Notification créée pour ${echeance.email} - échéance ${echeance.mois_concerne}`);
+                }
+            }
+
+            res.json({
+                message: 'Notifications générées avec succès',
+                notifications_creees: notificationsCreees.length,
+                notifications: notificationsCreees
+            });
+        } catch (error) {
+            console.error('Erreur génération notifications échéances:', error);
             res.status(500).json({ message: 'Erreur serveur' });
         }
     },

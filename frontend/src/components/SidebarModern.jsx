@@ -13,6 +13,7 @@ const SidebarModern = ({ user: propUser }) => {
     { name: 'Mes Biens', path: '/owner/properties', icon: 'bi-house' },
     { name: 'Visites', path: '/owner/visits', icon: 'bi-calendar-check' },
     { name: 'Paiements', path: '/owner/payments', icon: 'bi-credit-card' },
+    { name: 'Échéances impayées', path: '/owner/impayes', icon: 'bi-exclamation-circle' },
     { name: 'Documents', path: '/owner/documents', icon: 'bi-file-text' },
     { name: 'Annonces', path: '/owner/alertes', icon: 'bi-bell' },
     { name: 'Messagerie', path: '/messaging', icon: 'bi-chat-dots' },

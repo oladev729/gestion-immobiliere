@@ -125,7 +125,7 @@ class Contrat {
     // ============================================================
     static async findByProprietaire(id_proprietaire) {
         const query = `
-            SELECT c.*, 
+            SELECT c.*,
                    b.titre as bien_titre,
                    b.adresse as adresse,
                    b.ville as ville,
@@ -137,8 +137,8 @@ class Contrat {
             JOIN bien b ON c.id_bien = b.id_bien
             JOIN proprietaire p ON b.id_proprietaire = p.id_proprietaire
             JOIN utilisateur u_prop ON p.id_utilisateur = u_prop.id_utilisateur
-            LEFT LEFT JOIN locataire l ON c.id_locataire = l.id_locataire
-            LEFT LEFT JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
+            LEFT JOIN locataire l ON c.id_locataire = l.id_locataire
+            LEFT JOIN utilisateur u_loc ON l.id_utilisateur = u_loc.id_utilisateur
             WHERE b.id_proprietaire = $1
             ORDER BY c.date_creation DESC
         `;

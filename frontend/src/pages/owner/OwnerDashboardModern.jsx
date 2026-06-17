@@ -18,38 +18,52 @@ const OwnerDashboardModern = () => {
     maintenance: 0
   });
   const [loading, setLoading] = useState(true);
+  const [repartitionData, setRepartitionData] = useState(null);
+  const [performanceData, setPerformanceData] = useState(null);
+  const [relationData, setRelationData] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
+    fetchChartData();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      // Utiliser les données simulées pour éviter l'erreur 500
-      console.log('📊 Chargement dashboard avec données simulées...');
-      setStats({
-        revenue: 7852000,
-        revenueChange: 2.1,
-        orders: 1000,
-        ordersChange: -2.1,
-        properties: 12,
-        contracts: 10,
-        occupancyRate: 85,
-        unpaidCount: 3
-      });
+      console.log('📊 Chargement dashboard avec données réelles...');
+      const response = await api.get('/dashboard/stats');
+      console.log('✅ Données reçues:', response.data);
+      setStats(response.data);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      // Garder les données simulées en cas d'erreur
+      console.error('❌ Erreur chargement dashboard:', error);
+      // Utiliser des données par défaut en cas d'erreur
       setStats({
-        revenue: 7852000,
-        revenueChange: 2.1,
-        orders: 1000,
-        ordersChange: -2.1,
-        properties: 1000,
-        contracts: 1000,
+        revenue: 0,
+        revenueChange: 0,
+        orders: 0,
+        ordersChange: 0,
+        properties: 0,
+        contracts: 0,
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchChartData = async () => {
+    try {
+      // Fetch répartition des revenus
+      const repartitionRes = await api.get('/dashboard/repartition-revenus');
+      setRepartitionData(repartitionRes.data);
+
+      // Fetch performance mensuelle
+      const performanceRes = await api.get('/dashboard/performance-mensuelle');
+      setPerformanceData(performanceRes.data);
+
+      // Fetch relation propriétaire-locataire
+      const relationRes = await api.get('/dashboard/relation-proprietaire-locataire');
+      setRelationData(relationRes.data);
+    } catch (error) {
+      console.error('❌ Erreur chargement données graphiques:', error);
     }
   };
 
@@ -290,11 +304,11 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
       {/* Content Row */}
       <div className="bottom-row">
         <ChartCard title="Répartition des Revenus">
-          <RevenueChart />
+          <RevenueChart data={repartitionData} />
         </ChartCard>
 
         <ChartCard title="Performance Mensuelle">
-          <MonthlyPerformanceChart />
+          <MonthlyPerformanceChart data={performanceData} />
         </ChartCard>
 
         <ChartCard title="Les Biens les plus Loués">
@@ -317,7 +331,7 @@ const StatCard = ({ title, value, change, color = 'blue', isCurrency = false }) 
         </ChartCard>
 
         <ChartCard title="Relation Propriétaire-Locataire">
-          <OwnerTenantRelationChart />
+          <OwnerTenantRelationChart data={relationData} />
         </ChartCard>
       </div>
 

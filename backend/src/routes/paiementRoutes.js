@@ -75,4 +75,20 @@ router.get('/fedapay/widget', authenticateToken, paiementController.getFedaPayWi
 // Paiements reçus par le propriétaire
 router.get('/recus', authenticateToken, paiementController.paiementsRecus);
 
+// ============================================================
+// ROUTES POUR LES ÉCHÉANCES MENSUELLES
+// ============================================================
+
+// Générer les échéances mensuelles pour tous les contrats actifs
+router.post('/echeances-mensuelles', authenticateToken, paiementController.genererEcheancesMensuelles);
+
+// Récupérer les échéances impayées pour un propriétaire
+router.get('/impayes-proprietaire', authenticateToken, paiementController.getImpayesProprietaire);
+
+// Récupérer les échéances proches pour un locataire
+router.get('/echeances-proches', authenticateToken, paiementController.getEcheancesProches);
+
+// Générer des notifications pour les échéances proches
+router.post('/generer-notifications-echeances', authenticateToken, paiementController.genererNotificationsEcheances);
+
 module.exports = router;

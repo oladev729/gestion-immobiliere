@@ -38,7 +38,7 @@ const Entretien = () => {
             // Récupérer les invitations (endpoint qui existe)
             try {
                 console.log('🔄 Récupération des invitations...');
-                const invitationsRes = await api.get('/invitations/reçues');
+                const invitationsRes = await api.get('/invitations/recues');
                 console.log('✅ Réponse invitations:', invitationsRes.data);
                 setInvitations(invitationsRes.data.invitations || []);
             } catch (err) {

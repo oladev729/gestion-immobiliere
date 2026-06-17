@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 
-const OwnerTenantRelationChart = () => {
-  const [data, setData] = useState({
-    totalProperties: 12,
-    occupiedProperties: 10,
-    totalTenants: 10
+const OwnerTenantRelationChart = ({ data }) => {
+  const [relationData, setRelationData] = useState({
+    totalProperties: 0,
+    occupiedProperties: 0,
+    totalTenants: 0
   });
 
   useEffect(() => {
-    // Récupérer les vraies données depuis l'API
-    // api.get('/dashboard/relation').then(res => setData(res.data));
-  }, []);
+    if (data) {
+      setRelationData(data);
+    }
+  }, [data]);
 
-  const occupancyRate = data.totalProperties > 0 
-    ? Math.round((data.occupiedProperties / data.totalProperties) * 100)
+  const occupancyRate = relationData.totalProperties > 0 
+    ? Math.round((relationData.occupiedProperties / relationData.totalProperties) * 100)
     : 0;
 
   return (
@@ -48,7 +49,7 @@ const OwnerTenantRelationChart = () => {
           Propriétaire
         </div>
         <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-          {data.totalProperties} biens
+          {relationData.totalProperties} biens
         </div>
       </div>
 
@@ -110,7 +111,7 @@ const OwnerTenantRelationChart = () => {
           Locataires
         </div>
         <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-          {data.totalTenants} actifs
+          {relationData.totalTenants} actifs
         </div>
       </div>
 

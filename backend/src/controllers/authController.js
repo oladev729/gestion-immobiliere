@@ -432,7 +432,7 @@ const authController = {
     async inviterLocataire(req, res) {
         console.log('📧 Début invitation locataire pour email:', req.body.email);
         try {
-            const { email, nom, prenoms, type_souhaite } = req.body;
+            const { email, nom, prenoms, type_souhaite, demandeId, locataireId } = req.body;
             const proprietaireId = req.user.id;
             const typeDemande = type_souhaite || 'locataire';
 
@@ -449,6 +449,7 @@ const authController = {
                 [email]
             );
 
+            let id_locataire = null;
             if (locataireExistant.rows.length > 0) {
                 await db.query(
                     `UPDATE locataire SET 
@@ -458,12 +459,32 @@ const authController = {
                      WHERE email_invite = $2`,
                     [token, email]
                 );
+                id_locataire = locataireExistant.rows[0].id_locataire;
             } else {
-                await db.query(
+                const result = await db.query(
                     `INSERT INTO locataire (email_invite, token_invitation, date_invitation, date_expiration_token, statut_invitation)
-                     VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '7 days', 'en_attente')`,
+                     VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '7 days', 'en_attente')
+                     RETURNING id_locataire`,
                     [email, token]
                 );
+                id_locataire = result.rows[0].id_locataire;
+            }
+
+            // Also create entry in invitation_locataire table for tenant display
+            if (id_locataire) {
+                const proprietaire = await db.query(
+                    'SELECT id_proprietaire FROM proprietaire WHERE id_utilisateur = $1',
+                    [proprietaireId]
+                );
+
+                if (proprietaire.rows.length > 0) {
+                    const invitationToken = require('crypto').randomBytes(32).toString('hex');
+                    await db.query(
+                        `INSERT INTO invitation_locataire (id_locataire, id_proprietaire, token, statut, date_invitation)
+                         VALUES ($1, $2, $3, 'envoyee', CURRENT_TIMESTAMP)`,
+                        [id_locataire, proprietaire.rows[0].id_proprietaire, invitationToken]
+                    );
+                }
             }
 
             res.json({

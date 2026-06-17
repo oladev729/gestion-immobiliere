@@ -262,6 +262,19 @@ const Contracts = () => {
         }
     };
 
+    const handleInviteTenant = async (c) => {
+        try {
+            await api.post('/invitations/invite-contrat', {
+                id_locataire: c.id_locataire,
+                id_contact: c.id_contact,
+                id_bien: c.id_bien
+            });
+            setSuccessMsg('Invitation envoyée au locataire pour consulter et accepter le contrat !');
+        } catch (err) {
+            setErrorMsg(err.response?.data?.message || 'Erreur lors de l\'envoi de l\'invitation');
+        }
+    };
+
     const locatairesFiltres = locataires.filter(l =>
         `${l.nom} ${l.prenoms} ${l.email}`.toLowerCase().includes(searchLocataire.toLowerCase())
     );
@@ -541,6 +554,9 @@ const Contracts = () => {
                                                     title="Générer et voir le contrat"
                                                 >
                                                     <i className="bi bi-file-earmark-text me-1"></i>Contrat
+                                                </button>
+                                                <button className="btn btn-sm btn-outline-success" onClick={() => handleInviteTenant(c)} title="Inviter le locataire à consulter et accepter le contrat">
+                                                    <i className="bi bi-envelope me-1"></i>Inviter
                                                 </button>
                                                 <button className="btn btn-sm btn-outline-warning" onClick={() => handleEditContrat(c)}>Modifier</button>
                                             </div>

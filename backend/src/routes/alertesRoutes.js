@@ -161,24 +161,29 @@ router.post('/', authenticateToken, async (req, res) => {
         return res.status(400).json({ message: 'Veuillez spécifier le bien concerné.' });
       }
 
-      const proprietaireResult = await db.query(`
-        SELECT b.id_proprietaire, l.id_locataire
-        FROM bien b
-        JOIN contact c ON c.id_bien = b.id_bien AND c.statut_contrat = 'actif'
-        JOIN locataire l ON l.id_locataire = c.id_locataire
-        WHERE b.id_bien = $1 AND l.id_utilisateur = $2
-        LIMIT 1
-      `, [id_bien_clean, req.user.id]);
+      try {
+        const proprietaireResult = await db.query(`
+          SELECT b.id_proprietaire, l.id_locataire
+          FROM bien b
+          JOIN contact c ON c.id_bien = b.id_bien AND c.statut_contrat = 'actif'
+          JOIN locataire l ON l.id_locataire = c.id_locataire
+          WHERE b.id_bien = $1 AND l.id_utilisateur = $2
+          LIMIT 1
+        `, [id_bien_clean, req.user.id]);
 
-      if (proprietaireResult.rows.length === 0) {
-        return res.status(400).json({ message: 'Bien non trouvé ou vous n\'êtes pas locataire de ce bien' });
+        if (proprietaireResult.rows.length === 0) {
+          return res.status(400).json({ message: 'Bien non trouvé ou vous n\'êtes pas locataire de ce bien' });
+        }
+
+        const bien = proprietaireResult.rows[0];
+        id_proprietaire   = bien.id_proprietaire;
+        id_locataire_final= bien.id_locataire;
+        expediteur_type   = 'locataire';
+        destinataire_type = 'proprietaire';
+      } catch (dbError) {
+        console.error('❌ Erreur base de données lors de la récupération du bien:', dbError);
+        return res.status(500).json({ message: 'Erreur lors de la vérification du bien', error: dbError.message });
       }
-
-      const bien = proprietaireResult.rows[0];
-      id_proprietaire   = bien.id_proprietaire;
-      id_locataire_final= bien.id_locataire;
-      expediteur_type   = 'locataire';
-      destinataire_type = 'proprietaire';
 
     } else {
       return res.status(403).json({ message: 'Type d\'utilisateur non autorisé' });
@@ -208,6 +213,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('❌ ERREUR POST /alertes:', error.message);
+    console.error('❌ Stack trace:', error.stack);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 

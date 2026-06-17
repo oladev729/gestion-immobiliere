@@ -148,7 +148,7 @@ class LoyerMensuel {
     // ============================================================
     static async findImpayes() {
         const query = `
-            SELECT l.*, 
+            SELECT l.*,
                    c.id_locataire,
                    c.id_bien,
                    u.nom as locataire_nom,
@@ -162,6 +162,105 @@ class LoyerMensuel {
             ORDER BY l.date_echeance
         `;
         const result = await db.query(query);
+        return result.rows;
+    }
+
+    // ============================================================
+    // GÉNÉRER LES ÉCHÉANCES MENSUELLES POUR TOUS LES CONTRATS ACTIFS
+    // ============================================================
+    static async genererEcheancesMensuelles() {
+        try {
+            // Récupérer tous les contrats actifs
+            const contratsActifs = await db.query(`
+                SELECT c.*, b.id_proprietaire
+                FROM contact c
+                JOIN bien b ON c.id_bien = b.id_bien
+                WHERE c.statut_contrat = 'actif'
+                AND c.date_fin > CURRENT_DATE
+            `);
+
+            const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+            const echeancesCreees = [];
+
+            for (const contrat of contratsActifs.rows) {
+                // Vérifier si l'échéance du mois courant existe déjà
+                const existingEcheance = await db.query(`
+                    SELECT * FROM loyermensuel
+                    WHERE id_contact = $1 AND mois_concerne = $2
+                `, [contrat.id_contact, currentMonth]);
+
+                if (existingEcheance.rows.length === 0) {
+                    // Créer l'échéance du mois courant
+                    const dateEcheance = new Date();
+                    dateEcheance.setDate(5); // 5 du mois
+
+                    const nouveauLoyer = await this.create({
+                        id_contact: contrat.id_contact,
+                        mois_concerne: currentMonth,
+                        montant_loyer: contrat.loyer_mensuel,
+                        montant_charge: contrat.charge || 0,
+                        date_echeance: dateEcheance,
+                        statut: 'en_attente'
+                    });
+
+                    echeancesCreees.push(nouveauLoyer);
+                    console.log(`✅ Échéance créée pour contrat ${contrat.id_contact} - mois ${currentMonth}`);
+                }
+            }
+
+            return echeancesCreees;
+        } catch (error) {
+            console.error('Erreur génération échéances mensuelles:', error);
+            throw error;
+        }
+    }
+
+    // ============================================================
+    // RÉCUPÉRER LES ÉCHÉANCES À POUR UN PROPRIÉTAIRE
+    // ============================================================
+    static async findImpayesByProprietaire(id_proprietaire) {
+        const query = `
+            SELECT l.*,
+                   c.id_contact,
+                   c.id_locataire,
+                   b.titre as bien_titre,
+                   b.adresse as bien_adresse,
+                   u.nom as locataire_nom,
+                   u.prenoms as locataire_prenoms,
+                   u.email as locataire_email,
+                   u.telephone as locataire_telephone
+            FROM loyermensuel l
+            JOIN contact c ON l.id_contact = c.id_contact
+            JOIN bien b ON c.id_bien = b.id_bien
+            JOIN locataire l2 ON c.id_locataire = l2.id_locataire
+            LEFT JOIN utilisateur u ON l2.id_utilisateur = u.id_utilisateur
+            WHERE b.id_proprietaire = $1
+            AND l.statut IN ('en_attente', 'impaye')
+            AND l.date_echeance <= CURRENT_DATE + INTERVAL '7 days'
+            ORDER BY l.date_echeance ASC
+        `;
+        const result = await db.query(query, [id_proprietaire]);
+        return result.rows;
+    }
+
+    // ============================================================
+    // RÉCUPÉRER LES ÉCHÉANCES APPROCHANTES POUR UN LOCATAIRE
+    // ============================================================
+    static async findEcheancesProches(id_locataire) {
+        const query = `
+            SELECT l.*,
+                   c.numero_contrat,
+                   b.titre as bien_titre,
+                   b.loyer_mensuel as contrat_loyer
+            FROM loyermensuel l
+            JOIN contact c ON l.id_contact = c.id_contact
+            JOIN bien b ON c.id_bien = b.id_bien
+            WHERE c.id_locataire = $1
+            AND l.statut IN ('en_attente', 'impaye')
+            AND l.date_echeance BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+            ORDER BY l.date_echeance ASC
+        `;
+        const result = await db.query(query, [id_locataire]);
         return result.rows;
     }
 }

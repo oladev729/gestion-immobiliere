@@ -27,20 +27,20 @@ export default function Quittances() {
     }
   };
 
-  const generateReceipt = async (paymentId) => {
+  const generateReceipt = async (paymentId, paymentType) => {
     setGenerating(true);
     try {
       const response = await api.post('/quittances/generer', {
         id_paiement: paymentId,
-        type_quittance: 'loyer'
+        type_quittance: paymentType || 'loyer'
       });
-      
+
       // Télécharger le PDF de la quittance
       const quittanceId = response.data.quittance.id_quittance;
       const pdfResponse = await api.get(`/quittances/${quittanceId}/pdf`, {
         responseType: 'blob'
       });
-      
+
       // Créer un lien de téléchargement
       const blob = new Blob([pdfResponse.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
@@ -51,7 +51,7 @@ export default function Quittances() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       alert('Quittance générée avec succès!');
       setSelectedPayment(null);
     } catch (error) {
@@ -124,7 +124,7 @@ export default function Quittances() {
                 <tbody>
                   {payments.map((payment) => (
                     <tr key={payment.id_payment || payment.id_payement}>
-                      <td>{payment.type_paiement || 'Loyer'}</td>
+                      <td>{payment.id_depot ? 'Dépôt de garantie' : (payment.type_paiement || 'Loyer')}</td>
                       <td>{payment.montant?.toLocaleString('fr-FR')} XOF</td>
                       <td>{formatDate(payment.date_paiement)}</td>
                       <td>
@@ -166,15 +166,21 @@ export default function Quittances() {
               <div className="modal-body">
                 <div className="receipt-preview">
                   <h6>informations du paiement</h6>
-                  <p><strong>type:</strong> {selectedPayment.type_paiement || 'Loyer'}</p>
+                  <p><strong>type:</strong> {selectedPayment.type_paiement || (selectedPayment.id_depot ? 'Dépôt de garantie' : 'Loyer')}</p>
                   <p><strong>montant:</strong> {selectedPayment.montant?.toLocaleString('fr-FR')} XOF</p>
                   <p><strong>date:</strong> {formatDate(selectedPayment.date_paiement)}</p>
-                  
-                  <h6 className="mt-3">quittance de loyer</h6>
+
+                  <h6 className="mt-3">
+                    {selectedPayment.id_depot ? 'Quittance de dépôt de garantie' : 'Quittance de loyer'}
+                  </h6>
                   <div className="border p-3 rounded">
                     <p>Je soussigné, propriétaire du bien, certifie avoir reçu la somme de:</p>
                     <p className="text-center fw-bold">{selectedPayment.montant?.toLocaleString('fr-FR')} XOF</p>
-                    <p>en paiement du loyer pour la période correspondante.</p>
+                    <p>
+                      {selectedPayment.id_depot
+                        ? 'en paiement du dépôt de garantie.'
+                        : 'en paiement du loyer pour la période correspondante.'}
+                    </p>
                     <p>Fait à {selectedPayment.lieu || 'Lieu'}, le {formatDate(selectedPayment.date_paiement)}</p>
                   </div>
                 </div>
@@ -184,7 +190,9 @@ export default function Quittances() {
                   type="button"
                   className="btn btn-primary"
                   onClick={() => {
-                    generateReceipt(selectedPayment.id_payment || selectedPayment.id_payement);
+                    const paymentType = selectedPayment.type_paiement ||
+                                      (selectedPayment.id_depot ? 'depot' : 'loyer');
+                    generateReceipt(selectedPayment.id_payment || selectedPayment.id_payement, paymentType);
                   }}
                   disabled={generating}
                 >

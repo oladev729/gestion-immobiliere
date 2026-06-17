@@ -136,7 +136,7 @@ class Paiement {
     // ============================================================
     static async findByLocataire(id_locataire) {
         const query = `
-            SELECT p.*, 
+            SELECT p.*,
                    mp.libelle as mode_paiement_libelle,
                    c.numero_contrat,
                    b.titre as bien_titre

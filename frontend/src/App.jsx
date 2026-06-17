@@ -20,6 +20,7 @@ import OwnerPayments from './pages/owner/OwnerPayments';
 import DocumentGeneratorPage from './pages/owner/DocumentGeneratorPage';
 import AlertesAvanceesPage from './pages/owner/AlertesAvanceesPage';
 import InviterLocataire from './pages/owner/InviterLocataire';
+import UnpaidDueDates from './pages/owner/UnpaidDueDates';
 // import TestData from "./pages/owner/TestData"; // Commenté car c'est une page de test
 
 // Pages Locataire
@@ -85,6 +86,7 @@ function App() {
                         <Route path="/owner/documents" element={<Layout><DocumentGeneratorPage /></Layout>} />
                         <Route path="/owner/alertes" element={<Layout><AlertesAvanceesPage /></Layout>} />
                         <Route path="/owner/inviter-locataire" element={<Layout><InviterLocataire /></Layout>} />
+                        <Route path="/owner/impayes" element={<Layout><UnpaidDueDates /></Layout>} />
                         {/* <Route path="/owner/test-data" element={<Layout><TestData /></Layout>} /> */}
                         <Route path="/messaging" element={
                             <AuthContext.Consumer>
